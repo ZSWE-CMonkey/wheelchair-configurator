@@ -9,11 +9,6 @@ namespace WheelchairConfigurator
         public MainPage()
         {
             InitializeComponent();
-
-            ITemporaryLogic temp = TemporaryFactory.CreateTemporaryLogic();
-
-            Label tempLabel = new Label() { Text = temp.GetTemporary(), TextColor=Colors.DarkRed };
-            Testing.Children.Add(tempLabel);
         }
 
         private void OnCounterClicked(object sender, EventArgs e)

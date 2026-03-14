@@ -1,0 +1,5 @@
+C:/Users/kryst/Desktop/Git Unity Projects/wheelchair-configurator/WheelchairConfigurator/WheelchairGraphics/out/build/x64-debug/CMakeFiles/edit_cache.dir
+C:/Users/kryst/Desktop/Git Unity Projects/wheelchair-configurator/WheelchairConfigurator/WheelchairGraphics/out/build/x64-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/kryst/Desktop/Git Unity Projects/wheelchair-configurator/WheelchairConfigurator/WheelchairGraphics/out/build/x64-debug/WheelchairGraphics/CMakeFiles/WheelchairGraphics.dir
+C:/Users/kryst/Desktop/Git Unity Projects/wheelchair-configurator/WheelchairConfigurator/WheelchairGraphics/out/build/x64-debug/WheelchairGraphics/CMakeFiles/edit_cache.dir
+C:/Users/kryst/Desktop/Git Unity Projects/wheelchair-configurator/WheelchairConfigurator/WheelchairGraphics/out/build/x64-debug/WheelchairGraphics/CMakeFiles/rebuild_cache.dir

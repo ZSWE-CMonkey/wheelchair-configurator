@@ -1,0 +1,9 @@
+# ninja log v5
+3	12	0	clean	8c45b54705a541e8
+83	461	7951540411404854	WheelchairGraphics/WheelchairGraphics.dll	7147c2585c763cc2
+10	81	7951540407874663	WheelchairGraphics/CMakeFiles/WheelchairGraphics.dir/src/WheelchairGraphics.cpp.obj	769e524969436bb9
+83	461	7951540411404854	WheelchairGraphics/WheelchairGraphics.lib	7147c2585c763cc2
+12	24	0	clean	8c45b54705a541e8
+11	845	7951555182521516	WheelchairGraphics/CMakeFiles/WheelchairGraphics.dir/src/WheelchairGraphics.cpp.obj	769e524969436bb9
+847	1079	7951555184352197	WheelchairGraphics/WheelchairGraphics.dll	7147c2585c763cc2
+847	1079	7951555184352197	WheelchairGraphics/WheelchairGraphics.lib	7147c2585c763cc2
