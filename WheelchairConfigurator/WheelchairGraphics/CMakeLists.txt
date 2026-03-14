@@ -7,4 +7,12 @@ endif()
 
 project ("WheelchairGraphics")
 
+if(WIN32)
+project ("WG_Test") #used for testing
+endif()
+
 add_subdirectory ("WheelchairGraphics")
+
+if(WIN32)
+add_subdirectory ("WG_Test") #used for testing
+endif()

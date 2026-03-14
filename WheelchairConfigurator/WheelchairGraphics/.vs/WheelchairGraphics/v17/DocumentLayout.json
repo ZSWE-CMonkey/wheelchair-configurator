@@ -1,18 +1,30 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\",
+  "WorkspaceRootPath": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WG_Test\\src\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WG_Test\\src\\main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\src\\WheelchairGraphics.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\WheelchairGraphics.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\include\\WheelchairGraphics.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\CMakeLists.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\CMakeLists.txt||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\GraphicsPlugin.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\include\\GraphicsPlugin.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\VulkanGraphicsPlugin.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\include\\VulkanGraphicsPlugin.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\includePublic\\WheelchairGraphics.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:WheelchairGraphics\\includePublic\\WheelchairGraphics.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -22,45 +34,84 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 5,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "WheelchairGraphics.cpp",
-              "DocumentMoniker": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp",
-              "RelativeDocumentMoniker": "WheelchairGraphics\\src\\WheelchairGraphics.cpp",
-              "ToolTip": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp",
-              "RelativeToolTip": "WheelchairGraphics\\src\\WheelchairGraphics.cpp",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAABKAAAA",
+              "DocumentIndex": 2,
+              "Title": "VulkanGraphicsPlugin.cpp",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp",
+              "RelativeDocumentMoniker": "WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp",
+              "RelativeToolTip": "WheelchairGraphics\\src\\VulkanGraphicsPlugin.cpp",
+              "ViewState": "AQIAABIAAAAAAAAAAAAAACIAAAABAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2026-03-14T01:05:27.826Z",
+              "WhenOpened": "2026-03-14T17:42:00.384Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "WheelchairGraphics.h",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\includePublic\\WheelchairGraphics.h",
+              "RelativeDocumentMoniker": "WheelchairGraphics\\includePublic\\WheelchairGraphics.h",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\includePublic\\WheelchairGraphics.h",
+              "RelativeToolTip": "WheelchairGraphics\\includePublic\\WheelchairGraphics.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAcAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-03-14T17:31:04.05Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "GraphicsPlugin.h",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\GraphicsPlugin.h",
+              "RelativeDocumentMoniker": "WheelchairGraphics\\include\\GraphicsPlugin.h",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\GraphicsPlugin.h",
+              "RelativeToolTip": "WheelchairGraphics\\include\\GraphicsPlugin.h",
+              "ViewState": "AQIAAAYAAAAAAAAAAAAAACEAAAArAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-03-14T17:28:04.804Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "VulkanGraphicsPlugin.h",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\VulkanGraphicsPlugin.h",
+              "RelativeDocumentMoniker": "WheelchairGraphics\\include\\VulkanGraphicsPlugin.h",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\VulkanGraphicsPlugin.h",
+              "RelativeToolTip": "WheelchairGraphics\\include\\VulkanGraphicsPlugin.h",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABIAAAAoAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2026-03-14T17:28:03.219Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "WheelchairGraphics.h",
-              "DocumentMoniker": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\WheelchairGraphics.h",
-              "RelativeDocumentMoniker": "WheelchairGraphics\\include\\WheelchairGraphics.h",
-              "ToolTip": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\include\\WheelchairGraphics.h",
-              "RelativeToolTip": "WheelchairGraphics\\include\\WheelchairGraphics.h",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAABAAAAAmAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2026-03-14T01:05:17.458Z",
+              "Title": "WheelchairGraphics.cpp",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp",
+              "RelativeDocumentMoniker": "WheelchairGraphics\\src\\WheelchairGraphics.cpp",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\src\\WheelchairGraphics.cpp",
+              "RelativeToolTip": "WheelchairGraphics\\src\\WheelchairGraphics.cpp",
+              "ViewState": "AQIAAA8AAAAAAAAAAAAAACAAAAAuAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-03-14T17:26:28.66Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "CMakeLists.txt",
-              "DocumentMoniker": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\CMakeLists.txt",
-              "RelativeDocumentMoniker": "WheelchairGraphics\\CMakeLists.txt",
-              "ToolTip": "C:\\Users\\kryst\\Desktop\\Git Unity Projects\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WheelchairGraphics\\CMakeLists.txt",
-              "RelativeToolTip": "WheelchairGraphics\\CMakeLists.txt",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAMAAAA7AAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2026-03-14T01:01:01.404Z",
+              "DocumentIndex": 0,
+              "Title": "main.cpp",
+              "DocumentMoniker": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WG_Test\\src\\main.cpp",
+              "RelativeDocumentMoniker": "WG_Test\\src\\main.cpp",
+              "ToolTip": "C:\\Users\\XD\\Desktop\\Projects\\ZSWE\\wheelchair-configurator\\WheelchairConfigurator\\WheelchairGraphics\\WG_Test\\src\\main.cpp",
+              "RelativeToolTip": "WG_Test\\src\\main.cpp",
+              "ViewState": "AQIAAGMAAAAAAAAAAAAAABEAAAAnAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2026-03-14T16:50:16.235Z",
               "EditorCaption": ""
             }
           ]

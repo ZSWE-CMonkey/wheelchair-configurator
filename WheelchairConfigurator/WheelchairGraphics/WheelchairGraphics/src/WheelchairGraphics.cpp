@@ -1,19 +1,39 @@
-﻿#include "../include/WheelchairGraphics.h"
+﻿#include "WheelchairGraphics.h"
+
+#include "GraphicsPlugin.h"
 
 #include <stdexcept>
 
-WG_API int InitializeVulkanGraphics()
-{
-	//TODO: create graphics plugin and initialize it
-	return 0;
+using namespace GraphicsPlugin;
+
+namespace {
+
+	GraphicsPluginPtr g_graphicsPlugin = nullptr;
+
 }
 
-WG_API int InitializeMoltenVulkanGraphics()
+
+WG_API void wgInitializeVulkanGraphics()
+{
+	g_graphicsPlugin = GraphicsPluginFactory::CreateVulkanGraphicsPlugin();
+	
+	if (!g_graphicsPlugin)
+		throw std::runtime_error("Graphics plugin was not created");
+
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize());
+}
+
+WG_API void wgInitializeMoltenVulkanGraphics()
 {
 	throw std::runtime_error("MoltenVulkan Graphics Plugin NOT Implemented");
 }
 
-WG_API int DeinitializeGraphics() {
+WG_API void wgRender()
+{
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Render());
+}
 
-	return 0;
+WG_API void wgDeinitializeGraphics() {
+	GP_THROW_IF_FAIL(g_graphicsPlugin->DeInitialize());
+	g_graphicsPlugin = nullptr;
 }
