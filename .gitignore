@@ -8,8 +8,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
 WheelchairConfigurator/.vs/
-WheelchairConfigurator/WheelchairGraphics/.vs
-WheelchairConfigurator/WheelchairGraphics/out
+WheelchairConfigurator/WheelchairGraphics/.vs/
+WheelchairConfigurator/WheelchairGraphics/out/
+WheelchairConfigurator/WheelchairGraphics/.vsx/
 
 # Build results
 [Dd]ebug/
