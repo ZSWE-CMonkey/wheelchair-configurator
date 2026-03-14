@@ -23,3 +23,6 @@ target_include_directories(WheelchairGraphics
 )
 
 target_compile_definitions(WheelchairGraphics PRIVATE _WG_API_EXPORT_)
+
+find_package(Vulkan REQUIRED)
+target_link_libraries(WheelchairGraphics PRIVATE Vulkan::Vulkan)

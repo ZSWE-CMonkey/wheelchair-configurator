@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <vulkan/vulkan.h>
+
 namespace GraphicsPlugin {
 
 	class VulkanGraphicsPlugin : IGraphicsPlugin
