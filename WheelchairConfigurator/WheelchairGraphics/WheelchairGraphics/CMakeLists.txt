@@ -11,7 +11,7 @@
 	"include/VulkanEngine.h"
 
 	"includePublic/WheelchairGraphics.h"
-)
+ "include/VulkanSwapchain.h" "src/VulkanSwapchain.cpp" "include/VulkanCommon.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET WheelchairGraphics PROPERTY CXX_STANDARD 20)
@@ -22,7 +22,11 @@ target_include_directories(WheelchairGraphics
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_compile_definitions(WheelchairGraphics PRIVATE _WG_API_EXPORT_)
+target_compile_definitions(WheelchairGraphics 
+	PRIVATE 
+		_WG_API_EXPORT_
+		VK_USE_PLATFORM_WIN32_KHR
+)
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(WheelchairGraphics PRIVATE Vulkan::Vulkan)

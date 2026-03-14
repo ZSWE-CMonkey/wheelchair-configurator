@@ -12,9 +12,11 @@
 
 //--Graphics specific--//
 
-extern "C" WG_API void wgInitializeVulkanGraphics();
+//TODO: ADD android as well
 
-extern "C" WG_API void wgInitializeMoltenVulkanGraphics();
+extern "C" WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformHandle, void* platformWindow);
+
+extern "C" WG_API void wgInitializeMoltenVulkanGraphics(const char* appName);
 
 //--Common--//
 

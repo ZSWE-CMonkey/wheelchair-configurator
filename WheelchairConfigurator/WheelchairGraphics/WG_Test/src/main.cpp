@@ -11,6 +11,8 @@
 #include <WheelchairGraphics.h>
 
 namespace {
+	const char* c_appName = "Test";
+
 	HWND* g_window = nullptr;
 
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
@@ -28,7 +30,7 @@ namespace {
 		wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 		wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 		wndClass.lpszMenuName = NULL;
-		wndClass.lpszClassName = "test";
+		wndClass.lpszClassName = c_appName;
 		wndClass.hIconSm = LoadIcon(NULL, IDI_WINLOGO);
 
 		if (!RegisterClassEx(&wndClass))
@@ -50,10 +52,10 @@ namespace {
 
 		AdjustWindowRectEx(&windowRect, dwStyle, FALSE, dwExStyle);
 
-		std::string windowTitle = "test";
+		std::string windowTitle = c_appName;
 		HWND window = CreateWindowEx(0,
-			"test",
-			"test",
+			c_appName,
+			c_appName,
 			dwStyle | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
 			windowRect.left,
 			windowRect.top,
@@ -124,7 +126,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	HWND window = setupWindow(hInstance, WndProc);
 	g_window = &window;
 
-	wgInitializeVulkanGraphics();
+	wgInitializeVulkanGraphicsWIN32(c_appName, hInstance, window);
 	renderLoop();
 	wgDeinitializeGraphics();
 
