@@ -3,6 +3,7 @@
     public interface IGraphicsPlugin
     {
         public bool Initialize();
-        public bool Deinitialize();
+        public void Render();
+        public void Deinitialize();
     }
 }
