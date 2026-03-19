@@ -23,12 +23,19 @@ namespace VkEngine {
 #else
 		VkResult InitSwapchain();
 #endif
+
+		VkResult Prepare();
 		
 	private:
 		VkResult CreateInstance(std::string appName);
 		VkResult CheckPhysicalDevices(uint32_t& outGraphicsQueueIndex);
 		VkResult CreateDevice(uint32_t graphicsQueueIndex);
 		VkResult CreateVulkanSemaphore();
+
+
+		VkResult CreateCommandPool();
+		VkResult CreateSetupCommandBuffer();
+
 
 		void CreateSumbitInfo();
 		bool GetDepthFormat();
@@ -42,6 +49,11 @@ namespace VkEngine {
 		VkQueue m_queue;
 
 		VkFormat m_depthFormat;
+
+
+		VkCommandPool m_cmdPool;
+		VkCommandBuffer m_setupCmdBuffer;
+
 
 		VkPipelineStageFlags m_submitPipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 

@@ -51,6 +51,18 @@ VkResult VulkanEngine::InitSwapchain()
 	return VK_SUCCESS;
 }
 
+VkResult VkEngine::VulkanEngine::Prepare()
+{
+	uint32_t width = 600, height = 600;//todo w/h take from device
+
+	VKE_CHECK_RESULT(CreateCommandPool());
+	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
+	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSwapchain(m_setupCmdBuffer, width, height));
+	//Todo: complete
+
+	return VK_SUCCESS;
+}
+
 VkResult VulkanEngine::CreateInstance(std::string appName)
 {
 	VkApplicationInfo appInfo = {};
@@ -145,6 +157,31 @@ VkResult VulkanEngine::CreateVulkanSemaphore()
 	
 	VKE_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &m_semaphores.presentComplete));
 	return vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &m_semaphores.renderComplete);
+}
+
+VkResult VkEngine::VulkanEngine::CreateCommandPool()
+{
+	VkCommandPoolCreateInfo cmdPoolInfo = {};
+	cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolInfo.queueFamilyIndex = m_vulkanSwapchain->GetQueueNodeIndex();
+	cmdPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	return vkCreateCommandPool(m_device, &cmdPoolInfo, nullptr, &m_cmdPool);
+}
+
+VkResult VkEngine::VulkanEngine::CreateSetupCommandBuffer()
+{
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.commandPool = m_cmdPool;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = 1;
+
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, &m_setupCmdBuffer));
+
+	VkCommandBufferBeginInfo cmdBufInfo = {};
+	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	return vkBeginCommandBuffer(m_setupCmdBuffer, &cmdBufInfo);
 }
 
 void VulkanEngine::CreateSumbitInfo()

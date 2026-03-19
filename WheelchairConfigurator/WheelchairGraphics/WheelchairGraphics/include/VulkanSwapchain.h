@@ -2,7 +2,42 @@
 
 #include "VulkanCommon.h"
 
+#include <vector>
+
+
+#define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                        \
+{                                                                       \
+    fn_##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
+    if (fn_##entrypoint == NULL)                                         \
+	{																    \
+        throw std::runtime_error("Function was not loaded");            \
+    }                                                                   \
+}
+
+// Macro to get a procedure address based on a vulkan device
+#define GET_DEVICE_PROC_ADDR(dev, entrypoint)                           \
+{                                                                       \
+    fn_##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk"#entrypoint);   \
+    if (fn_##entrypoint == NULL)                                         \
+	{																    \
+        throw std::runtime_error("Function was not loaded");            \
+    }                                                                   \
+}
+
+
 namespace VkEngine {
+	typedef struct {
+		VkImage image;
+		VkImageView view;
+	} SwapChainBuffer;
+
+	typedef struct {
+		VkCommandBuffer cmdbuffer;
+		VkImage image;
+		VkImageAspectFlags aspectMask;
+		VkImageLayout oldImageLayout;
+		VkImageLayout newImageLayout;
+	} SetImageLayoutInfo;
 
 	class VulkanSwapchain {
 	public:
@@ -19,7 +54,13 @@ namespace VkEngine {
 
 		VkResult InitSurface();
 
+		VkResult CreateSwapchain(VkCommandBuffer& cmdBuffer, uint32_t& width, uint32_t& height);
+
+		uint32_t GetQueueNodeIndex() const;
+
 	private:
+		void SetImageLayout(SetImageLayoutInfo& info);
+
 		VkInstance& m_instance;
 		VkPhysicalDevice& m_physicalDevice; 
 		VkDevice& m_device;
@@ -28,12 +69,24 @@ namespace VkEngine {
 		VkFormat m_colorFormat;
 		VkColorSpaceKHR m_colorSpace;
 
+		uint32_t m_imageCount;
+
+		std::vector<VkImage> m_images;
+		std::vector<SwapChainBuffer> m_buffers;
+
 		VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 
 		uint32_t m_queueNodeIndex = UINT32_MAX;
 
 		PFN_vkGetPhysicalDeviceSurfaceSupportKHR fn_GetPhysicalDeviceSurfaceSupportKHR;
 		PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fn_GetPhysicalDeviceSurfaceFormatsKHR;
+		PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fn_GetPhysicalDeviceSurfaceCapabilitiesKHR;
+		PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fn_GetPhysicalDeviceSurfacePresentModesKHR;
+		PFN_vkCreateSwapchainKHR fn_CreateSwapchainKHR;
+		PFN_vkDestroySwapchainKHR fn_DestroySwapchainKHR;
+		PFN_vkGetSwapchainImagesKHR fn_GetSwapchainImagesKHR;
+		PFN_vkAcquireNextImageKHR fn_AcquireNextImageKHR;
+		PFN_vkQueuePresentKHR fn_QueuePresentKHR;
 	};
 
 }

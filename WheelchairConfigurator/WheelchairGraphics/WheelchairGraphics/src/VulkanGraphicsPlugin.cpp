@@ -40,6 +40,10 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appNa
     //TODO: PLATFORM SPECIFIC
     if (m_vulkanEngine->InitSwapchain(m_platformHandle, m_platformWindow) != VK_SUCCESS)
         return GP_INITIALIZATION_FAILED;
+
+    if (m_vulkanEngine->Prepare() != VK_SUCCESS)
+        return GP_INITIALIZATION_FAILED;
+
     return GP_SUCCESS;
 }
 
