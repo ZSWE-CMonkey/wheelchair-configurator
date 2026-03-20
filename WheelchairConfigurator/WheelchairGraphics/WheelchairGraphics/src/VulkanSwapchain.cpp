@@ -270,6 +270,21 @@ uint32_t VkEngine::VulkanSwapchain::GetQueueNodeIndex() const
 	return m_queueNodeIndex;
 }
 
+uint32_t VkEngine::VulkanSwapchain::GetImageCount() const
+{
+	return m_imageCount;
+}
+
+VkFormat VkEngine::VulkanSwapchain::GetColorFormat() const
+{
+	return m_colorFormat;
+}
+
+SwapChainBuffer& VkEngine::VulkanSwapchain::GetSwapchainBuffer(int index)
+{
+	return m_buffers[index];
+}
+
 void VkEngine::VulkanSwapchain::SetImageLayout(SetImageLayoutInfo& info)
 {
 	VkImageSubresourceRange subresourceRange = {};

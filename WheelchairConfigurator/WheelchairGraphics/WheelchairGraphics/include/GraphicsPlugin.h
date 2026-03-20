@@ -38,7 +38,7 @@ namespace GraphicsPlugin {
 #endif
 
 
-		virtual GPluginResult Initialize(std::string appName) = 0;
+		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
 		virtual GPluginResult SetObject(/*TODO: parameter/s*/) = 0;
 		virtual GPluginResult Render() = 0;
 		virtual GPluginResult DeInitialize() = 0;

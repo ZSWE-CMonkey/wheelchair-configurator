@@ -14,7 +14,6 @@
     }                                                                   \
 }
 
-// Macro to get a procedure address based on a vulkan device
 #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                           \
 {                                                                       \
     fn_##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk"#entrypoint);   \
@@ -56,10 +55,14 @@ namespace VkEngine {
 
 		VkResult CreateSwapchain(VkCommandBuffer& cmdBuffer, uint32_t& width, uint32_t& height);
 
+		void SetImageLayout(SetImageLayoutInfo& info);
+
 		uint32_t GetQueueNodeIndex() const;
+		uint32_t GetImageCount() const;
+		VkFormat GetColorFormat() const;
+		SwapChainBuffer& GetSwapchainBuffer(int index);
 
 	private:
-		void SetImageLayout(SetImageLayoutInfo& info);
 
 		VkInstance& m_instance;
 		VkPhysicalDevice& m_physicalDevice; 

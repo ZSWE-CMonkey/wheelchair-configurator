@@ -21,7 +21,7 @@ namespace GraphicsPlugin {
 		void SetHandles() override;
 #endif
 
-		GPluginResult Initialize(std::string appName) override;
+		GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) override;
 		GPluginResult SetObject(/*TODO: parameter/s*/) override;
 		GPluginResult Render() override;
 		GPluginResult DeInitialize() override;
@@ -30,7 +30,8 @@ namespace GraphicsPlugin {
 
 		std::unique_ptr<VkEngine::VulkanEngine> m_vulkanEngine = nullptr;
 
-
+		uint32_t m_width;
+		uint32_t m_height;
 
 #ifdef _WIN32
 		void* m_platformHandle;

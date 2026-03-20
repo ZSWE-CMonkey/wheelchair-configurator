@@ -22,7 +22,8 @@ WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformH
 
 	g_graphicsPlugin->SetHandles(platformHandle, platformWindow);
 
-	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize(std::string(appName)));
+	//todo width and height take from main device display/window
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize(std::string(appName), 600, 600));
 }
 
 WG_API void wgInitializeMoltenVulkanGraphics(const char* appName)

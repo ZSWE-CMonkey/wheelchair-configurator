@@ -14,8 +14,11 @@ VulkanEngine::~VulkanEngine()
 	vkDestroyInstance(m_instance, nullptr);
 }
 
-VkResult VulkanEngine::InitVulkan(std::string appName)
+VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t height)
 {
+	m_width = width;
+	m_height = height;
+
 	VKE_CHECK_RESULT(CreateInstance(appName));
 	//TODO: for android is needed to load vulkan function, bc android loads it on runtime. place it here
 	uint32_t graphicsQueueIndex{};
@@ -53,12 +56,21 @@ VkResult VulkanEngine::InitSwapchain()
 
 VkResult VkEngine::VulkanEngine::Prepare()
 {
-	uint32_t width = 600, height = 600;//todo w/h take from device
-
 	VKE_CHECK_RESULT(CreateCommandPool());
 	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
-	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSwapchain(m_setupCmdBuffer, width, height));
-	//Todo: complete
+	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSwapchain(m_setupCmdBuffer, m_width, m_height));
+	VKE_CHECK_RESULT(CreateCommandBuffers());
+	VKE_CHECK_RESULT(SetupDepthStencil());
+	VKE_CHECK_RESULT(SetupRenderPass());
+	VKE_CHECK_RESULT(CreatePipelineCache());
+	VKE_CHECK_RESULT(SetupFrameBuffer());
+	VKE_CHECK_RESULT(FlushSetupCommandBuffer());
+	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
+
+	//Here later load texture and mesh etc.
+
+
+	//Todo: complete it
 
 	return VK_SUCCESS;
 }
@@ -182,6 +194,206 @@ VkResult VkEngine::VulkanEngine::CreateSetupCommandBuffer()
 	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 	return vkBeginCommandBuffer(m_setupCmdBuffer, &cmdBufInfo);
+}
+
+VkResult VkEngine::VulkanEngine::CreateCommandBuffers()
+{
+	m_drawCmdBuffers.resize(m_vulkanSwapchain->GetImageCount());
+
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	commandBufferAllocateInfo.commandPool = m_cmdPool;
+	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	commandBufferAllocateInfo.commandBufferCount = (uint32_t)m_drawCmdBuffers.size();
+
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, m_drawCmdBuffers.data()));
+
+	commandBufferAllocateInfo.commandBufferCount = 1;
+
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, &m_prePresentCmdBuffer));
+	return vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, &m_postPresentCmdBuffer);
+}
+
+VkResult VkEngine::VulkanEngine::SetupDepthStencil()
+{
+	VkImageCreateInfo image = {};
+	image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	image.pNext = NULL;
+	image.imageType = VK_IMAGE_TYPE_2D;
+	image.format = m_depthFormat;
+	image.extent = { m_width, m_height, 1 };
+	image.mipLevels = 1;
+	image.arrayLayers = 1;
+	image.samples = VK_SAMPLE_COUNT_1_BIT;
+	image.tiling = VK_IMAGE_TILING_OPTIMAL;
+	image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	image.flags = 0;
+
+	VkMemoryAllocateInfo mem_alloc = {};
+	mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	mem_alloc.pNext = NULL;
+	mem_alloc.allocationSize = 0;
+	mem_alloc.memoryTypeIndex = 0;
+
+	VkImageViewCreateInfo depthStencilView = {};
+	depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	depthStencilView.pNext = NULL;
+	depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	depthStencilView.format = m_depthFormat;
+	depthStencilView.flags = 0;
+	depthStencilView.subresourceRange = {};
+	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	depthStencilView.subresourceRange.baseMipLevel = 0;
+	depthStencilView.subresourceRange.levelCount = 1;
+	depthStencilView.subresourceRange.baseArrayLayer = 0;
+	depthStencilView.subresourceRange.layerCount = 1;
+
+	VkMemoryRequirements memReqs;
+
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &image, nullptr, &m_depthStencil.image));
+	vkGetImageMemoryRequirements(m_device, m_depthStencil.image, &memReqs);
+	mem_alloc.allocationSize = memReqs.size;
+	mem_alloc.memoryTypeIndex = GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &mem_alloc, nullptr, &m_depthStencil.mem));
+
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, m_depthStencil.image, m_depthStencil.mem, 0));
+
+	SetImageLayoutInfo setImageLayoutInfo{};
+	setImageLayoutInfo.cmdbuffer = m_setupCmdBuffer;
+	setImageLayoutInfo.image = m_depthStencil.image;
+	setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	m_vulkanSwapchain->SetImageLayout(setImageLayoutInfo);
+
+
+	depthStencilView.image = m_depthStencil.image;
+	return vkCreateImageView(m_device, &depthStencilView, nullptr, &m_depthStencil.view);
+}
+
+VkResult VkEngine::VulkanEngine::SetupRenderPass()
+{
+	VkAttachmentDescription attachments[2] = {};
+
+	attachments[0].format = m_vulkanSwapchain->GetColorFormat();
+	attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	attachments[1].format = m_depthFormat;
+	attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colorReference = {};
+	colorReference.attachment = 0;
+	colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference depthReference = {};
+	depthReference.attachment = 1;
+	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.flags = 0;
+	subpass.inputAttachmentCount = 0;
+	subpass.pInputAttachments = NULL;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorReference;
+	subpass.pResolveAttachments = NULL;
+	subpass.pDepthStencilAttachment = &depthReference;
+	subpass.preserveAttachmentCount = 0;
+	subpass.pPreserveAttachments = NULL;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.pNext = NULL;
+	renderPassInfo.attachmentCount = 2;
+	renderPassInfo.pAttachments = attachments;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 0;
+	renderPassInfo.pDependencies = NULL;
+
+	return vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass);
+}
+
+VkResult VkEngine::VulkanEngine::CreatePipelineCache()
+{
+	VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+	pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+	return vkCreatePipelineCache(m_device, &pipelineCacheCreateInfo, nullptr, &m_pipelineCache);
+}
+
+VkResult VkEngine::VulkanEngine::SetupFrameBuffer()
+{
+	VkImageView attachments[2];
+
+	attachments[1] = m_depthStencil.view;
+
+	VkFramebufferCreateInfo frameBufferCreateInfo = {};
+	frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	frameBufferCreateInfo.pNext = NULL;
+	frameBufferCreateInfo.renderPass = m_renderPass;
+	frameBufferCreateInfo.attachmentCount = 2;
+	frameBufferCreateInfo.pAttachments = attachments;
+	frameBufferCreateInfo.width = m_width;
+	frameBufferCreateInfo.height = m_height;
+	frameBufferCreateInfo.layers = 1;
+
+	m_frameBuffers.resize(m_vulkanSwapchain->GetImageCount());
+	for (uint32_t i = 0; i < m_frameBuffers.size(); i++)
+	{
+		attachments[0] = m_vulkanSwapchain->GetSwapchainBuffer(i).view;
+		VKE_CHECK_RESULT(vkCreateFramebuffer(m_device, &frameBufferCreateInfo, nullptr, &m_frameBuffers[i]));
+	}
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::FlushSetupCommandBuffer()
+{
+	if (m_setupCmdBuffer == VK_NULL_HANDLE)
+		return VK_SUCCESS;
+
+	VKE_CHECK_RESULT(vkEndCommandBuffer(m_setupCmdBuffer));
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &m_setupCmdBuffer;
+
+	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &submitInfo, VK_NULL_HANDLE));
+	VKE_CHECK_RESULT(vkQueueWaitIdle(m_queue));
+
+	vkFreeCommandBuffers(m_device, m_cmdPool, 1, &m_setupCmdBuffer);
+	m_setupCmdBuffer = VK_NULL_HANDLE;
+
+	return VK_SUCCESS;
+}
+
+uint32_t VkEngine::VulkanEngine::GetMemoryType(uint32_t typeBits, VkFlags properties)
+{
+	for (uint32_t i = 0; i < 32; i++)
+	{
+		if ((typeBits & 1) == 1)
+		{
+			if ((m_deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+	return 0;
 }
 
 void VulkanEngine::CreateSumbitInfo()

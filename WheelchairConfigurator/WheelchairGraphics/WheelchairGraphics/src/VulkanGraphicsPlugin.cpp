@@ -32,9 +32,9 @@ void GraphicsPlugin::VulkanGraphicsPlugin::SetHandles()
 }
 #endif
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appName)
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appName, uint32_t width, uint32_t height)
 {
-    if (m_vulkanEngine->InitVulkan(appName) != VK_SUCCESS)
+    if (m_vulkanEngine->InitVulkan(appName, width, height) != VK_SUCCESS)
         return GP_INITIALIZATION_FAILED;
 
     //TODO: PLATFORM SPECIFIC
