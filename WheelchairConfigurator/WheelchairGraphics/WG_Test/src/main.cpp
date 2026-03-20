@@ -11,14 +11,13 @@
 #include <WheelchairGraphics.h>
 
 namespace {
+	const UINT c_width = 800, c_height = 600;
 	const char* c_appName = "Test";
 
 	HWND* g_window = nullptr;
 
 	HWND setupWindow(HINSTANCE hinstance, WNDPROC wndproc)
 	{
-		const UINT width = 800, height = 600;
-
 		WNDCLASSEX wndClass;
 		wndClass.cbSize = sizeof(WNDCLASSEX);
 		wndClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -45,10 +44,10 @@ namespace {
 		DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN;
 
 		RECT windowRect;
-		windowRect.left = (long)screenWidth / 2 - width / 2;
-		windowRect.right = (long)width;
-		windowRect.top = (long)screenHeight / 2 - height / 2;
-		windowRect.bottom = (long)height;
+		windowRect.left = (long)screenWidth / 2 - c_width / 2;
+		windowRect.right = (long)c_width;
+		windowRect.top = (long)screenHeight / 2 - c_height / 2;
+		windowRect.bottom = (long)c_height;
 
 		AdjustWindowRectEx(&windowRect, dwStyle, FALSE, dwExStyle);
 
@@ -83,6 +82,7 @@ namespace {
 		switch (uMsg)
 		{
 		case WM_CLOSE:
+			wgDeinitializeGraphics();
 			DestroyWindow(hWnd);
 			PostQuitMessage(0);
 			break;
@@ -126,7 +126,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 	HWND window = setupWindow(hInstance, WndProc);
 	g_window = &window;
 
-	wgInitializeVulkanGraphicsWIN32(c_appName, hInstance, window);
+	wgInitializeVulkanGraphicsWIN32(c_appName, hInstance, window, c_width, c_height);
 	renderLoop();
 	wgDeinitializeGraphics();
 

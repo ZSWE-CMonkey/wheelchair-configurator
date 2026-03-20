@@ -370,3 +370,24 @@ void VkEngine::VulkanSwapchain::SetImageLayout(SetImageLayoutInfo& info)
 		0, nullptr,
 		1, &imageMemoryBarrier);
 }
+
+VkResult VkEngine::VulkanSwapchain::AcquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t* currentBuffer)
+{
+	return fn_AcquireNextImageKHR(m_device, m_swapchain, UINT64_MAX, presentCompleteSemaphore, (VkFence)nullptr, currentBuffer);
+}
+
+VkResult VkEngine::VulkanSwapchain::QueuePresent(VkQueue queue, uint32_t currentBuffer, VkSemaphore waitSemaphore)
+{
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentInfo.pNext = NULL;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &m_swapchain;
+	presentInfo.pImageIndices = &currentBuffer;
+	if (waitSemaphore != VK_NULL_HANDLE)
+	{
+		presentInfo.pWaitSemaphores = &waitSemaphore;
+		presentInfo.waitSemaphoreCount = 1;
+	}
+	return fn_QueuePresentKHR(queue, &presentInfo);
+}

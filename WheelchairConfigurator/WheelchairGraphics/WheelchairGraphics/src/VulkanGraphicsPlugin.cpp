@@ -54,7 +54,9 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetObject()
 
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render()
 {
-    return GP_SUCCESS;
+    if (!m_vulkanEngine)
+        return GP_SUCCESS;
+    return m_vulkanEngine->Render() == VK_SUCCESS ? GP_SUCCESS : GP_RENDERING_ERROR;
 }
 
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::DeInitialize()

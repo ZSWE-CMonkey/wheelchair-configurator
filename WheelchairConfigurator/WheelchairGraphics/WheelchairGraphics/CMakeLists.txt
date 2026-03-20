@@ -11,7 +11,7 @@
 	"include/VulkanEngine.h"
 
 	"includePublic/WheelchairGraphics.h"
- "include/VulkanSwapchain.h" "src/VulkanSwapchain.cpp" "include/VulkanCommon.h")
+ "include/VulkanSwapchain.h" "src/VulkanSwapchain.cpp" "include/VulkanCommon.h" "include/ObjectLoader.h" "src/ObjectLoader.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET WheelchairGraphics PROPERTY CXX_STANDARD 20)
@@ -30,3 +30,8 @@ target_compile_definitions(WheelchairGraphics
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(WheelchairGraphics PRIVATE Vulkan::Vulkan)
+
+include_directories("C:/tool-Assimp/assimp-include")
+target_link_libraries(WheelchairGraphics PRIVATE "C:/tool-Assimp/assimp-lib/assimp/assimp.lib")
+
+include_directories("C:/tool-glm")

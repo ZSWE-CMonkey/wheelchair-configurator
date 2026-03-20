@@ -57,6 +57,9 @@ namespace VkEngine {
 
 		void SetImageLayout(SetImageLayoutInfo& info);
 
+		VkResult AcquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t* currentBuffer);
+		VkResult QueuePresent(VkQueue queue, uint32_t currentBuffer, VkSemaphore waitSemaphore);
+
 		uint32_t GetQueueNodeIndex() const;
 		uint32_t GetImageCount() const;
 		VkFormat GetColorFormat() const;

@@ -14,6 +14,7 @@ namespace GraphicsPlugin {
 
 	enum GPluginResult {
 		//errors
+		GP_RENDERING_ERROR = -4,
 		GP_INITIALIZATION_FAILED = -3,
 		GP_NOT_IMPLEMENTED = -2,
 		GP_UNKNOW_ERROR = -1,
