@@ -8,6 +8,11 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/Dotnet.gitignore
 
 WheelchairConfigurator/.vs/
+WheelchairConfigurator/WheelchairGraphics/.vs/
+WheelchairConfigurator/WheelchairGraphics/out/
+WheelchairConfigurator/WheelchairGraphics/.vsx/
+WheelchairConfigurator/WheelchairGraphics/out-android/
+WheelchairConfigurator/WheelchairGraphics/external
 
 # Build results
 [Dd]ebug/

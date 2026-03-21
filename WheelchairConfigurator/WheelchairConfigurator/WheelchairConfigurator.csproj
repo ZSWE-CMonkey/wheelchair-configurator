@@ -57,6 +57,20 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\libs\arm64-v8a\libWheelchairGraphics.so" />
+	  <None Remove="Resources\libs\armeabi-v7a\libWheelchairGraphics.so" />
+	  <None Remove="Resources\libs\x86\libWheelchairGraphics.so" />
+	  <None Remove="Resources\libs\x86_64\libWheelchairGraphics.so" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <AndroidNativeLibrary Include="Resources\libs\arm64-v8a\libWheelchairGraphics.so" />
+	  <AndroidNativeLibrary Include="Resources\libs\armeabi-v7a\libWheelchairGraphics.so" />
+	  <AndroidNativeLibrary Include="Resources\libs\x86\libWheelchairGraphics.so" />
+	  <AndroidNativeLibrary Include="Resources\libs\x86_64\libWheelchairGraphics.so" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />

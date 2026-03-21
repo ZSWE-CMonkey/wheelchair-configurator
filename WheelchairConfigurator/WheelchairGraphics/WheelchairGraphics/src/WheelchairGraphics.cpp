@@ -1,19 +1,47 @@
-﻿#include "../include/WheelchairGraphics.h"
+﻿#include "WheelchairGraphics.h"
+
+#include "GraphicsPlugin.h"
 
 #include <stdexcept>
 
-WG_API int InitializeVulkanGraphics()
-{
-	//TODO: create graphics plugin and initialize it
-	return 0;
+using namespace GraphicsPlugin;
+
+namespace {
+
+	GraphicsPluginPtr g_graphicsPlugin = nullptr;
+
 }
 
-WG_API int InitializeMoltenVulkanGraphics()
+
+WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformHandle, void* platformWindow, int width, int height)
+{
+	g_graphicsPlugin = GraphicsPluginFactory::CreateVulkanGraphicsPlugin();
+	
+	if (!g_graphicsPlugin)
+		throw std::runtime_error("Graphics plugin was not created");
+
+	g_graphicsPlugin->SetHandles(platformHandle, platformWindow);
+
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize(std::string(appName), width, height));
+}
+
+WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int width, int height)
 {
 	throw std::runtime_error("MoltenVulkan Graphics Plugin NOT Implemented");
 }
 
-WG_API int DeinitializeGraphics() {
+WG_API void wgRender()
+{
+	if (!g_graphicsPlugin)
+		return;
 
-	return 0;
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Render());
+}
+
+WG_API void wgDeinitializeGraphics() {
+	if (g_graphicsPlugin)
+		return;
+
+	GP_THROW_IF_FAIL(g_graphicsPlugin->DeInitialize());
+	g_graphicsPlugin = nullptr;
 }
