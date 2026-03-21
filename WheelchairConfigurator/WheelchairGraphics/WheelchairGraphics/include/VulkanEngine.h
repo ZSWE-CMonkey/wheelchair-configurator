@@ -5,6 +5,7 @@
 
 #include "VulkanCommon.h"
 #include "VulkanSwapchain.h"
+#include "ObjectLoader.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -38,18 +39,6 @@ namespace VkEngine {
 		VkDescriptorBufferInfo* descriptor;
 	};
 
-	struct VulkanTexture
-	{
-		VkSampler sampler;
-		VkImage image;
-		VkImageLayout imageLayout;
-		VkDeviceMemory deviceMemory;
-		VkImageView view;
-		uint32_t width, height;
-		uint32_t mipLevels;
-		uint32_t layerCount;
-	};
-
 	class VulkanEngine
 	{
 	public:
@@ -71,16 +60,11 @@ namespace VkEngine {
 		VkResult Render();
 
 	private:
-		//---------//
-			//DEBUG- REMOVE AFTER TEXTURE LOADING IS IMPLEMENETED:
-		void CreateDummyTexture();
-		//---------//
 
 		VkResult CreateInstance(std::string appName);
 		VkResult CheckPhysicalDevices(uint32_t& outGraphicsQueueIndex);
 		VkResult CreateDevice(uint32_t graphicsQueueIndex);
 		VkResult CreateVulkanSemaphore();
-
 		
 		VkResult CreateCommandPool();
 		VkResult CreateSetupCommandBuffer();
@@ -105,14 +89,23 @@ namespace VkEngine {
 		VkResult UpdateUniformBuffers();
 		//Todo: shorter parameters >:(
 		VkResult CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data, VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo* descriptor);
+		VkResult CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data, VkBuffer* buffer, VkDeviceMemory* memory);
 		uint32_t GetMemoryType(uint32_t typeBits, VkFlags properties);
+
+		VkResult CreateCommandBuffer(VkCommandBufferLevel level, bool begin, VkCommandBuffer& out);
 
 		void CreateSumbitInfo();
 		bool GetDepthFormat();
 
+		VkResult FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free);
+
+		VkResult LoadResources();
+
+		VkResult LoadMesh();
 		VkResult LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out);
 
 		std::unique_ptr<VulkanSwapchain> m_vulkanSwapchain = nullptr;
+		std::unique_ptr<VkLoader::TextureHandle> m_textureHandle = nullptr;
 
 		//TODO: seperate class
 		float m_zoom = -5.5f;
@@ -131,7 +124,7 @@ namespace VkEngine {
 		VkQueue m_queue;
 
 		VkFormat m_depthFormat;
-		VkClearColorValue m_defaultClearColor = { { 0.925f, 0.025f, 0.025f, 1.0f } };
+		VkClearColorValue m_defaultClearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
 
 		VkCommandPool m_cmdPool;
 		VkCommandBuffer m_setupCmdBuffer;

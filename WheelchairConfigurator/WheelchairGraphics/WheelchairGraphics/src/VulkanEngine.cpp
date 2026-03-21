@@ -3,8 +3,6 @@
 #include <vector>
 #include <array>
 
-#include "ObjectLoader.h"
-
 using namespace VkEngine;
 
 namespace {
@@ -86,13 +84,7 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	VKE_CHECK_RESULT(SetupFrameBuffer());
 	VKE_CHECK_RESULT(FlushSetupCommandBuffer());
 	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
-
-	//Here later load texture and mesh via ObjectLoader.
-
-	//TESTING: REMOVE AFTER loader is implemented, this is needed bc current setup doesnt allowe null textures:
-	CreateDummyTexture();
-	//
-
+	VKE_CHECK_RESULT(LoadResources())
 	SetupVertexDescriptions();
 	VKE_CHECK_RESULT(PrepareUniformBuffers());
 	VKE_CHECK_RESULT(SetupDescriptorSetLayout());
@@ -124,175 +116,6 @@ VkResult VkEngine::VulkanEngine::Render()
 	VKE_CHECK_RESULT(m_vulkanSwapchain->QueuePresent(m_queue, m_currentBuffer, m_semaphores.renderComplete));
 
 	return vkQueueWaitIdle(m_queue);
-}
-
-void VkEngine::VulkanEngine::CreateDummyTexture()
-{
-	uint32_t pixel = 0xFFFFFFFF;
-
-	VkBuffer stagingBuffer;
-	VkDeviceMemory stagingMemory;
-
-	VkBufferCreateInfo bufferInfo{};
-	bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferInfo.size = sizeof(uint32_t);
-	bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	vkCreateBuffer(m_device, &bufferInfo, nullptr, &stagingBuffer);
-
-	VkMemoryRequirements memReq;
-	vkGetBufferMemoryRequirements(m_device, stagingBuffer, &memReq);
-
-	VkMemoryAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memReq.size;
-	allocInfo.memoryTypeIndex =
-		GetMemoryType(
-			memReq.memoryTypeBits,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	vkAllocateMemory(m_device, &allocInfo, nullptr, &stagingMemory);
-	vkBindBufferMemory(m_device, stagingBuffer, stagingMemory, 0);
-
-	void* data;
-	vkMapMemory(m_device, stagingMemory, 0, sizeof(uint32_t), 0, &data);
-	memcpy(data, &pixel, sizeof(uint32_t));
-	vkUnmapMemory(m_device, stagingMemory);
-
-	VkImageCreateInfo imageInfo{};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent = { 1, 1, 1 };
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	VkImage image;
-	vkCreateImage(m_device, &imageInfo, nullptr, &image);
-
-	vkGetImageMemoryRequirements(m_device, image, &memReq);
-
-	allocInfo.allocationSize = memReq.size;
-	allocInfo.memoryTypeIndex =
-		GetMemoryType(
-			memReq.memoryTypeBits,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	VkDeviceMemory imageMemory;
-	vkAllocateMemory(m_device, &allocInfo, nullptr, &imageMemory);
-	vkBindImageMemory(m_device, image, imageMemory, 0);
-
-	VkCommandBufferAllocateInfo cmdAlloc{};
-	cmdAlloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	cmdAlloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	cmdAlloc.commandPool = m_cmdPool;
-	cmdAlloc.commandBufferCount = 1;
-
-	VkCommandBuffer cmd;
-	vkAllocateCommandBuffers(m_device, &cmdAlloc, &cmd);
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(cmd, &beginInfo);
-
-	auto transition = [&](VkImageLayout oldLayout, VkImageLayout newLayout)
-		{
-			VkImageMemoryBarrier barrier{};
-			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			barrier.oldLayout = oldLayout;
-			barrier.newLayout = newLayout;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = image;
-			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.layerCount = 1;
-
-			VkPipelineStageFlags srcStage;
-			VkPipelineStageFlags dstStage;
-
-			if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-				newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-			{
-				barrier.srcAccessMask = 0;
-				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-				dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-			}
-			else
-			{
-				barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-				barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-				srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-				dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-			}
-
-			vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-		};
-
-	transition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-	VkBufferImageCopy region{};
-	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	region.imageSubresource.layerCount = 1;
-	region.imageExtent = { 1, 1, 1 };
-
-	vkCmdCopyBufferToImage(cmd, stagingBuffer, image,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		1, &region);
-
-	transition(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	vkEndCommandBuffer(cmd);
-
-	VkSubmitInfo submit{};
-	submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submit.commandBufferCount = 1;
-	submit.pCommandBuffers = &cmd;
-
-	vkQueueSubmit(m_queue, 1, &submit, VK_NULL_HANDLE);
-	vkQueueWaitIdle(m_queue);
-
-	vkFreeCommandBuffers(m_device, m_cmdPool, 1, &cmd);
-
-	VkImageViewCreateInfo viewInfo{};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	VkImageView view;
-	vkCreateImageView(m_device, &viewInfo, nullptr, &view);
-
-	VkSamplerCreateInfo samplerInfo{};
-	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;
-	samplerInfo.minFilter = VK_FILTER_LINEAR;
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-	VkSampler sampler;
-	vkCreateSampler(m_device, &samplerInfo, nullptr, &sampler);
-
-	m_colorMap.image = image;
-	m_colorMap.view = view;
-	m_colorMap.sampler = sampler;
-
-	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-	vkFreeMemory(m_device, stagingMemory, nullptr);
 }
 
 VkResult VulkanEngine::CreateInstance(std::string appName)
@@ -1016,6 +839,16 @@ VkResult VkEngine::VulkanEngine::UpdateUniformBuffers()
 
 VkResult VkEngine::VulkanEngine::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data, VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo* descriptor)
 {
+	VKE_CHECK_RESULT(CreateBuffer(usageFlags, memoryPropertyFlags, size, data, buffer, memory));
+
+	descriptor->offset = 0;
+	descriptor->buffer = *buffer;
+	descriptor->range = size;
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::CreateBuffer(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size, void* data, VkBuffer* buffer, VkDeviceMemory* memory)
+{
 	VkMemoryRequirements memReqs;
 	VkMemoryAllocateInfo memAlloc{};
 	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1043,12 +876,7 @@ VkResult VkEngine::VulkanEngine::CreateBuffer(VkBufferUsageFlags usageFlags, VkM
 		memcpy(mapped, data, size);
 		vkUnmapMemory(m_device, *memory);
 	}
-	VKE_CHECK_RESULT(vkBindBufferMemory(m_device, *buffer, *memory, 0));
-
-	descriptor->offset = 0;
-	descriptor->buffer = *buffer;
-	descriptor->range = size;
-	return VK_SUCCESS;
+	return vkBindBufferMemory(m_device, *buffer, *memory, 0);
 }
 
 uint32_t VkEngine::VulkanEngine::GetMemoryType(uint32_t typeBits, VkFlags properties)
@@ -1065,6 +893,27 @@ uint32_t VkEngine::VulkanEngine::GetMemoryType(uint32_t typeBits, VkFlags proper
 		typeBits >>= 1;
 	}
 	return 0;
+}
+
+VkResult VkEngine::VulkanEngine::CreateCommandBuffer(VkCommandBufferLevel level, bool begin, VkCommandBuffer& out)
+{
+	VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
+	cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufAllocateInfo.commandPool = m_cmdPool;
+	cmdBufAllocateInfo.level = level;
+	cmdBufAllocateInfo.commandBufferCount = 1;
+
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &cmdBufAllocateInfo, &out));
+
+	if (begin)
+	{
+		VkCommandBufferBeginInfo cmdBufInfo{};
+		cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBufInfo.pNext = NULL;
+		VKE_CHECK_RESULT(vkBeginCommandBuffer(out, &cmdBufInfo));
+	}
+
+	return VK_SUCCESS;
 }
 
 void VulkanEngine::CreateSumbitInfo()
@@ -1102,6 +951,176 @@ bool VulkanEngine::GetDepthFormat()
 	return false;
 }
 
+VkResult VkEngine::VulkanEngine::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free)
+{
+	if (commandBuffer == VK_NULL_HANDLE)
+	{
+		return VK_SUCCESS;
+	}
+
+	VKE_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	VKE_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+	VKE_CHECK_RESULT(vkQueueWaitIdle(queue));
+
+	if (free)
+	{
+		vkFreeCommandBuffers(m_device, m_cmdPool, 1, &commandBuffer);
+	}
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::LoadResources()
+{
+	m_textureHandle = VkLoader::ObjectLoader::CreateTextureHandle(m_physicalDevice, m_device, m_queue, m_cmdPool);
+	if (!m_textureHandle)
+		return VK_ERROR_INITIALIZATION_FAILED;
+
+	VKE_CHECK_RESULT(m_textureHandle->LoadTexture(
+		"test.ktx",
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		&m_colorMap));
+
+	return LoadMesh();
+}
+
+VkResult VkEngine::VulkanEngine::LoadMesh()
+{
+	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
+#if defined(__ANDROID__)
+	meshHandle->assetManager = androidApp->activity->assetManager;
+#endif
+	meshHandle->LoadMesh("test.dae");
+
+	float scale = 1.0f;
+	std::vector<Vertex> vertexBuffer;
+	for (uint32_t m = 0; m < meshHandle->GetEntriesSize(); m++)
+	{
+		for (uint32_t i = 0; i < meshHandle->GetEntry(m).Vertices.size(); i++)
+		{
+			Vertex vertex;
+
+			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos * scale;
+			vertex.normal = meshHandle->GetEntry(m).Vertices[i].m_normal;
+			vertex.uv = meshHandle->GetEntry(m).Vertices[i].m_tex;
+			vertex.color = meshHandle->GetEntry(m).Vertices[i].m_color;
+
+			vertexBuffer.push_back(vertex);
+		}
+	}
+	uint32_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
+
+	std::vector<uint32_t> indexBuffer;
+	for (uint32_t m = 0; m < meshHandle->GetEntriesSize(); m++)
+	{
+		uint32_t indexBase = indexBuffer.size();
+		for (uint32_t i = 0; i < meshHandle->GetEntry(m).Indices.size(); i++)
+		{
+			indexBuffer.push_back(meshHandle->GetEntry(m).Indices[i] + indexBase);
+		}
+	}
+	uint32_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
+	m_mesh.indices.count = indexBuffer.size();
+
+	bool useStaging = true;
+
+	if (useStaging)
+	{
+		struct {
+			VkBuffer buffer;
+			VkDeviceMemory memory;
+		} vertexStaging, indexStaging;
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			vertexBufferSize,
+			vertexBuffer.data(),
+			&vertexStaging.buffer,
+			&vertexStaging.memory));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			indexBufferSize,
+			indexBuffer.data(),
+			&indexStaging.buffer,
+			&indexStaging.memory));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			vertexBufferSize,
+			nullptr,
+			&m_mesh.vertices.buf,
+			&m_mesh.vertices.mem));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			indexBufferSize,
+			nullptr,
+			&m_mesh.indices.buf,
+			&m_mesh.indices.mem));
+
+		VkCommandBuffer copyCmd{};
+		VKE_CHECK_RESULT(CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true, copyCmd));
+
+		VkBufferCopy copyRegion = {};
+
+		copyRegion.size = vertexBufferSize;
+		vkCmdCopyBuffer(
+			copyCmd,
+			vertexStaging.buffer,
+			m_mesh.vertices.buf,
+			1,
+			&copyRegion);
+
+		copyRegion.size = indexBufferSize;
+		vkCmdCopyBuffer(
+			copyCmd,
+			indexStaging.buffer,
+			m_mesh.indices.buf,
+			1,
+			&copyRegion);
+
+		VKE_CHECK_RESULT(FlushCommandBuffer(copyCmd, m_queue, true));
+
+		vkDestroyBuffer(m_device, vertexStaging.buffer, nullptr);
+		vkFreeMemory(m_device, vertexStaging.memory, nullptr);
+		vkDestroyBuffer(m_device, indexStaging.buffer, nullptr);
+		vkFreeMemory(m_device, indexStaging.memory, nullptr);
+	}
+	else
+	{
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			vertexBufferSize,
+			vertexBuffer.data(),
+			&m_mesh.vertices.buf,
+			&m_mesh.vertices.mem));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			indexBufferSize,
+			indexBuffer.data(),
+			&m_mesh.indices.buf,
+			&m_mesh.indices.mem));
+	}
+
+	meshHandle = nullptr;
+
+	return VK_SUCCESS;
+}
+
 VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out)
 {
 	out.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1109,7 +1128,7 @@ VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageF
 #if defined(__ANDROID__)
 	VKE_CHECK_RESULT(ObjectLoader::LoadShader(androidApp->activity->assetManager, fileName.c_str(), device, stage, out.module));
 #else
-	VKE_CHECK_RESULT(ObjectLoader::LoadShader(fileName.c_str(), m_device, stage, out.module));
+	VKE_CHECK_RESULT(VkLoader::ObjectLoader::LoadShader(fileName.c_str(), m_device, stage, out.module));
 #endif
 	out.pName = "main";
 	assert(out.module != NULL);

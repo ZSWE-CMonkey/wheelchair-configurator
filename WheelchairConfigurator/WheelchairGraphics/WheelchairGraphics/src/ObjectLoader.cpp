@@ -2,6 +2,26 @@
 
 #include <iostream>
 
+using namespace VkLoader;
+
+std::unique_ptr<TextureHandle> VkLoader::ObjectLoader::CreateTextureHandle(VkPhysicalDevice& physicalDevice, VkDevice& device, VkQueue& queue, VkCommandPool& cmdPool)
+{
+	std::unique_ptr<TextureHandle> res = std::make_unique<TextureHandle>(physicalDevice, device, queue, cmdPool);
+	if (res->Initialize() != VK_SUCCESS) {
+		res = nullptr;
+		return nullptr;
+	}
+	return std::move(res);
+}
+
+std::unique_ptr<MeshHandle> VkLoader::ObjectLoader::CreateMeshHandle()
+{
+	std::unique_ptr<MeshHandle> res = std::make_unique<MeshHandle>();
+	return std::move(res);
+}
+
+
+
 #if defined(__ANDROID__)
 VkShaderModule ObjectLoader::LoadShader(AAssetManager* assetManager, const char* fileName, VkDevice device, VkShaderStageFlagBits stage, VkShaderModule& out)
 {
