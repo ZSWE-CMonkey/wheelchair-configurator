@@ -2,6 +2,11 @@
 {
     public static class GraphicsPluginFactory
     {
+        public static IGraphicsPlugin CreateImageCompositorGraphicsPlugin(int width, int height)
+        {
+            return new ImageCompositorGraphicsPluginImpl(width, height);
+        }
+
         public static IGraphicsPlugin CreateVulkanGraphicsPlugin()
         {
             return new VulkanGraphicsPluginImpl();
