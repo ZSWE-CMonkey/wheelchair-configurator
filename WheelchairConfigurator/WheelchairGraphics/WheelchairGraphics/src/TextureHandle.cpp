@@ -2,6 +2,8 @@
 
 #include <gli/gli.hpp>
 
+#include "../assetResources/assetResource.h"
+
 VkLoader::TextureHandle::TextureHandle(VkPhysicalDevice& physicalDevice, VkDevice& device, VkQueue& queue, VkCommandPool& cmdPool) :
 	m_physicalDevice(physicalDevice),
 	m_device(device),
@@ -27,24 +29,9 @@ VkResult VkLoader::TextureHandle::LoadTexture(std::string filename, VkFormat for
 	const bool forceLinear = false;
 	const VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT;
 
-#if defined(__ANDROID__)
-	assert(assetManager != nullptr);
-
-	AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
-	assert(asset);
-	size_t size = AAsset_getLength(asset);
-	assert(size > 0);
-
-	void* textureData = malloc(size);
-	AAsset_read(asset, textureData, size);
-	AAsset_close(asset);
-
-	gli::texture2D tex2D(gli::load((const char*)textureData, size));
-
-	free(textureData);
-#else
-	gli::texture2D tex2D(gli::load(filename.c_str()));
-#endif		
+	auto textureEmbed = getEmbeddedAsset(filename);
+	gli::texture2D tex2D(gli::load(reinterpret_cast<const char*>(textureEmbed->data), textureEmbed->size));
+		
 	assert(!tex2D.empty());
 
 	texture->width = static_cast<uint32_t>(tex2D[0].dimensions().x);

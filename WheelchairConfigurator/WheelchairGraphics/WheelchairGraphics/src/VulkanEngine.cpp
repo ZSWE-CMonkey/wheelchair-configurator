@@ -583,8 +583,8 @@ VkResult VkEngine::VulkanEngine::PreparePipelines()
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 
-	VKE_CHECK_RESULT(LoadShader("mesh.vert.spv", VK_SHADER_STAGE_VERTEX_BIT, shaderStages[0]));
-	VKE_CHECK_RESULT(LoadShader("mesh.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, shaderStages[1]));
+	VKE_CHECK_RESULT(LoadShader("shader/mesh.vert.spv", VK_SHADER_STAGE_VERTEX_BIT, shaderStages[0]));
+	VKE_CHECK_RESULT(LoadShader("shader/mesh.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, shaderStages[1]));
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -982,7 +982,7 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 		return VK_ERROR_INITIALIZATION_FAILED;
 
 	VKE_CHECK_RESULT(m_textureHandle->LoadTexture(
-		"test.ktx",
+		"models/test.ktx",
 		VK_FORMAT_BC3_UNORM_BLOCK,
 		&m_colorMap));
 
@@ -992,10 +992,7 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 VkResult VkEngine::VulkanEngine::LoadMesh()
 {
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
-#if defined(__ANDROID__)
-	meshHandle->assetManager = androidApp->activity->assetManager;
-#endif
-	meshHandle->LoadMesh("test.dae");
+	meshHandle->LoadMesh("models/test.dae");
 
 	float scale = 1.0f;
 	std::vector<Vertex> vertexBuffer;
@@ -1125,11 +1122,9 @@ VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageF
 {
 	out.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	out.stage = stage;
-#if defined(__ANDROID__)
-	VKE_CHECK_RESULT(ObjectLoader::LoadShader(androidApp->activity->assetManager, fileName.c_str(), device, stage, out.module));
-#else
+
 	VKE_CHECK_RESULT(VkLoader::ObjectLoader::LoadShader(fileName.c_str(), m_device, stage, out.module));
-#endif
+
 	out.pName = "main";
 	assert(out.module != NULL);
 	m_shaderModules.push_back(out.module);
