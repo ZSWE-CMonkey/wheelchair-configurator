@@ -19,15 +19,27 @@ namespace ConfigurationLogic.Graphics
             throw new NotImplementedException();
         }
 
-        public void Render()
+        public void Render(out byte[] image)
         {
             //wgRender()
+
+            image = new byte[0] { };
             throw new NotImplementedException();
         }
 
         public void Deinitialize()
         {
             //wgDeinitializeGraphics()
+            throw new NotImplementedException();
+        }
+
+        public void AddResource(string resourceId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ClearResources()
+        {
             throw new NotImplementedException();
         }
     }
