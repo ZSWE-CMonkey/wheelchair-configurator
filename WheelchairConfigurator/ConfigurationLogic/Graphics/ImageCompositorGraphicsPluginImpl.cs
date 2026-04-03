@@ -1,12 +1,4 @@
-﻿using Android.Hardware.Lights;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Android.Icu.Text.ListFormatter;
-
-namespace ConfigurationLogic.Graphics
+﻿namespace ConfigurationLogic.Graphics
 {
     internal class ImageCompositorGraphicsPluginImpl : IGraphicsPlugin
     {
