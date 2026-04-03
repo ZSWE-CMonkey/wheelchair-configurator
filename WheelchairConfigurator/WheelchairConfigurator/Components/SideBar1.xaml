@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Components.SideBar1">
+
+    <Border BackgroundColor="#F8F8F8" StrokeThickness="0" WidthRequest="250">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Informace o pacientovi I." FontAttributes="Bold" FontSize="18" />
+
+            <Label Text="Výška trupu (cm)"></Label>
+            <Entry PlaceholderColor="Gray" Placeholder="Šířka pánve (cm)" Keyboard="Numeric" BackgroundColor="WhiteSmoke" MaxLength="3" x:Name="bodyHeightEntry"></Entry>
+
+            <Label Text="Hmotnost (kg)"></Label>
+            <Entry PlaceholderColor="Gray" Placeholder="Hmotnost (kg)" Keyboard="Numeric" BackgroundColor="WhiteSmoke" MaxLength="3" x:Name="weightEntry"></Entry>
+
+
+            <Label Text="Šířka pánve (cm)"></Label>
+            <Entry PlaceholderColor="Gray" Placeholder="Šířka pánve (cm)" Keyboard="Numeric" BackgroundColor="WhiteSmoke" MaxLength="3" x:Name="pelvisWidthEntry"></Entry>
+
+            <Label Text="Délka stehna (cm)"></Label>
+            <Entry PlaceholderColor="Gray" Placeholder="Délka stehna (cm)" Keyboard="Numeric" BackgroundColor="WhiteSmoke" MaxLength="3" x:Name="thighLengthEntry"></Entry>
+
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

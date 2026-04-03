@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Components.SideBar2">
+
+    <Border BackgroundColor="#F8F8F8" StrokeThickness="0" WidthRequest="250">
+        <VerticalStackLayout Padding="20" Spacing="15">
+
+            <Label Text="Informace o pacientovi II." FontAttributes="Bold" FontSize="18" />
+
+            <Picker x:Name="bodyStabilityEntry" Title="Stabilita trupu">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Dobrá</x:String>
+                        <x:String>Střední</x:String>
+                        <x:String>Špatná</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+
+            <Picker x:Name="headStabilityEntry" Title="Kontrola hlavy">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Ano</x:String>
+                        <x:String>Ne</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+
+            <Picker x:Name="bedsoresRiskEntry" Title="Riziko dekubitů (proleženin)">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Nízké</x:String>
+                        <x:String>Střední</x:String>
+                        <x:String>Vysoké</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+
+            <Picker x:Name="painEntry" Title="Bolesti a únava">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Nízké</x:String>
+                        <x:String>Střední</x:String>
+                        <x:String>Vysoké</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+
+            <Picker x:Name="legsEntry" Title="Dolní končetiny">
+                <Picker.ItemsSource>
+                    <x:Array Type="{x:Type x:String}">
+                        <x:String>Ano</x:String>
+                        <x:String>Ne</x:String>
+                    </x:Array>
+                </Picker.ItemsSource>
+            </Picker>
+            
+        </VerticalStackLayout>
+    </Border>
+</ContentView>
