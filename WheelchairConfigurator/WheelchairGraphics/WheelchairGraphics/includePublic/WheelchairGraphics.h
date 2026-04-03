@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <cstdint>
+
 #ifdef _WIN32
 #ifdef _WG_API_EXPORT_
 #define WG_API __declspec(dllexport)
@@ -20,6 +22,6 @@ extern "C" WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int
 
 //--Common--//
 
-extern "C" WG_API void wgRender();
+extern "C" WG_API void wgRender(const char** out);
 
 extern "C" WG_API void wgDeinitializeGraphics();

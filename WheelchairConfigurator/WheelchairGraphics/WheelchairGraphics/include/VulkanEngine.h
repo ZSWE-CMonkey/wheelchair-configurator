@@ -57,7 +57,7 @@ namespace VkEngine {
 
 		VkResult Prepare();
 		
-		VkResult Render();
+		VkResult Render(const char** imagedata);
 
 	private:
 
@@ -100,6 +100,13 @@ namespace VkEngine {
 		VkResult FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free);
 
 		VkResult LoadResources();
+
+		VkResult CopySwapchainImageToCPU(VkImage image, const char** imagedata);
+
+		uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
+
+		VkResult CreateOffscreenImage();
+		VkResult CreateOffscreenFrameBuffer();
 
 		VkResult LoadMesh();
 		VkResult LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out);
@@ -151,6 +158,11 @@ namespace VkEngine {
 		VkPipelineStageFlags m_submitPipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
 		UniformData m_uniformData{};
+
+		VkImage m_offscreenImage;
+		VkMemoryRequirements m_memReq;
+		VkDeviceMemory m_offscreenImageMemory;
+		VkFramebuffer m_offscreenFramebuffer;
 
 		struct {
 			VkSemaphore presentComplete;

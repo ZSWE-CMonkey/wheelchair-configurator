@@ -30,12 +30,12 @@ WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int width, int
 	throw std::runtime_error("MoltenVulkan Graphics Plugin NOT Implemented");
 }
 
-WG_API void wgRender()
+WG_API void wgRender(const char** out)
 {
 	if (!g_graphicsPlugin)
 		return;
 
-	GP_THROW_IF_FAIL(g_graphicsPlugin->Render());
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Render(out));
 }
 
 WG_API void wgDeinitializeGraphics() {

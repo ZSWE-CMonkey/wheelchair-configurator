@@ -22,8 +22,8 @@ namespace GraphicsPlugin {
 #endif
 
 		GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) override;
-		GPluginResult SetObject(/*TODO: parameter/s*/) override;
-		GPluginResult Render() override;
+		GPluginResult SetObject(std::string objectId) override;
+		GPluginResult Render(const char** out) override;
 		GPluginResult DeInitialize() override;
 	private:
 		void CleanUp();

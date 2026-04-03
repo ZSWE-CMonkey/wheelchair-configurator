@@ -14,6 +14,7 @@ namespace GraphicsPlugin {
 
 	enum GPluginResult {
 		//errors
+		GP_NULL_PARAM_ERROR = -5,
 		GP_RENDERING_ERROR = -4,
 		GP_INITIALIZATION_FAILED = -3,
 		GP_NOT_IMPLEMENTED = -2,
@@ -40,8 +41,8 @@ namespace GraphicsPlugin {
 
 
 		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
-		virtual GPluginResult SetObject(/*TODO: parameter/s*/) = 0;
-		virtual GPluginResult Render() = 0;
+		virtual GPluginResult SetObject(std::string objectId) = 0;
+		virtual GPluginResult Render(const char** out) = 0;
 		virtual GPluginResult DeInitialize() = 0;
 	};
 

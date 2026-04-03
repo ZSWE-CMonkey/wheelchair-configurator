@@ -19,6 +19,39 @@ namespace {
 		vInputAttribDescription.offset = offset;
 		return vInputAttribDescription;
 	}
+
+
+	void InsertImageMemoryBarrier(
+		VkCommandBuffer cmdbuffer,
+		VkImage image,
+		VkAccessFlags srcAccessMask,
+		VkAccessFlags dstAccessMask,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkPipelineStageFlags srcStageMask,
+		VkPipelineStageFlags dstStageMask,
+		VkImageSubresourceRange subresourceRange)
+	{
+		VkImageMemoryBarrier imageMemoryBarrier{};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.srcAccessMask = srcAccessMask;
+		imageMemoryBarrier.dstAccessMask = dstAccessMask;
+		imageMemoryBarrier.oldLayout = oldImageLayout;
+		imageMemoryBarrier.newLayout = newImageLayout;
+		imageMemoryBarrier.image = image;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		vkCmdPipelineBarrier(
+			cmdbuffer,
+			srcStageMask,
+			dstStageMask,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+	}
 }
 
 
@@ -66,6 +99,7 @@ VkResult VulkanEngine::InitSwapchain()
 	m_vulkanSwapchain = std::make_unique<VulkanSwapchain>(m_instance, m_physicalDevice, m_device);
 	
 	//TODO: android version implement as well!!
+	//TODO2: not needed for offscreen rendering; normalize
 	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSurface(platformHandle, platformWindow));
 
 	VKE_CHECK_RESULT(m_vulkanSwapchain->InitSurface());
@@ -87,6 +121,8 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	VKE_CHECK_RESULT(LoadResources())
 	SetupVertexDescriptions();
 	VKE_CHECK_RESULT(PrepareUniformBuffers());
+	VKE_CHECK_RESULT(CreateOffscreenImage());
+	VKE_CHECK_RESULT(CreateOffscreenFrameBuffer());
 	VKE_CHECK_RESULT(SetupDescriptorSetLayout());
 	VKE_CHECK_RESULT(PreparePipelines());
 	VKE_CHECK_RESULT(SetupDescriptorPool());
@@ -97,7 +133,7 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	return VK_SUCCESS;
 }
 
-VkResult VkEngine::VulkanEngine::Render()
+VkResult VkEngine::VulkanEngine::Render(const char** imagedata)
 {
 	if (!m_canRender)
 		return VK_SUCCESS; //bc is not initialized, not problem
@@ -111,10 +147,12 @@ VkResult VkEngine::VulkanEngine::Render()
 
 	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
+
 	VKE_CHECK_RESULT(SubmitPrePresentBarrier(m_vulkanSwapchain->GetSwapchainBuffer(m_currentBuffer).image));
 
 	VKE_CHECK_RESULT(m_vulkanSwapchain->QueuePresent(m_queue, m_currentBuffer, m_semaphores.renderComplete));
 
+	CopySwapchainImageToCPU(m_offscreenImage, imagedata);
 	return vkQueueWaitIdle(m_queue);
 }
 
@@ -698,9 +736,9 @@ VkResult VkEngine::VulkanEngine::BuildCommandBuffers()
 	renderPassBeginInfo.clearValueCount = 2;
 	renderPassBeginInfo.pClearValues = clearValues;
 
-	for (int32_t i = 0; i < m_drawCmdBuffers.size(); ++i)
+	for (int32_t i = 0; i < 1/*m_drawCmdBuffers.size()*/ /*??? Check ???*/; ++i)
 	{
-		renderPassBeginInfo.framebuffer = m_frameBuffers[i];
+		renderPassBeginInfo.framebuffer = m_offscreenFramebuffer;
 
 		VKE_CHECK_RESULT(vkBeginCommandBuffer(m_drawCmdBuffers[i], &cmdBufInfo));
 
@@ -989,6 +1027,129 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 	return LoadMesh();
 }
 
+VkResult VkEngine::VulkanEngine::CopySwapchainImageToCPU(VkImage image, const char** imagedata)
+{
+	VkImageCreateInfo imgCreateInfo{};
+	imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imgCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	imgCreateInfo.extent.width = m_width;
+	imgCreateInfo.extent.height = m_height;
+	imgCreateInfo.extent.depth = 1;
+	imgCreateInfo.arrayLayers = 1;
+	imgCreateInfo.mipLevels = 1;
+	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	
+	VkImage dstImage;
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &imgCreateInfo, nullptr, &dstImage));
+	
+	VkMemoryRequirements memRequirements;
+	VkMemoryAllocateInfo memAllocInfo{};
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	VkDeviceMemory dstImageMemory;
+	vkGetImageMemoryRequirements(m_device, dstImage, &memRequirements);
+	memAllocInfo.allocationSize = memRequirements.size;
+	
+	memAllocInfo.memoryTypeIndex = GetMemoryTypeIndex(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &memAllocInfo, nullptr, &dstImageMemory));
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, dstImage, dstImageMemory, 0));
+
+	VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
+	cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufAllocateInfo.commandPool = m_cmdPool;
+	cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufAllocateInfo.commandBufferCount = 1;
+	VkCommandBuffer copyCmd;
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &cmdBufAllocateInfo, &copyCmd));
+	VkCommandBufferBeginInfo cmdBufInfo{};
+	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	VKE_CHECK_RESULT(vkBeginCommandBuffer(copyCmd, &cmdBufInfo));
+
+	InsertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		0,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	VkImageCopy imageCopyRegion{};
+	imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageCopyRegion.srcSubresource.layerCount = 1;
+	imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageCopyRegion.dstSubresource.layerCount = 1;
+	imageCopyRegion.extent.width = m_width;
+	imageCopyRegion.extent.height = m_height;
+	imageCopyRegion.extent.depth = 1;
+
+	vkCmdCopyImage(
+		copyCmd,
+		image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&imageCopyRegion);
+
+	InsertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	VKE_CHECK_RESULT(vkEndCommandBuffer(copyCmd));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &copyCmd;
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = 0;
+	VkFence fence;
+	VKE_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &fence));
+	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &submitInfo, fence));
+	VKE_CHECK_RESULT(vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX));
+	vkDestroyFence(m_device, fence, nullptr);
+
+	VkImageSubresource subResource{};
+	subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	VkSubresourceLayout subResourceLayout;
+
+	vkGetImageSubresourceLayout(m_device, dstImage, &subResource, &subResourceLayout);
+
+	vkMapMemory(m_device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)imagedata);
+	*imagedata += subResourceLayout.offset;
+
+	vkUnmapMemory(m_device, dstImageMemory);
+	vkFreeMemory(m_device, dstImageMemory, nullptr);
+	vkDestroyImage(m_device, dstImage, nullptr);
+}
+
+uint32_t VkEngine::VulkanEngine::GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+	vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &deviceMemoryProperties);
+	for (uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount; i++) {
+		if ((typeBits & 1) == 1) {
+			if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+	return 0;
+}
+
 VkResult VkEngine::VulkanEngine::LoadMesh()
 {
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
@@ -1129,4 +1290,66 @@ VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageF
 	assert(out.module != NULL);
 	m_shaderModules.push_back(out.module);
 	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::CreateOffscreenImage()
+{
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	imageInfo.extent.width = m_width;
+	imageInfo.extent.height = m_height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &imageInfo, nullptr, &m_offscreenImage));
+	
+	vkGetImageMemoryRequirements(m_device, m_offscreenImage, &m_memReq);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = m_memReq.size;
+	allocInfo.memoryTypeIndex = GetMemoryType(m_memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &allocInfo, nullptr, &m_offscreenImageMemory));
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, m_offscreenImage, m_offscreenImageMemory, 0));
+
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::CreateOffscreenFrameBuffer()
+{
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = m_offscreenImage;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView offscreenImageView;
+	VKE_CHECK_RESULT(vkCreateImageView(m_device, &viewInfo, nullptr, &offscreenImageView));
+
+	VkFramebufferCreateInfo fbInfo{};
+	fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	fbInfo.renderPass = m_renderPass;
+	fbInfo.attachmentCount = 1;
+	fbInfo.pAttachments = &offscreenImageView;
+	fbInfo.width = m_width;
+	fbInfo.height = m_height;
+	fbInfo.layers = 1;
+
+	return vkCreateFramebuffer(m_device, &fbInfo, nullptr, &m_offscreenFramebuffer);
 }

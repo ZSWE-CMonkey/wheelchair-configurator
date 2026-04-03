@@ -4,7 +4,6 @@
 
 */
 
-#include <iostream>
 #include <Windows.h>
 #include <stdexcept>
 
@@ -13,6 +12,8 @@
 namespace {
 	const UINT c_width = 800, c_height = 600;
 	const char* c_appName = "Test";
+
+	const char* g_pixelBuffer = nullptr;
 
 	HWND* g_window = nullptr;
 
@@ -81,13 +82,43 @@ namespace {
 	{
 		switch (uMsg)
 		{
+		case WM_PAINT:
+		{
+			wgRender(&g_pixelBuffer);
+			if (g_pixelBuffer == nullptr)
+				break;
+
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hWnd, &ps);
+			
+			BITMAPINFO bmi{};
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = c_width;
+			bmi.bmiHeader.biHeight = -c_height;
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = 32;
+			bmi.bmiHeader.biCompression = BI_RGB;
+
+			
+			StretchDIBits(
+				hdc,
+				0, 0, c_width, c_height,
+				0, 0, c_width, c_height,
+				g_pixelBuffer,
+				&bmi,
+				DIB_RGB_COLORS,
+				SRCCOPY
+			);
+
+			EndPaint(hWnd, &ps);
+
+			ValidateRect(window, NULL);
+		}
+		break;
 		case WM_CLOSE:
 			wgDeinitializeGraphics();
 			DestroyWindow(hWnd);
 			PostQuitMessage(0);
-			break;
-		case WM_PAINT:
-			ValidateRect(window, NULL);
 			break;
 		}
 	}
@@ -116,7 +147,6 @@ namespace {
 					DispatchMessage(&msg);
 				}
 			}
-			wgRender();
 		}
 	}
 }

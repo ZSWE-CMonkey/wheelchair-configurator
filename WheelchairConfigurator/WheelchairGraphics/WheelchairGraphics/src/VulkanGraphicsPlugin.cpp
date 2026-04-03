@@ -47,16 +47,19 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appNa
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetObject()
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetObject(std::string objectId)
 {
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render()
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render(const char** out)
 {
+    if (out == nullptr)
+        return GP_NULL_PARAM_ERROR;
+
     if (!m_vulkanEngine)
         return GP_SUCCESS;
-    return m_vulkanEngine->Render() == VK_SUCCESS ? GP_SUCCESS : GP_RENDERING_ERROR;
+    return m_vulkanEngine->Render(out) == VK_SUCCESS ? GP_SUCCESS : GP_RENDERING_ERROR;
 }
 
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::DeInitialize()
