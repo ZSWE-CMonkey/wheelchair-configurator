@@ -5,7 +5,9 @@ VisualStudioVersion = 17.10.34916.146
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WheelchairConfigurator", "WheelchairConfigurator\WheelchairConfigurator.csproj", "{462F973E-6562-4C78-9B5B-F57262B8C95D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigurationLogic", "ConfigurationLogic\ConfigurationLogic.csproj", "{18860DBA-4734-4B8F-B3A0-851CB56F896D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigurationLogic", "ConfigurationLogic\ConfigurationLogic.csproj", "{18860DBA-4734-4B8F-B3A0-851CB56F896D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLayer", "DataLayer\DataLayer.csproj", "{935C06E3-F16B-45AD-BBEF-3074375F07B1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +25,10 @@ Global
 		{18860DBA-4734-4B8F-B3A0-851CB56F896D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18860DBA-4734-4B8F-B3A0-851CB56F896D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18860DBA-4734-4B8F-B3A0-851CB56F896D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,94 @@
+{
+    "Categories": [
+        {
+            "Name": "Rámy"
+        },
+        {
+            "Name": "Kola"
+        },
+        {
+            "Name": "Pohony"
+        },
+        {
+            "Name": "Sedáky"
+        }
+    ],
+    "Components": [
+        {
+            "Name": "Standardní ocelový rám",
+            "CategoryName": "Rámy",
+            "CatalogUrl": "https://katalog.cz/ocelovy-ram",
+            "Price": 12000.00
+        },
+        {
+            "Name": "Lehký duralový rám",
+            "CategoryName": "Rámy",
+            "CatalogUrl": "https://katalog.cz/duralovy-ram",
+            "Price": 25000.00
+        },
+        {
+            "Name": "Městská úzká kola",
+            "CategoryName": "Kola",
+            "Price": 3500.00
+        },
+        {
+            "Name": "Terénní široká kola",
+            "CategoryName": "Kola",
+            "Price": 5800.00
+        },
+        {
+            "Name": "Základní motor 250W",
+            "CategoryName": "Pohony",
+            "Price": 15000.00
+        },
+        {
+            "Name": "Ergonomický sedák",
+            "CategoryName": "Sedáky",
+            "Price": 4200.00
+        }
+    ],
+    "Rules": [
+        {
+            "ComponentAName": "Lehký duralový rám",
+            "ComponentBName": "Terénní široká kola",
+            "IsCompatible": false
+        },
+        {
+            "ComponentAName": "Základní motor 250W",
+            "ComponentBName": "Standardní ocelový rám",
+            "IsCompatible": true
+        }
+    ],
+    "Specs": [
+        {
+            "ComponentName": "Standardní ocelový rám",
+            "WeightCapacityKg": 150,
+            "SeatWidthCm": 45,
+            "MaxSpeedKmh": 0
+        },
+        {
+            "ComponentName": "Základní motor 250W",
+            "WeightCapacityKg": 0,
+            "SeatWidthCm": 0,
+            "MaxSpeedKmh": 6
+        }
+    ],
+    "Models3D": [
+        {
+            "ComponentName": "Standardní ocelový rám",
+            "FilePath": "assets/models/frames/steel_frame.glb",
+            "TextureId": "tex_steel_matte",
+            "AnchorX": 0.0,
+            "AnchorY": 0.5,
+            "AnchorZ": 0.0
+        },
+        {
+            "ComponentName": "Terénní široká kola",
+            "FilePath": "assets/models/wheels/offroad_wheels.glb",
+            "TextureId": "tex_rubber_mud",
+            "AnchorX": 1.2,
+            "AnchorY": 0.0,
+            "AnchorZ": 0.0
+        }
+    ]
+}
