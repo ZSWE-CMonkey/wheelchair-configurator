@@ -79,6 +79,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\ConfigurationLogic\ConfigurationLogic.csproj" />
+	  <ProjectReference Include="..\DataLayer\DataLayer.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
