@@ -9,7 +9,7 @@
         <ContentView x:Name="SidebarContainer" 
                      Grid.Column="0" 
                      Grid.Row="0"
-                     BackgroundColor="#F5F5F5" />
+                     BackgroundColor="#F8F8F5" />
 
         <!-- Preview -->
         <VerticalStackLayout Grid.Column="1" Grid.Row="0" VerticalOptions="Center" Grid.RowSpan="2" HorizontalOptions="Center">
@@ -18,14 +18,16 @@
         </VerticalStackLayout>
 
         <!-- Navigation buttons -->
-        <HorizontalStackLayout Grid.Column="0" 
-                               Grid.Row="1" 
-                               Spacing="10" 
-                               Padding="20" 
-                               HorizontalOptions="Center">
-            <Button Text="Zpět" Clicked="OnBackClicked" x:Name="BackBtn" />
-            <Button Text="Další" Clicked="OnNextClicked" x:Name="NextBtn" />
-        </HorizontalStackLayout>
+        <Grid Grid.Column="0" 
+          Grid.Row="1" 
+          ColumnDefinitions="*, *" 
+          ColumnSpacing="10" 
+          Padding="20" 
+          BackgroundColor="#F8F8F5">
+
+                <Button Grid.Column="0" Text="Zpět" Clicked="OnBackClicked" x:Name="BackBtn" />
+                <Button Grid.Column="1" Text="Další" Clicked="OnNextClicked" x:Name="NextBtn" />
+        </Grid>
 
     </Grid>
 </ContentPage>

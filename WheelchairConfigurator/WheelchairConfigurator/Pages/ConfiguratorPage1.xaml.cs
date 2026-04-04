@@ -4,15 +4,15 @@ namespace WheelchairConfigurator.Pages;
 
 
 /*
- * Cus Pasta, necham ti tu, jak jsem nad tim uvazoval, az to budes delat. Na tyhle strance je container pro sidebary a nahled toho vozejku. V tom containeru se toci sidebary se vstupama. Moje idea je, ze pri prepnuti toho sidebaru se ulozi vsechny vstupy, co na nem jsou. Tim, ze je to vsechno na jedne strance, budes mit ty data pohromade. Asi si muzes udelat tridu pro vozik, do ktere to vsechno ulozis, a pak s tim objektem budes pracovat dal. Snad jsem to neudelal uplne napicu a pomuze ti to :)
+ * Cus Pasta, necham ti tu, jak jsem nad tim uvazoval, az to budes delat. Na tyhle strance je container pro sidebary a nahled toho vozejku. V tom containeru se toci sidebary se vstupama. Pri zmene jakehokoli vstupu se ty data rovnou ulozi do userInput. Ty data se ukladaji rovnou a nejsou nijak checkovana, takze budes muset overit nejake min a max hodnoty. Je tam ciselny input, ale asi tam pujde narvat treba + -, takze by to taky mohlo delat brikule. 
  */
 
 
 public partial class ConfiguratorPage1 : ContentPage
 {
-    private List<ContentView> _panels;
+    public UserInput userInput = new();
+    private readonly List<ContentView> _panels;
     private int _currentPanelIndex = 0;
-
 
     /*
      * Constructor - creates panels
@@ -20,10 +20,22 @@ public partial class ConfiguratorPage1 : ContentPage
     public ConfiguratorPage1()
     {
         InitializeComponent();
-
-        _panels = [new SideBar1(), new SideBar2(), new SideBar3()];
-
+        _panels = [
+            new SideBar1(userInput),
+            new SideBar2(userInput),
+            new SideBar3(userInput)
+        ];
         UpdatePanel();
+    }
+
+    /*
+     * SaveCurrentPanel - Saves all inputs in sidebar
+     *                  - Inputs are saved automatically on their changes, this function does it again for sure if there is something unsaved
+     */
+    private void SaveCurrentPanel()
+    {
+        if (_panels[_currentPanelIndex] is ISideBar sidebar)
+            sidebar.Save();
     }
 
     /*
@@ -33,7 +45,6 @@ public partial class ConfiguratorPage1 : ContentPage
     private void UpdatePanel()
     {
         SidebarContainer.Content = _panels[_currentPanelIndex];
-
         BackBtn.IsVisible = _currentPanelIndex > 0;
         NextBtn.Text = _currentPanelIndex == _panels.Count - 1 ? "Dokonèit" : "Další";
     }
@@ -43,6 +54,7 @@ public partial class ConfiguratorPage1 : ContentPage
      */
     private void OnNextClicked(object sender, EventArgs e)
     {
+        SaveCurrentPanel();
         if (_currentPanelIndex < _panels.Count - 1)
         {
             _currentPanelIndex++;
@@ -51,7 +63,7 @@ public partial class ConfiguratorPage1 : ContentPage
         else
         {
             // There is a final point of configuration.
-            DisplayAlert("Hotovo", "Vozík byl úspìšnì nakonfigurován!", "OK");
+            DisplayAlert("Hotovo", $"Výška: {userInput.BodyHeight}", "OK");
         }
     }
 
@@ -60,6 +72,7 @@ public partial class ConfiguratorPage1 : ContentPage
      */
     private void OnBackClicked(object sender, EventArgs e)
     {
+        SaveCurrentPanel();
         if (_currentPanelIndex > 0)
         {
             _currentPanelIndex--;

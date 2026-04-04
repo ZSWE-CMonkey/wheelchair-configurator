@@ -6,23 +6,18 @@ using System.Threading.Tasks;
 
 namespace WheelchairConfigurator
 {
-    class UserInput
+    public class UserInput
     {
-        public double bodyHeight {  get; set; }
-        public double pelvisWidth { get; set; }
-        public double thighLength { get; set; }
-        public double weight { get; set;}
-        public string bodyStability {  get; set; }
-
-        public bool headStability { get; set; }
-        public string bedsoreRisk { get; set; }
-        public bool handControl { get; set; }
-
-        public string enviroment { get; set;}
-
-        public bool legs {  get; set; }
-
-        public bool pain { get; set;}
-
+        public double BodyHeight { get; set; }
+        public double PelvisWidth { get; set; }
+        public double ThighLength { get; set; }
+        public double Weight { get; set; }
+        public string BodyStability { get; set; } = "";
+        public bool HeadStability { get; set; }
+        public string BedsoreRisk { get; set; } = "";
+        public bool HandControl { get; set; }
+        public string Environment { get; set; } = "";
+        public bool Legs { get; set; }
+        public string Pain { get; set; } = "";
     }
 }

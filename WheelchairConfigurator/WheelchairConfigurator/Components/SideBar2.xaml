@@ -4,11 +4,12 @@
              x:Class="WheelchairConfigurator.Components.SideBar2">
 
     <Border BackgroundColor="#F8F8F8" StrokeThickness="0" WidthRequest="250">
-        <VerticalStackLayout Padding="20" Spacing="15">
+        <VerticalStackLayout Padding="20" Spacing="10">
 
             <Label Text="Informace o pacientovi II." FontAttributes="Bold" FontSize="18" />
 
-            <Picker x:Name="bodyStabilityEntry" Title="Stabilita trupu">
+            <Label Text="Stabilita trupu"></Label>
+            <Picker x:Name="bodyStabilityEntry" Title="Vyberte" SelectedIndexChanged="OnBodyStabilityChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Dobrá</x:String>
@@ -18,7 +19,8 @@
                 </Picker.ItemsSource>
             </Picker>
 
-            <Picker x:Name="headStabilityEntry" Title="Kontrola hlavy">
+            <Label Text="Kontrola hlavy"></Label>
+            <Picker x:Name="headStabilityEntry" Title="Vyberte" SelectedIndexChanged="OnHeadStabilityChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Ano</x:String>
@@ -27,7 +29,8 @@
                 </Picker.ItemsSource>
             </Picker>
 
-            <Picker x:Name="bedsoresRiskEntry" Title="Riziko dekubitů (proleženin)">
+            <Label Text="Riziko dekubitů (proleženin)"></Label>
+            <Picker x:Name="bedsoresRiskEntry" Title="Vyberte" SelectedIndexChanged="OnBedsoreRiskChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Nízké</x:String>
@@ -37,7 +40,8 @@
                 </Picker.ItemsSource>
             </Picker>
 
-            <Picker x:Name="painEntry" Title="Bolesti a únava">
+            <Label Text="Bolesti a únava"></Label>
+            <Picker x:Name="painEntry" Title="Vyberte" SelectedIndexChanged="OnPainChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Nízké</x:String>
@@ -47,7 +51,8 @@
                 </Picker.ItemsSource>
             </Picker>
 
-            <Picker x:Name="legsEntry" Title="Dolní končetiny">
+            <Label Text="Dolní končetiny"></Label>
+            <Picker x:Name="legsEntry" Title="Vyberte" SelectedIndexChanged="OnLegsChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Ano</x:String>

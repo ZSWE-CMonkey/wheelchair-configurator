@@ -4,11 +4,12 @@
              x:Class="WheelchairConfigurator.Components.SideBar3">
 
     <Border BackgroundColor="#F8F8F8" StrokeThickness="0" WidthRequest="250">
-        <VerticalStackLayout Padding="20" Spacing="15">
+        <VerticalStackLayout Padding="20" Spacing="10">
 
             <Label Text="Vozík" FontAttributes="Bold" FontSize="18" />
-            
-            <Picker x:Name="handControlEntry" Title="Ovládání rukou">
+
+            <Label Text="Ovládání rukou"></Label>
+            <Picker x:Name="handControlEntry" Title="Vyberte" SelectedIndexChanged="OnHandControlChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Ano</x:String>
@@ -17,7 +18,8 @@
                 </Picker.ItemsSource>
             </Picker>
 
-            <Picker x:Name="enviromentEntry" Title="Terén a prostředí">
+            <Label Text="Terén a prostředí"></Label>
+            <Picker x:Name="enviromentEntry" Title="Vyberte" SelectedIndexChanged="OnEnvironmentChanged">
                 <Picker.ItemsSource>
                     <x:Array Type="{x:Type x:String}">
                         <x:String>Indoor</x:String>
