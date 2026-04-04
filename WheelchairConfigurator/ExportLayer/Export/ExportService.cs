@@ -26,6 +26,8 @@ public class ExportService : IExportService
     /// </summary>
     public async Task<string> ExportAsync(int configurationId, ExportFormat format)
     {
+        try
+    {
         // TODO: Replace mock data with actual database calls to load configuration details.
         var exportData = GetMockData(configurationId);
 
@@ -34,6 +36,13 @@ public class ExportService : IExportService
             ExportFormat.Pdf => _fileBuilder.Build(exportData),
             _ => throw new NotImplementedException($"Format {format} is not supported.")
         };
+    }
+
+           catch (Exception ex)
+    {
+        Console.WriteLine($"[ExportService] ERROR: Export failed — {ex.Message}");
+        throw;
+    }
     }
 
     /// <summary>
