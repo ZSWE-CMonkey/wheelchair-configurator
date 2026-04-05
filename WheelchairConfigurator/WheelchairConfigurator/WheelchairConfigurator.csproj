@@ -81,6 +81,7 @@
 	  <ProjectReference Include="..\ConfigurationLogic\ConfigurationLogic.csproj" />
 	  <ProjectReference Include="..\DataLayer\DataLayer.csproj" />
 	  <ProjectReference Include="..\ExportLayer\ExportLayer.csproj" />
+	  <ProjectReference Include="..\ServiceLayer\ServiceLayer.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

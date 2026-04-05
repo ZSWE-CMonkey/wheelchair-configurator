@@ -1,26 +1,27 @@
 # Export Layer — Wheelchair Configurator
 
-**Version 1.0** | Author: Peta8 | C# / MAUI / QuestPDF
+**Version 1.1** | Author: Peta8 | C# / MAUI / QuestPDF
 
 ---
 
 ## Overview
 
 The export layer is responsible for generating PDF documents from wheelchair configurations.
-It is fully decoupled from the database and UI — it receives a populated model and produces a file.
+It is fully decoupled from the database and UI — it receives a fully populated model and produces a file.
+
+**ExportService and IExportService have been moved to ServiceLayer.**
+ExportLayer contains only the file builder and PDF components — no orchestration logic.
 
 ---
 
 ## Project Structure
 
 ```
-Export/
-    IExportService.cs           — contract for the export orchestrator
-    ExportService.cs            — orchestrator, loads data and routes to builder
+ExportLayer/
     IExportFileBuilder.cs       — contract for the file builder
 
     ExportModel/
-        ConfigurationExportModel.cs  — internal model passed between service and builder
+        ConfigurationExportModel.cs  — model passed from ServiceLayer to PdfBuilder
         ExportFormat.cs              — enum of supported formats
 
     Pdf/
@@ -41,9 +42,9 @@ Export/
 ## Dependency Flow
 
 ```
-ExportAsync(configurationId, format)
+AppService.ExportConfigurationAsync()    ← called from ServiceLayer
     │
-    ├── GetMockData()              ← TODO: replace with repository calls
+    ├── ExportMapper.MapAsync()          ← assembles ConfigurationExportModel
     │       └── ConfigurationExportModel
     │
     └── IExportFileBuilder.Build(model)
@@ -59,9 +60,12 @@ ExportAsync(configurationId, format)
 
 ## How to Use
 
+ExportLayer is called exclusively through `AppService` in ServiceLayer.
+UI never calls ExportLayer directly.
+
 ### 1. Register QuestPDF license — once at startup
 
-In `MauiProgram.cs` or `Program.cs`:
+In `MauiProgram.cs`:
 
 ```csharp
 using QuestPDF.Infrastructure;
@@ -69,76 +73,19 @@ using QuestPDF.Infrastructure;
 QuestPDF.Settings.License = LicenseType.Community;
 ```
 
-### 2. Initialize ExportService
+### 2. Register PdfBuilder in DI
 
 ```csharp
-var dbService = new DbService("konfigurator.db");
-var exportService = new ExportService(new PdfBuilder(), dbService);
+builder.Services.AddSingleton<IExportFileBuilder, PdfBuilder>();
 ```
 
-### 3. Call ExportAsync
+### 3. Call export from UI via AppService
 
 ```csharp
-string pdfPath = await exportService.ExportAsync(configurationId, ExportFormat.Pdf);
-Console.WriteLine($"PDF saved to: {pdfPath}");
+string pdfPath = await _appService.ExportConfigurationAsync(configurationId);
 ```
 
----
-
-## Connecting to the Database (TODO for engine team)
-
-`ExportService` currently uses mock data. Once the engine is ready, replace `GetMockData()` with real repository calls:
-
-```csharp
-// Replace this:
-private ConfigurationExportModel GetMockData(int id) { ... }
-
-// With this:
-private async Task<ConfigurationExportModel> LoadFromDbAsync(int configurationId)
-{
-    var config     = await _configurationRepo.GetByIdAsync(configurationId);
-    var items      = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
-    var specialist = await _specialistRepo.GetByIdAsync(config.SpecialistId);
-
-    var exportItems = new List<ConfigurationExportItem>();
-    foreach (var item in items)
-    {
-        var component = await _componentRepo.GetByIdAsync(item.ComponentId);
-        var category  = await _categoryRepo.GetByIdAsync(component.CategoryId);
-
-        exportItems.Add(new ConfigurationExportItem
-        {
-            CategoryName  = category.Name,
-            ComponentName = component.Name,
-            ItemCode      = component.CatalogUrl ?? "-",
-            Price         = component.Price,
-            Quantity      = item.Quantity
-        });
-    }
-
-    return new ConfigurationExportModel
-    {
-        ConfigurationName = $"Configuration #{config.Id}",
-        SpecialistName    = $"{specialist.FirstName} {specialist.LastName}",
-        CreatedAt         = config.CreatedAt,
-        TotalPrice        = exportItems.Sum(i => i.Price * i.Quantity),
-        Items             = exportItems
-    };
-}
-```
-
-Also inject the repositories via constructor:
-
-```csharp
-public ExportService(
-    IExportFileBuilder fileBuilder,
-    DbService dbService,
-    ConfigurationRepository configurationRepo,
-    ConfigurationItemRepository configurationItemRepo,
-    ComponentRepository componentRepo,
-    CategoryRepository categoryRepo,
-    SpecialistRepository specialistRepo)
-```
+AppService handles all data loading and model assembly internally — UI only provides the configuration ID.
 
 ---
 
@@ -197,11 +144,14 @@ Assets are copied to output automatically via `.csproj`:
 
 ---
 
-## Known Limitations (v1.0)
+## Known Limitations (v1.1)
 
-- `ExportService` uses mock data — replace `GetMockData()` with real repository calls once engine is ready.
 - PDF save path uses `Directory.GetCurrentDirectory()` — for MAUI on Android replace with `FileSystem.CacheDirectory`.
 
-Developed by Claude Sonnet 4.6 <3
-Consulted with Gemini 3.1 Pro <3
-Managed by Peta 8-)
+---
+
+## Developed by Claude Sonnet 4.6 <3
+
+## Consulted with Gemini 3.1 Pro <3
+
+## Managed by Peta 8-)

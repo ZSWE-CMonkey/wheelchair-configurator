@@ -26,4 +26,12 @@ public class ComponentRepository : GenericRepository<Component>
         => await _db.Table<Component>()
               .Where(c => c.Name == name)
               .FirstOrDefaultAsync();
+    
+    /// <summary>
+        /// Returns all components matching the given IDs in a single query.
+        /// </summary>
+        public Task<List<Component>> GetByIdsAsync(List<int> ids)
+            => _db.Table<Component>()
+                  .Where(c => ids.Contains(c.Id))
+                  .ToListAsync();
 }
