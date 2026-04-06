@@ -39,7 +39,7 @@ public partial class SideBarView : ContentView, ISideBar
                     BackgroundColor = Color.FromArgb("F5F5F5"),
                     MaxLength = 3
                 };
-                entry.TextChanged += (_, _) => field.OnSave(entry.Text ?? "");
+                entry.TextChanged += (_, _) => field.OnSave(entry.Text ?? String.Empty);
                 _inputs.Add(entry);
                 layout.Add(entry);
             }
@@ -50,7 +50,7 @@ public partial class SideBarView : ContentView, ISideBar
                     picker.Items.Add(option);
 
                 picker.SelectedIndexChanged += (_, _) =>
-                    field.OnSave(picker.SelectedItem as string ?? "");
+                    field.OnSave(picker.SelectedItem as string ?? String.Empty);
 
                 _inputs.Add(picker);
                 layout.Add(picker);
@@ -76,7 +76,7 @@ public partial class SideBarView : ContentView, ISideBar
             if (_inputs[i] is Entry entry)
                 _fields[i].OnSave(entry.Text ?? "");
             else if (_inputs[i] is Picker picker)
-                _fields[i].OnSave(picker.SelectedItem as string ?? "");
+                _fields[i].OnSave(picker.SelectedItem as string ?? String.Empty);
         }
     }
 }
