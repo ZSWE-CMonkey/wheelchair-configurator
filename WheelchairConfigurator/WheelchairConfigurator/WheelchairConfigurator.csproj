@@ -57,6 +57,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiImage Remove="Resources\Images\dolphinImage.webp" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Resources\Images\dolphinImage.webp" />
 	  <None Remove="Resources\Images\skibidi.png" />
 	  <None Remove="Resources\libs\arm64-v8a\libWheelchairGraphics.so" />
 	  <None Remove="Resources\libs\armeabi-v7a\libWheelchairGraphics.so" />
@@ -69,6 +74,12 @@
 	  <AndroidNativeLibrary Include="Resources\libs\armeabi-v7a\libWheelchairGraphics.so" />
 	  <AndroidNativeLibrary Include="Resources\libs\x86\libWheelchairGraphics.so" />
 	  <AndroidNativeLibrary Include="Resources\libs\x86_64\libWheelchairGraphics.so" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiAsset Include="Resources\Images\dolphinImage.webp">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </MauiAsset>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -86,10 +97,6 @@
 	<ItemGroup>
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.10" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<PackageReference Include="QuestPDF" Version="2024.3.4" />
 	</ItemGroup>
 
 </Project>

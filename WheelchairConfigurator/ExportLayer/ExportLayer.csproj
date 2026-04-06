@@ -19,17 +19,10 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-		<PackageReference Include="QuestPDF" Version="2024.3.4" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\DataLayer\DataLayer.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Assets\**\*.*">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 </Project>

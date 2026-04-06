@@ -7,11 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WheelchairConfigurator", "W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConfigurationLogic", "ConfigurationLogic\ConfigurationLogic.csproj", "{18860DBA-4734-4B8F-B3A0-851CB56F896D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLayer", "DataLayer\DataLayer.csproj", "{935C06E3-F16B-45AD-BBEF-3074375F07B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataLayer", "DataLayer\DataLayer.csproj", "{935C06E3-F16B-45AD-BBEF-3074375F07B1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WheelchairConfigurator.Export", "WheelchairConfigurator.Export\WheelchairConfigurator.Export.csproj", "{4DB5CFBE-A6FA-4211-B85E-8E136762B1BC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExportLayer", "ExportLayer\ExportLayer.csproj", "{8C20B482-C673-428F-AF6C-91C37051F3F2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExportLayer", "ExportLayer\ExportLayer.csproj", "{8C20B482-C673-428F-AF6C-91C37051F3F2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,10 +31,6 @@ Global
 		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{935C06E3-F16B-45AD-BBEF-3074375F07B1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4DB5CFBE-A6FA-4211-B85E-8E136762B1BC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4DB5CFBE-A6FA-4211-B85E-8E136762B1BC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4DB5CFBE-A6FA-4211-B85E-8E136762B1BC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4DB5CFBE-A6FA-4211-B85E-8E136762B1BC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8C20B482-C673-428F-AF6C-91C37051F3F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8C20B482-C673-428F-AF6C-91C37051F3F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C20B482-C673-428F-AF6C-91C37051F3F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
