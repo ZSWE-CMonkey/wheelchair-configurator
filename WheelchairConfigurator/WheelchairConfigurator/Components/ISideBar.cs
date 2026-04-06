@@ -8,9 +8,9 @@ namespace WheelchairConfigurator
 {
     public interface ISideBar
     {
-        /*
-     *  Save - saving whole sidebar
-     */
+         /*
+         *  Save - saving whole sidebar
+         */
         void Save();
     }
 }

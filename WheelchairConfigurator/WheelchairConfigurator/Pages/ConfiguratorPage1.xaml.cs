@@ -2,12 +2,6 @@ using WheelchairConfigurator.Components;
 
 namespace WheelchairConfigurator.Pages;
 
-
-/*
- * Cus Pasta, necham ti tu, jak jsem nad tim uvazoval, az to budes delat. Na tyhle strance je container pro sidebary a nahled toho vozejku. V tom containeru se toci sidebary se vstupama. Pri zmene jakehokoli vstupu se ty data rovnou ulozi do userInput. Ty data se ukladaji rovnou a nejsou nijak checkovana, takze budes muset overit nejake min a max hodnoty. Je tam ciselny input, ale asi tam pujde narvat treba + -, takze by to taky mohlo delat brikule. 
- */
-
-
 public partial class ConfiguratorPage1 : ContentPage
 {
     public UserInput userInput = new();
@@ -15,22 +9,104 @@ public partial class ConfiguratorPage1 : ContentPage
     private int _currentPanelIndex = 0;
 
     /*
-     * Constructor - creates panels
+     * Constructor - creates panels using generic SideBarView
      */
     public ConfiguratorPage1()
     {
         InitializeComponent();
-        _panels = [
-            new SideBar1(userInput),
-            new SideBar2(userInput),
-            new SideBar3(userInput)
+        _panels =
+        [
+            new SideBarView("Informace o pacientovi I.",
+            [
+                new SideBarField
+                {
+                    Label = "Výška trupu (cm)",
+                    Type = FieldType.Entry,
+                    OnSave = v => userInput.BodyHeight = double.TryParse(v, out var x) ? x : 0
+                },
+                new SideBarField
+                {
+                    Label = "Hmotnost (kg)",
+                    Type = FieldType.Entry,
+                    OnSave = v => userInput.Weight = double.TryParse(v, out var x) ? x : 0
+                },
+                new SideBarField
+                {
+                    Label = "Šíøka pánve (cm)",
+                    Type = FieldType.Entry,
+                    OnSave = v => userInput.PelvisWidth = double.TryParse(v, out var x) ? x : 0
+                },
+                new SideBarField
+                {
+                    Label = "Délka stehna (cm)",
+                    Type = FieldType.Entry,
+                    OnSave = v => userInput.ThighLength = double.TryParse(v, out var x) ? x : 0
+                },
+            ]),
+
+            new SideBarView("Informace o pacientovi II.",
+            [
+                new SideBarField
+                {
+                    Label = "Stabilita trupu",
+                    Type = FieldType.Picker,
+                    Options = ["Dobrá", "Støední", "Špatná"],
+                    OnSave = v => userInput.BodyStability = v
+                },
+                new SideBarField
+                {
+                    Label = "Kontrola hlavy",
+                    Type = FieldType.Picker,
+                    Options = ["Ano", "Ne"],
+                    OnSave = v => userInput.HeadStability = v == "Ano"
+                },
+                new SideBarField
+                {
+                    Label = "Riziko dekubitù (proleženin)",
+                    Type = FieldType.Picker,
+                    Options = ["Nízké", "Støední", "Vysoké"],
+                    OnSave = v => userInput.BedsoreRisk = v
+                },
+                new SideBarField
+                {
+                    Label = "Bolesti a únava",
+                    Type = FieldType.Picker,
+                    Options = ["Nízké", "Støední", "Vysoké"],
+                    OnSave = v => userInput.Pain = v
+                },
+                new SideBarField
+                {
+                    Label = "Dolní konèetiny",
+                    Type = FieldType.Picker,
+                    Options = ["Ano", "Ne"],
+                    OnSave = v => userInput.Legs = v == "Ano"
+                },
+            ]),
+
+            new SideBarView("Vozík",
+            [
+                new SideBarField
+                {
+                    Label = "Ovládání rukou",
+                    Type = FieldType.Picker,
+                    Options = ["Ano", "Ne"],
+                    OnSave = v => userInput.HandControl = v == "Ano"
+                },
+                new SideBarField
+                {
+                    Label = "Terén a prostøedí",
+                    Type = FieldType.Picker,
+                    Options = ["Indoor", "Outdoor", "Kombinace"],
+                    OnSave = v => userInput.Environment = v
+                },
+            ]),
         ];
+
         UpdatePanel();
     }
 
     /*
-     * SaveCurrentPanel - Saves all inputs in sidebar
-     *                  - Inputs are saved automatically on their changes, this function does it again for sure if there is something unsaved
+     * SaveCurrentPanel - saves all inputs in current sidebar
      */
     private void SaveCurrentPanel()
     {
@@ -39,8 +115,7 @@ public partial class ConfiguratorPage1 : ContentPage
     }
 
     /*
-     * UpdatePanel - updates panel in container using current id
-     *             - handles button text logic
+     * UpdatePanel - updates panel and handles button visibility/text
      */
     private void UpdatePanel()
     {
@@ -62,7 +137,6 @@ public partial class ConfiguratorPage1 : ContentPage
         }
         else
         {
-            // There is a final point of configuration.
             DisplayAlert("Hotovo", $"Výška: {userInput.BodyHeight}", "OK");
         }
     }
