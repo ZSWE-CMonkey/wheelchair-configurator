@@ -80,6 +80,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\ConfigurationLogic\ConfigurationLogic.csproj" />
 	  <ProjectReference Include="..\DataLayer\DataLayer.csproj" />
+	  <ProjectReference Include= "..\ServiceLayer\ServiceLayer.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
