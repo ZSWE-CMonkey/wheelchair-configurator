@@ -23,30 +23,8 @@ VkEngine::VulkanSwapchain::VulkanSwapchain(VkInstance& instance, VkPhysicalDevic
 
 VkEngine::VulkanSwapchain::~VulkanSwapchain()
 {
-}
-
-#ifdef _WIN32
-VkResult VkEngine::VulkanSwapchain::CreateSurface(void* platformHandle, void* platformWindow)
-#elif __ANDROID__
-VkResult VkEngine::VulkanSwapchain::CreateSurface(ANativeWindow* window)
-#else
-VkResult VkEngine::VulkanSwapchain::CreateSurface()
-#endif
-{
-#ifdef _WIN32
-	VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	surfaceCreateInfo.hinstance = (HINSTANCE)platformHandle;
-	surfaceCreateInfo.hwnd = (HWND)platformWindow;
-	return vkCreateWin32SurfaceKHR(m_instance, &surfaceCreateInfo, nullptr, &m_surface);
-#elif __ANDROID__;
-	VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
-	surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-	surfaceCreateInfo.window = window;
-	return vkCreateAndroidSurfaceKHR(m_instance, &surfaceCreateInfo, NULL, &m_surface);
-#else
-	return VK_ERROR_INITIALIZATION_FAILED;
-#endif
+	vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 }
 
 VkResult VkEngine::VulkanSwapchain::InitSurface()
@@ -132,6 +110,7 @@ VkResult VkEngine::VulkanSwapchain::InitSurface()
 VkResult VkEngine::VulkanSwapchain::CreateSwapchain(VkCommandBuffer& cmdBuffer, uint32_t& width, uint32_t& height)
 {
 	//TODO: refactor! >:(
+	//TODO2: Not used anymore, delete?
 
 	VkSwapchainKHR oldSwapchain = m_swapchain;
 
@@ -265,6 +244,53 @@ VkResult VkEngine::VulkanSwapchain::CreateSwapchain(VkCommandBuffer& cmdBuffer, 
 	return VK_SUCCESS;
 }
 
+VkResult VkEngine::VulkanSwapchain::SetupOffscreenImage(VkCommandBuffer& cmdBuffer, VkImage& offscreenImage, VkFormat colorFormat)
+{
+	m_colorFormat = colorFormat;
+
+	m_imageCount = 1;
+	m_images.resize(m_imageCount);
+	m_images[0] = offscreenImage;
+
+	m_buffers.resize(m_imageCount);
+	for (uint32_t i = 0; i < m_imageCount; i++)
+	{
+		VkImageViewCreateInfo colorAttachmentView = {};
+		colorAttachmentView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		colorAttachmentView.pNext = NULL;
+		colorAttachmentView.format = m_colorFormat;
+		colorAttachmentView.components = {
+			VK_COMPONENT_SWIZZLE_R,
+			VK_COMPONENT_SWIZZLE_G,
+			VK_COMPONENT_SWIZZLE_B,
+			VK_COMPONENT_SWIZZLE_A
+		};
+		colorAttachmentView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		colorAttachmentView.subresourceRange.baseMipLevel = 0;
+		colorAttachmentView.subresourceRange.levelCount = 1;
+		colorAttachmentView.subresourceRange.baseArrayLayer = 0;
+		colorAttachmentView.subresourceRange.layerCount = 1;
+		colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		colorAttachmentView.flags = 0;
+
+		m_buffers[i].image = m_images[i];
+
+		SetImageLayoutInfo setImageLayoutInfo{};
+		setImageLayoutInfo.cmdbuffer = cmdBuffer;
+		setImageLayoutInfo.image = m_buffers[i].image;
+		setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		SetImageLayout(setImageLayoutInfo);
+
+		colorAttachmentView.image = m_buffers[i].image;
+
+		VKE_CHECK_RESULT(vkCreateImageView(m_device, &colorAttachmentView, nullptr, &m_buffers[i].view));
+	}
+	return VK_SUCCESS;
+}
+
 uint32_t VkEngine::VulkanSwapchain::GetQueueNodeIndex() const
 {
 	return m_queueNodeIndex;
@@ -283,6 +309,34 @@ VkFormat VkEngine::VulkanSwapchain::GetColorFormat() const
 SwapChainBuffer& VkEngine::VulkanSwapchain::GetSwapchainBuffer(int index)
 {
 	return m_buffers[index];
+}
+
+VkResult VkEngine::VulkanSwapchain::CreateQueueFamilyIndex()
+{
+	uint32_t queueCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueCount, nullptr);
+
+	if (queueCount == 0)
+		return VK_ERROR_INITIALIZATION_FAILED;
+
+	std::vector<VkQueueFamilyProperties> queueProps(queueCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(m_physicalDevice, &queueCount, queueProps.data());
+
+	uint32_t graphicsQueueFamilyIndex = UINT32_MAX;
+
+	for (uint32_t i = 0; i < queueCount; i++)
+	{
+		if (queueProps[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+		{
+			graphicsQueueFamilyIndex = i;
+			break;
+		}
+	}
+
+	if (graphicsQueueFamilyIndex == UINT32_MAX)
+		return VK_ERROR_INITIALIZATION_FAILED;
+
+	m_queueNodeIndex = graphicsQueueFamilyIndex;
 }
 
 void VkEngine::VulkanSwapchain::SetImageLayout(SetImageLayoutInfo& info)

@@ -20,8 +20,6 @@ WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformH
 	if (!g_graphicsPlugin)
 		throw std::runtime_error("Graphics plugin was not created");
 
-	g_graphicsPlugin->SetHandles(platformHandle, platformWindow);
-
 	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize(std::string(appName), width, height));
 }
 

@@ -43,17 +43,10 @@ namespace VkEngine {
 		VulkanSwapchain(VkInstance& instance, VkPhysicalDevice& physicalDevice, VkDevice& device);
 		~VulkanSwapchain();
 
-#ifdef _WIN32
-		VkResult CreateSurface(void* platformHandle, void* platformWindow);
-#elif __ANDROID__
-		VkResult CreateSurface(ANativeWindow* window);
-#else
-		VkResult CreateSurface();
-#endif
-
 		VkResult InitSurface();
 
 		VkResult CreateSwapchain(VkCommandBuffer& cmdBuffer, uint32_t& width, uint32_t& height);
+		VkResult SetupOffscreenImage(VkCommandBuffer& cmdBuffer, VkImage& offscreenImage, VkFormat colorFormat);
 
 		void SetImageLayout(SetImageLayoutInfo& info);
 
@@ -64,6 +57,8 @@ namespace VkEngine {
 		uint32_t GetImageCount() const;
 		VkFormat GetColorFormat() const;
 		SwapChainBuffer& GetSwapchainBuffer(int index);
+
+		VkResult CreateQueueFamilyIndex();
 
 	private:
 

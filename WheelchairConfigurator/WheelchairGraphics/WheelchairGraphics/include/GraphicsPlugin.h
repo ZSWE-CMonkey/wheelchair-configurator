@@ -31,15 +31,6 @@ namespace GraphicsPlugin {
 	public:
 		~IGraphicsPlugin() = default;
 
-#ifdef _WIN32
-		virtual void SetHandles(void* platformHandle, void* platformWindow) = 0;
-#elif __ANDROID__
-		virtual void SetHandles(ANativeWindow* window) = 0;
-#else
-		virtual void SetHandles() = 0;
-#endif
-
-
 		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
 		virtual GPluginResult SetObject(std::string objectId) = 0;
 		virtual GPluginResult Render(const char** out) = 0;

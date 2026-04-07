@@ -58,6 +58,7 @@ namespace {
 VulkanEngine::~VulkanEngine()
 {
 	m_canRender = false;
+	m_vulkanSwapchain = nullptr;
 	vkDeviceWaitIdle(m_device);
 	vkDestroySemaphore(m_device, m_semaphores.presentComplete, nullptr);
 	vkDestroySemaphore(m_device, m_semaphores.renderComplete, nullptr);
@@ -86,23 +87,10 @@ VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t 
 
 	CreateSumbitInfo();
 
-	return VK_SUCCESS;
-}
-#if _WIN32
-VkResult VulkanEngine::InitSwapchain(void* platformHandle, void* platformWindow)
-#elif __ANDROID__
-VkResult VulkanEngine::InitSwapchain(ANativeWindow* window)
-#else
-VkResult VulkanEngine::InitSwapchain()
-#endif
-{
+	//Altought swapchain class, it is used for offscreen image as well without creating VkSwapchainKHR
 	m_vulkanSwapchain = std::make_unique<VulkanSwapchain>(m_instance, m_physicalDevice, m_device);
-	
-	//TODO: android version implement as well!!
-	//TODO2: not needed for offscreen rendering; normalize
-	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSurface(platformHandle, platformWindow));
+	m_vulkanSwapchain->CreateQueueFamilyIndex();
 
-	VKE_CHECK_RESULT(m_vulkanSwapchain->InitSurface());
 	return VK_SUCCESS;
 }
 
@@ -110,7 +98,8 @@ VkResult VkEngine::VulkanEngine::Prepare()
 {
 	VKE_CHECK_RESULT(CreateCommandPool());
 	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
-	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSwapchain(m_setupCmdBuffer, m_width, m_height));
+	VKE_CHECK_RESULT(CreateOffscreenImage());
+	VKE_CHECK_RESULT(m_vulkanSwapchain->SetupOffscreenImage(m_setupCmdBuffer, m_offscreenImage, VK_FORMAT_R8G8B8A8_UNORM));
 	VKE_CHECK_RESULT(CreateCommandBuffers());
 	VKE_CHECK_RESULT(SetupDepthStencil());
 	VKE_CHECK_RESULT(SetupRenderPass());
@@ -121,7 +110,6 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	VKE_CHECK_RESULT(LoadResources())
 	SetupVertexDescriptions();
 	VKE_CHECK_RESULT(PrepareUniformBuffers());
-	VKE_CHECK_RESULT(CreateOffscreenImage());
 	VKE_CHECK_RESULT(CreateOffscreenFrameBuffer());
 	VKE_CHECK_RESULT(SetupDescriptorSetLayout());
 	VKE_CHECK_RESULT(PreparePipelines());
@@ -138,19 +126,14 @@ VkResult VkEngine::VulkanEngine::Render(const char** imagedata)
 	if (!m_canRender)
 		return VK_SUCCESS; //bc is not initialized, not problem
 
-	VKE_CHECK_RESULT(m_vulkanSwapchain->AcquireNextImage(m_semaphores.presentComplete, &m_currentBuffer));
-
-	VKE_CHECK_RESULT(SubmitPostPresentBarrier(m_vulkanSwapchain->GetSwapchainBuffer(m_currentBuffer).image));
+	VKE_CHECK_RESULT(SubmitPostPresentBarrier(m_offscreenImage));
 
 	m_submitInfo.commandBufferCount = 1;
 	m_submitInfo.pCommandBuffers = &m_drawCmdBuffers[m_currentBuffer];
 
 	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
-
-	VKE_CHECK_RESULT(SubmitPrePresentBarrier(m_vulkanSwapchain->GetSwapchainBuffer(m_currentBuffer).image));
-
-	VKE_CHECK_RESULT(m_vulkanSwapchain->QueuePresent(m_queue, m_currentBuffer, m_semaphores.renderComplete));
+	VKE_CHECK_RESULT(SubmitPrePresentBarrier(m_offscreenImage));
 
 	CopySwapchainImageToCPU(m_offscreenImage, imagedata);
 	return vkQueueWaitIdle(m_queue);

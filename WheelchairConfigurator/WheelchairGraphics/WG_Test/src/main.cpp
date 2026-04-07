@@ -14,6 +14,7 @@ namespace {
 	const char* c_appName = "Test";
 
 	const char* g_pixelBuffer = nullptr;
+	HINSTANCE g_hInstance = nullptr;
 
 	HWND* g_window = nullptr;
 
@@ -82,14 +83,44 @@ namespace {
 	{
 		switch (uMsg)
 		{
+		case WM_KEYDOWN:
+		{
+			if (wParam == 'K' || wParam == 'k')
+			{
+				ValidateRect(window, NULL);
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+			else if (wParam == 'L' || wParam == 'l')
+			{
+				g_pixelBuffer = nullptr;
+			}
+			else if (wParam == 'J' || wParam == 'j')
+			{
+				if (g_hInstance == nullptr)
+					break;
+
+				wgInitializeVulkanGraphicsWIN32(c_appName, g_hInstance, window, c_width, c_height);
+				wgRender(&g_pixelBuffer);
+				wgDeinitializeGraphics();
+			}
+			break;
+		}
 		case WM_PAINT:
 		{
-			wgRender(&g_pixelBuffer);
-			if (g_pixelBuffer == nullptr)
-				break;
-
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
+			if (g_pixelBuffer == nullptr) {
+
+				RECT rect;
+				GetClientRect(hWnd, &rect);
+				HBRUSH hBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
+				FillRect(hdc, &rect, hBrush);
+
+				EndPaint(hWnd, &ps);
+				ValidateRect(window, NULL);
+				break;
+			}
+
 			
 			BITMAPINFO bmi{};
 			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -116,7 +147,7 @@ namespace {
 		}
 		break;
 		case WM_CLOSE:
-			wgDeinitializeGraphics();
+			//wgDeinitializeGraphics();
 			DestroyWindow(hWnd);
 			PostQuitMessage(0);
 			break;
@@ -155,10 +186,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 {
 	HWND window = setupWindow(hInstance, WndProc);
 	g_window = &window;
-
-	wgInitializeVulkanGraphicsWIN32(c_appName, hInstance, window, c_width, c_height);
+	g_hInstance = hInstance;
+	
 	renderLoop();
-	wgDeinitializeGraphics();
 
 	return 0;
 }

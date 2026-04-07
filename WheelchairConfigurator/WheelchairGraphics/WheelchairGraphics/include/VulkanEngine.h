@@ -47,14 +47,6 @@ namespace VkEngine {
 
 		VkResult InitVulkan(std::string appName, uint32_t width, uint32_t height);
 
-#ifdef _WIN32
-		VkResult InitSwapchain(void* platformHandle, void* platformWindow);
-#elif __ANDROID__
-		VkResult InitSwapchain(ANativeWindow* window);
-#else
-		VkResult InitSwapchain();
-#endif
-
 		VkResult Prepare();
 		
 		VkResult Render(const char** imagedata);
