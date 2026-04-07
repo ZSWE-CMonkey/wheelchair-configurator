@@ -100,6 +100,7 @@ namespace {
 					break;
 
 				wgAddObject("models/test");
+				wgSetCamera(-10.5f, 0.1f, 0.0f, 0.0f, -0.5f, -112.75f, 0.0f);
 				wgInitializeVulkanGraphicsWIN32(c_appName, g_hInstance, window, c_width, c_height);
 				wgRender(&g_pixelBuffer);
 				wgDeinitializeGraphics();

@@ -14,6 +14,7 @@ namespace GraphicsPlugin {
 
 	enum GPluginResult {
 		//errors
+		GP_SET_CAMERA_ERROR = -7,
 		GP_ADD_OBJECT_ERROR = -6,
 		GP_NULL_PARAM_ERROR = -5,
 		GP_RENDERING_ERROR = -4,
@@ -28,11 +29,26 @@ namespace GraphicsPlugin {
 		//--------------------//
 	};
 
+	struct CameraSettings {
+		float zoom;
+		struct Position_t {
+			float x;
+			float y;
+			float z;
+		} position;
+		struct Rotation_t {
+			float x;
+			float y;
+			float z;
+		} rotation;
+	};
+
 	class IGraphicsPlugin {
 	public:
 		~IGraphicsPlugin() = default;
 
 		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
+		virtual GPluginResult SetCamera(CameraSettings setting) = 0;
 		virtual GPluginResult AddObject(std::string objectId) = 0;
 		virtual GPluginResult Render(const char** out) = 0;
 		virtual GPluginResult DeInitialize() = 0;

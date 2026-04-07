@@ -57,6 +57,8 @@ namespace VkEngine {
 		VulkanEngine() = default;
 		~VulkanEngine();
 
+		VkResult SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation);
+
 		VkResult AddObject(std::string objectId);
 
 		VkResult InitVulkan(std::string appName, uint32_t width, uint32_t height);

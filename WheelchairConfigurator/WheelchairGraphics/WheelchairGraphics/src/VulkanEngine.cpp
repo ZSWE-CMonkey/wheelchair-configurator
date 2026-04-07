@@ -175,6 +175,14 @@ VulkanEngine::~VulkanEngine()
 	}
 }
 
+VkResult VkEngine::VulkanEngine::SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation)
+{
+	m_zoom = zoom;
+	m_cameraPos = position;
+	m_rotation = rotation;
+	return VK_SUCCESS;
+}
+
 VkResult VkEngine::VulkanEngine::AddObject(std::string objectId)
 {
 	m_objectId.push_back(objectId);

@@ -25,6 +25,18 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appNa
     return GP_SUCCESS;
 }
 
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetCamera(CameraSettings setting)
+{
+    float zoom = setting.zoom;
+    glm::vec3 position(setting.position.x, setting.position.y, setting.position.z);
+    glm::vec3 rotation(setting.rotation.x, setting.rotation.y, setting.rotation.z);
+
+    if (m_vulkanEngine->SetCamera(zoom, position, rotation) != VK_SUCCESS)
+        return GP_SET_CAMERA_ERROR;
+
+    return GP_SUCCESS;
+}
+
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObject(std::string objectId)
 {
     if (m_vulkanEngine->AddObject(objectId) != VK_SUCCESS)
