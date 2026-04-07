@@ -59,11 +59,111 @@ VulkanEngine::~VulkanEngine()
 {
 	m_canRender = false;
 	m_vulkanSwapchain = nullptr;
-	vkDeviceWaitIdle(m_device);
-	vkDestroySemaphore(m_device, m_semaphores.presentComplete, nullptr);
-	vkDestroySemaphore(m_device, m_semaphores.renderComplete, nullptr);
-	vkDestroyDevice(m_device, nullptr);
-	vkDestroyInstance(m_instance, nullptr);
+
+	if (m_device != VK_NULL_HANDLE) {
+		vkDeviceWaitIdle(m_device);
+	}
+
+	if (m_semaphores.presentComplete != VK_NULL_HANDLE) {
+		vkDestroySemaphore(m_device, m_semaphores.presentComplete, nullptr);
+	}
+	if (m_semaphores.renderComplete != VK_NULL_HANDLE) {
+		vkDestroySemaphore(m_device, m_semaphores.renderComplete, nullptr);
+	}
+
+	for (auto framebuffer : m_frameBuffers) {
+		vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+	}
+	m_frameBuffers.clear();
+
+	if (m_pipeline != VK_NULL_HANDLE) {
+		vkDestroyPipeline(m_device, m_pipeline, nullptr);
+	}
+
+	if (m_pipelineCache != VK_NULL_HANDLE) {
+		vkDestroyPipelineCache(m_device, m_pipelineCache, nullptr);
+	}
+
+	for (auto shaderModule : m_shaderModules) {
+		vkDestroyShaderModule(m_device, shaderModule, nullptr);
+	}
+	m_shaderModules.clear();
+
+	if (m_descriptorPool != VK_NULL_HANDLE) {
+		vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+	}
+
+	if (m_descriptorSetLayout != VK_NULL_HANDLE) {
+		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+	}
+
+	if (m_pipelineLayout != VK_NULL_HANDLE) {
+		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+	}
+
+	if (m_cmdPool != VK_NULL_HANDLE) {
+		vkDestroyCommandPool(m_device, m_cmdPool, nullptr);
+	}
+
+	if (m_offscreenFramebuffer != VK_NULL_HANDLE) {
+		vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
+	}
+
+	if (m_offscreenImage != VK_NULL_HANDLE) {
+		vkDestroyImage(m_device, m_offscreenImage, nullptr);
+	}
+	if (m_offscreenImageMemory != VK_NULL_HANDLE) {
+		vkFreeMemory(m_device, m_offscreenImageMemory, nullptr);
+	}
+
+	if (m_depthStencil.view != VK_NULL_HANDLE) {
+		vkDestroyImageView(m_device, m_depthStencil.view, nullptr);
+	}
+	if (m_depthStencil.image != VK_NULL_HANDLE) {
+		vkDestroyImage(m_device, m_depthStencil.image, nullptr);
+	}
+	if (m_depthStencil.mem != VK_NULL_HANDLE) {
+		vkFreeMemory(m_device, m_depthStencil.mem, nullptr);
+	}
+
+	vkDestroyBuffer(m_device, m_mesh.vertices.buf, nullptr);
+	vkFreeMemory(m_device, m_mesh.vertices.mem, nullptr);
+	vkDestroyBuffer(m_device, m_mesh.indices.buf, nullptr);
+	vkFreeMemory(m_device, m_mesh.indices.mem, nullptr);
+
+	if (m_colorMap.view != VK_NULL_HANDLE) {
+		vkDestroyImageView(m_device, m_colorMap.view, nullptr);
+		m_colorMap.view = VK_NULL_HANDLE;
+	}
+	if (m_colorMap.image != VK_NULL_HANDLE) {
+		vkDestroyImage(m_device, m_colorMap.image, nullptr);
+		m_colorMap.image = VK_NULL_HANDLE;
+	}
+	if (m_colorMap.deviceMemory != VK_NULL_HANDLE) {
+		vkFreeMemory(m_device, m_colorMap.deviceMemory, nullptr);
+		m_colorMap.deviceMemory = VK_NULL_HANDLE;
+	}
+	if (m_colorMap.sampler != VK_NULL_HANDLE) {
+		vkDestroySampler(m_device, m_colorMap.sampler, nullptr);
+		m_colorMap.sampler = VK_NULL_HANDLE;
+	}
+
+	if (m_uniformData.mapped != nullptr)
+	{
+		vkUnmapMemory(m_device, m_uniformData.memory);
+	}
+	vkDestroyBuffer(m_device, m_uniformData.buffer, nullptr);
+	vkFreeMemory(m_device, m_uniformData.memory, nullptr);
+
+	if (m_device != VK_NULL_HANDLE) {
+		vkDestroyDevice(m_device, nullptr);
+		m_device = VK_NULL_HANDLE;
+	}
+
+	if (m_instance != VK_NULL_HANDLE) {
+		vkDestroyInstance(m_instance, nullptr);
+		m_instance = VK_NULL_HANDLE;
+	}
 }
 
 VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t height)

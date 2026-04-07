@@ -37,7 +37,7 @@ WG_API void wgRender(const char** out)
 }
 
 WG_API void wgDeinitializeGraphics() {
-	if (g_graphicsPlugin)
+	if (!g_graphicsPlugin)
 		return;
 
 	GP_THROW_IF_FAIL(g_graphicsPlugin->DeInitialize());

@@ -23,8 +23,18 @@ VkEngine::VulkanSwapchain::VulkanSwapchain(VkInstance& instance, VkPhysicalDevic
 
 VkEngine::VulkanSwapchain::~VulkanSwapchain()
 {
-	vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
-	vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+	if (m_swapchain != VK_NULL_HANDLE) {
+		vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+		m_swapchain = VK_NULL_HANDLE;
+	}
+
+	if (m_surface != VK_NULL_HANDLE) {
+		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		m_surface = VK_NULL_HANDLE;
+	}
+
+	m_images.clear();
+	m_buffers.clear();
 }
 
 VkResult VkEngine::VulkanSwapchain::InitSurface()

@@ -66,7 +66,7 @@ namespace VkEngine {
 		VkPhysicalDevice& m_physicalDevice; 
 		VkDevice& m_device;
 
-		VkSurfaceKHR m_surface;
+		VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 		VkFormat m_colorFormat;
 		VkColorSpaceKHR m_colorSpace;
 
