@@ -1265,9 +1265,6 @@ uint32_t VkEngine::VulkanEngine::GetMemoryTypeIndex(uint32_t typeBits, VkMemoryP
 
 VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 {
-	static int test = -1;
-	test++;
-
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
 	meshHandle->LoadMesh(id);
 
@@ -1283,7 +1280,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 		{
 			Vertex vertex;
 
-			vertex.pos = (meshHandle->GetEntry(m).Vertices[i].m_pos * scale) + glm::vec3(0,0,test == 1 ? 2 : 0);
+			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos * scale;
 			vertex.normal = meshHandle->GetEntry(m).Vertices[i].m_normal;
 			vertex.uv = meshHandle->GetEntry(m).Vertices[i].m_tex;
 			vertex.color = meshHandle->GetEntry(m).Vertices[i].m_color;
