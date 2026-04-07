@@ -16,7 +16,7 @@
 
 //TODO: ADD android as well
 
-extern "C" WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformHandle, void* platformWindow, int width, int height);
+extern "C" WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, int width, int height);
 
 extern "C" WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int width, int height);
 

@@ -19,7 +19,7 @@ namespace {
 }
 
 
-WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformHandle, void* platformWindow, int width, int height)
+WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, int width, int height)
 {
 	g_graphicsPlugin = GraphicsPluginFactory::CreateVulkanGraphicsPlugin();
 	
