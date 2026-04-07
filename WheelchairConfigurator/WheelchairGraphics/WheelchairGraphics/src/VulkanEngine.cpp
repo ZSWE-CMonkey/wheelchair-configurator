@@ -60,6 +60,8 @@ VulkanEngine::~VulkanEngine()
 	m_canRender = false;
 	m_vulkanSwapchain = nullptr;
 
+	m_objectId.clear();
+
 	if (m_device != VK_NULL_HANDLE) {
 		vkDeviceWaitIdle(m_device);
 	}
@@ -126,26 +128,33 @@ VulkanEngine::~VulkanEngine()
 		vkFreeMemory(m_device, m_depthStencil.mem, nullptr);
 	}
 
-	vkDestroyBuffer(m_device, m_mesh.vertices.buf, nullptr);
-	vkFreeMemory(m_device, m_mesh.vertices.mem, nullptr);
-	vkDestroyBuffer(m_device, m_mesh.indices.buf, nullptr);
-	vkFreeMemory(m_device, m_mesh.indices.mem, nullptr);
+	for (int i = 0; i < m_meshes.size(); i++)
+	{
+		vkDestroyBuffer(m_device, m_meshes[i].vertices.buf, nullptr);
+		vkFreeMemory(m_device, m_meshes[i].vertices.mem, nullptr);
+		vkDestroyBuffer(m_device, m_meshes[i].indices.buf, nullptr);
+		vkFreeMemory(m_device, m_meshes[i].indices.mem, nullptr);
+	}
+	m_meshes.clear();
 
-	if (m_colorMap.view != VK_NULL_HANDLE) {
-		vkDestroyImageView(m_device, m_colorMap.view, nullptr);
-		m_colorMap.view = VK_NULL_HANDLE;
-	}
-	if (m_colorMap.image != VK_NULL_HANDLE) {
-		vkDestroyImage(m_device, m_colorMap.image, nullptr);
-		m_colorMap.image = VK_NULL_HANDLE;
-	}
-	if (m_colorMap.deviceMemory != VK_NULL_HANDLE) {
-		vkFreeMemory(m_device, m_colorMap.deviceMemory, nullptr);
-		m_colorMap.deviceMemory = VK_NULL_HANDLE;
-	}
-	if (m_colorMap.sampler != VK_NULL_HANDLE) {
-		vkDestroySampler(m_device, m_colorMap.sampler, nullptr);
-		m_colorMap.sampler = VK_NULL_HANDLE;
+	for (int i = 0; i < m_colorMaps.size(); i++)
+	{
+		if (m_colorMaps[i].view != VK_NULL_HANDLE) {
+			vkDestroyImageView(m_device, m_colorMaps[i].view, nullptr);
+			m_colorMaps[i].view = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].image != VK_NULL_HANDLE) {
+			vkDestroyImage(m_device, m_colorMaps[i].image, nullptr);
+			m_colorMaps[i].image = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].deviceMemory != VK_NULL_HANDLE) {
+			vkFreeMemory(m_device, m_colorMaps[i].deviceMemory, nullptr);
+			m_colorMaps[i].deviceMemory = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].sampler != VK_NULL_HANDLE) {
+			vkDestroySampler(m_device, m_colorMaps[i].sampler, nullptr);
+			m_colorMaps[i].sampler = VK_NULL_HANDLE;
+		}
 	}
 
 	if (m_uniformData.mapped != nullptr)
@@ -164,6 +173,12 @@ VulkanEngine::~VulkanEngine()
 		vkDestroyInstance(m_instance, nullptr);
 		m_instance = VK_NULL_HANDLE;
 	}
+}
+
+VkResult VkEngine::VulkanEngine::AddObject(std::string objectId)
+{
+	m_objectId.push_back(objectId);
+	return VK_SUCCESS;
 }
 
 VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t height)
@@ -214,7 +229,9 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	VKE_CHECK_RESULT(SetupDescriptorSetLayout());
 	VKE_CHECK_RESULT(PreparePipelines());
 	VKE_CHECK_RESULT(SetupDescriptorPool());
-	VKE_CHECK_RESULT(SetupDescriptorSet());
+	for (int i = 0; i < m_colorMaps.size(); i++) {
+		VKE_CHECK_RESULT(SetupDescriptorSet(m_colorMaps[i], m_descriptorSets[i]));
+	}
 	VKE_CHECK_RESULT(BuildCommandBuffers());
 
 	m_canRender = true;
@@ -731,11 +748,11 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorPool()
 {
 	VkDescriptorPoolSize descriptorPoolSizeUBO{};
 	descriptorPoolSizeUBO.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorPoolSizeUBO.descriptorCount = 1;
+	descriptorPoolSizeUBO.descriptorCount = m_colorMaps.size();
 
 	VkDescriptorPoolSize descriptorPoolSizeSampler{};
 	descriptorPoolSizeSampler.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorPoolSizeSampler.descriptorCount = 1;
+	descriptorPoolSizeSampler.descriptorCount = m_colorMaps.size();
 
 	std::vector<VkDescriptorPoolSize> poolSizes =
 	{
@@ -748,12 +765,12 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorPool()
 	descriptorPoolInfo.pNext = NULL;
 	descriptorPoolInfo.poolSizeCount = poolSizes.size();
 	descriptorPoolInfo.pPoolSizes = poolSizes.data();
-	descriptorPoolInfo.maxSets = 1;
+	descriptorPoolInfo.maxSets = m_colorMaps.size();
 
 	return vkCreateDescriptorPool(m_device, &descriptorPoolInfo, nullptr, &m_descriptorPool);
 }
 
-VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
+VkResult VkEngine::VulkanEngine::SetupDescriptorSet(VulkanTexture& vulkanTexture, VkDescriptorSet& descriptorSet)
 {
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -762,17 +779,17 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
 	allocInfo.pSetLayouts = &m_descriptorSetLayout;
 	allocInfo.descriptorSetCount = 1;
 
-	VKE_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, &m_descriptorSet));
+	VKE_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, &descriptorSet));
 
 	VkDescriptorImageInfo texDescriptor{};
-	texDescriptor.sampler = m_colorMap.sampler;
-	texDescriptor.imageView = m_colorMap.view;
+	texDescriptor.sampler = vulkanTexture.sampler;
+	texDescriptor.imageView = vulkanTexture.view;
 	texDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	VkWriteDescriptorSet writeDescriptorSetUniform{};
 	writeDescriptorSetUniform.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSetUniform.pNext = NULL;
-	writeDescriptorSetUniform.dstSet = m_descriptorSet;
+	writeDescriptorSetUniform.dstSet = descriptorSet;
 	writeDescriptorSetUniform.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	writeDescriptorSetUniform.dstBinding = 0;
 	writeDescriptorSetUniform.pBufferInfo = &m_uniformData.descriptor;
@@ -781,7 +798,7 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
 	VkWriteDescriptorSet writeDescriptorSetColorMap = {};
 	writeDescriptorSetColorMap.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSetColorMap.pNext = NULL;
-	writeDescriptorSetColorMap.dstSet = m_descriptorSet;
+	writeDescriptorSetColorMap.dstSet = descriptorSet;
 	writeDescriptorSetColorMap.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	writeDescriptorSetColorMap.dstBinding = 1;
 	writeDescriptorSetColorMap.pImageInfo = &texDescriptor;
@@ -841,13 +858,16 @@ VkResult VkEngine::VulkanEngine::BuildCommandBuffers()
 		scissor.offset.y = 0;
 		vkCmdSetScissor(m_drawCmdBuffers[i], 0, 1, &scissor);
 
-		vkCmdBindDescriptorSets(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, NULL);
-		vkCmdBindPipeline(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		for (int m = 0; m < m_meshes.size(); m++)
+		{
+			vkCmdBindDescriptorSets(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[m], 0, NULL);
+			vkCmdBindPipeline(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		VkDeviceSize offsets[1] = { 0 };
-		vkCmdBindVertexBuffers(m_drawCmdBuffers[i], 0, 1, &m_mesh.vertices.buf, offsets);
-		vkCmdBindIndexBuffer(m_drawCmdBuffers[i], m_mesh.indices.buf, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdDrawIndexed(m_drawCmdBuffers[i], m_mesh.indices.count, 1, 0, 0, 0);
+			VkDeviceSize offsets[1] = { 0 };
+			vkCmdBindVertexBuffers(m_drawCmdBuffers[i], 0, 1, &m_meshes[m].vertices.buf, offsets);
+			vkCmdBindIndexBuffer(m_drawCmdBuffers[i], m_meshes[m].indices.buf, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdDrawIndexed(m_drawCmdBuffers[i], m_meshes[m].indices.count, 1, 0, 0, 0);
+		}
 
 		vkCmdEndRenderPass(m_drawCmdBuffers[i]);
 
@@ -1102,12 +1122,14 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 	if (!m_textureHandle)
 		return VK_ERROR_INITIALIZATION_FAILED;
 
-	VKE_CHECK_RESULT(m_textureHandle->LoadTexture(
-		"models/test.ktx",
-		VK_FORMAT_BC3_UNORM_BLOCK,
-		&m_colorMap));
-
-	return LoadMesh();
+	for (auto& id : m_objectId) {
+		{ 
+			VkResult res = (LoadTexture(id + ".ktx")); 
+			if (res != VK_SUCCESS) 
+				return res; };
+		VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
+	}
+	return VK_SUCCESS;
 }
 
 VkResult VkEngine::VulkanEngine::CopySwapchainImageToCPU(VkImage image, const char** imagedata)
@@ -1233,10 +1255,17 @@ uint32_t VkEngine::VulkanEngine::GetMemoryTypeIndex(uint32_t typeBits, VkMemoryP
 	return 0;
 }
 
-VkResult VkEngine::VulkanEngine::LoadMesh()
+VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 {
+	static int test = -1;
+	test++;
+
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
-	meshHandle->LoadMesh("models/test.dae");
+	meshHandle->LoadMesh(id);
+
+	m_meshes.push_back({});
+
+	Mesh& newMesh = m_meshes[m_meshes.size() - 1];
 
 	float scale = 1.0f;
 	std::vector<Vertex> vertexBuffer;
@@ -1246,7 +1275,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		{
 			Vertex vertex;
 
-			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos * scale;
+			vertex.pos = (meshHandle->GetEntry(m).Vertices[i].m_pos * scale) + glm::vec3(0,0,test == 1 ? 2 : 0);
 			vertex.normal = meshHandle->GetEntry(m).Vertices[i].m_normal;
 			vertex.uv = meshHandle->GetEntry(m).Vertices[i].m_tex;
 			vertex.color = meshHandle->GetEntry(m).Vertices[i].m_color;
@@ -1266,7 +1295,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		}
 	}
 	uint32_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
-	m_mesh.indices.count = indexBuffer.size();
+	newMesh.indices.count = indexBuffer.size();
 
 	bool useStaging = true;
 
@@ -1298,16 +1327,16 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			vertexBufferSize,
 			nullptr,
-			&m_mesh.vertices.buf,
-			&m_mesh.vertices.mem));
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
 
 		VKE_CHECK_RESULT(CreateBuffer(
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			indexBufferSize,
 			nullptr,
-			&m_mesh.indices.buf,
-			&m_mesh.indices.mem));
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
 
 		VkCommandBuffer copyCmd{};
 		VKE_CHECK_RESULT(CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true, copyCmd));
@@ -1318,7 +1347,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		vkCmdCopyBuffer(
 			copyCmd,
 			vertexStaging.buffer,
-			m_mesh.vertices.buf,
+			newMesh.vertices.buf,
 			1,
 			&copyRegion);
 
@@ -1326,7 +1355,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		vkCmdCopyBuffer(
 			copyCmd,
 			indexStaging.buffer,
-			m_mesh.indices.buf,
+			newMesh.indices.buf,
 			1,
 			&copyRegion);
 
@@ -1345,21 +1374,34 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			vertexBufferSize,
 			vertexBuffer.data(),
-			&m_mesh.vertices.buf,
-			&m_mesh.vertices.mem));
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
 
 		VKE_CHECK_RESULT(CreateBuffer(
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			indexBufferSize,
 			indexBuffer.data(),
-			&m_mesh.indices.buf,
-			&m_mesh.indices.mem));
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
 	}
 
 	meshHandle = nullptr;
 
 	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::LoadTexture(std::string id)
+{
+	m_colorMaps.push_back({});
+	m_descriptorSets.push_back({});
+
+	VulkanTexture& vulkanTexture = m_colorMaps[m_colorMaps.size() - 1];
+
+	return m_textureHandle->LoadTexture(
+		id,
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		&vulkanTexture);
 }
 
 VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out)

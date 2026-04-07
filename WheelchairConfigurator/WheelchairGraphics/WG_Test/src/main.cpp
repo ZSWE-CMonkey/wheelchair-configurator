@@ -99,6 +99,7 @@ namespace {
 				if (g_hInstance == nullptr)
 					break;
 
+				wgAddObject("models/test");
 				wgInitializeVulkanGraphicsWIN32(c_appName, g_hInstance, window, c_width, c_height);
 				wgRender(&g_pixelBuffer);
 				wgDeinitializeGraphics();

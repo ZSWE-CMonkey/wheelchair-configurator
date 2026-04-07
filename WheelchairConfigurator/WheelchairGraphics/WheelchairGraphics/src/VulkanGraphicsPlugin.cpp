@@ -25,8 +25,11 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appNa
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetObject(std::string objectId)
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObject(std::string objectId)
 {
+    if (m_vulkanEngine->AddObject(objectId) != VK_SUCCESS)
+        return GP_ADD_OBJECT_ERROR;
+
     return GP_SUCCESS;
 }
 
