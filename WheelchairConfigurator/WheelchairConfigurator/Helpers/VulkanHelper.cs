@@ -1,4 +1,6 @@
 ﻿using ConfigurationLogic.Graphics;
+using SkiaSharp;
+using System.Runtime.InteropServices;
 
 namespace WheelchairConfigurator.Helpers
 {
@@ -7,7 +9,6 @@ namespace WheelchairConfigurator.Helpers
     /// </summary>
     internal class VulkanHelper
     {
-        private string _name;
         private int _width;
         private int _height;
 
@@ -17,7 +18,6 @@ namespace WheelchairConfigurator.Helpers
 
         public VulkanHelper(string name, int widht, int height)
         {
-            _name = name;
             _width = widht;
             _height = height;
             _objectsId = new List<string>();
@@ -49,8 +49,8 @@ namespace WheelchairConfigurator.Helpers
         /// Outputs final image of that rendering.
         /// You must add object first before this call :3
         /// </summary>
-        /// <param name="bytes">Raw image data</param>
-        public void GetRenderedImageBuffer(out byte[] bytes)
+        /// <returns>ImageSource of pixel buffer</returns>        
+        public ImageSource GetRenderedImageSource()
         {
             foreach(string id in _objectsId)
             {
@@ -58,8 +58,26 @@ namespace WheelchairConfigurator.Helpers
             }
 
             _graphicsPlugin.Initialize();
-            _graphicsPlugin.Render(out bytes);
+            _graphicsPlugin.Render(out byte[] pixelBuffer);
             _graphicsPlugin.Deinitialize();
+
+            GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
+            IntPtr pixels = handle.AddrOfPinnedObject();
+
+            SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+
+            using SKBitmap bitmap = new SKBitmap();
+            bitmap.InstallPixels(info, pixels, info.RowBytes);
+
+            using SKImage image = SKImage.FromBitmap(bitmap);
+            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+
+            byte[] bytes = data.ToArray();
+
+            ImageSource result = ImageSource.FromStream(() => new MemoryStream(bytes));
+            handle.Free();
+
+            return result;
         }
 
     }
