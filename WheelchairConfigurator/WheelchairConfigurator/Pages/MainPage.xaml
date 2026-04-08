@@ -1,0 +1,62 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.MainPage"
+             xmlns:local="clr-namespace:WheelchairConfigurator"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+
+        <ScrollView>
+            <VerticalStackLayout x:Name="Testing"
+                                 Padding="30"
+                                 Spacing="25"
+                                 VerticalOptions="Center"
+                                 HorizontalOptions="Fill">
+
+                <Image Source="mainpage.webp"
+                       HeightRequest="185"
+                       Aspect="AspectFit"
+                       SemanticProperties.Description="mainpage picture" />
+
+                <Label Text="E-Vozík builder"
+                       Style="{StaticResource Headline}"
+                       HorizontalTextAlignment="Center"
+                       SemanticProperties.HeadingLevel="Level1" />
+
+                <Label Text="Konfigurátor elektrických vozíků"
+                       Style="{StaticResource SubHeadline}"
+                       HorizontalTextAlignment="Center"
+                       SemanticProperties.HeadingLevel="Level2" />
+
+                <Button x:Name="toConfiguratorBtn"
+                        Text="Sestavit nový vozík" 
+                        SemanticProperties.Hint="Redirects to configurator"
+                        Clicked="OnToConfiguratorClicked"
+                        HorizontalOptions="Fill" />
+
+                <Button x:Name="ExitBtn"
+                        Text="Zavřít aplikaci"
+                        Clicked="OnExitClicked"
+                        BackgroundColor="Red"
+                        TextColor="White"
+                        HorizontalOptions="Fill" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Label FontSize="12"
+           TextColor="Gray"
+           HorizontalOptions="End"
+           VerticalOptions="End"
+           Margin="15">
+                <Label.Text>
+                    <MultiBinding StringFormat="v{0}.{1}.{2}">
+                        <Binding Source="{x:Static local:Version.Major}" />
+                        <Binding Source="{x:Static local:Version.Minor}" />
+                        <Binding Source="{x:Static local:Version.Patch}" />
+                    </MultiBinding>
+                </Label.Text>
+            </Label>
+
+    </Grid>
+</ContentPage>

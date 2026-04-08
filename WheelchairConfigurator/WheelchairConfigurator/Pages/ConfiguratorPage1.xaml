@@ -1,0 +1,33 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.ConfiguratorPage1"
+             Shell.NavBarIsVisible="False">
+
+    <Grid ColumnDefinitions="350, *" RowDefinitions="*, Auto">
+
+        <!-- SidePanel -->
+        <ContentView x:Name="SidebarContainer" 
+                     Grid.Column="0" 
+                     Grid.Row="0"
+                     BackgroundColor="#F8F8F5" />
+
+        <!-- Preview -->
+        <VerticalStackLayout Grid.Column="1" Grid.Row="0" VerticalOptions="Center" Grid.RowSpan="2" HorizontalOptions="Center">
+            <Image Source="mainpage.webp" HeightRequest="300" />
+            <Label Text="Zde se zobrazí tvůj vozík" FontSize="20" />
+        </VerticalStackLayout>
+
+        <!-- Navigation buttons -->
+        <Grid Grid.Column="0" 
+          Grid.Row="1" 
+          ColumnDefinitions="*, *" 
+          ColumnSpacing="10" 
+          Padding="20" 
+          BackgroundColor="#F8F8F5">
+
+                <Button Grid.Column="0" Text="Zpět" Clicked="OnBackClicked" x:Name="BackBtn" />
+                <Button Grid.Column="1" Text="Další" Clicked="OnNextClicked" x:Name="NextBtn" />
+        </Grid>
+
+    </Grid>
+</ContentPage>
