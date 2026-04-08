@@ -55,6 +55,14 @@ namespace {
 }
 
 
+VkEngine::VulkanEngine::VulkanEngine()
+{
+#if defined(__ANDROID__)
+	bool libLoaded = loadVulkanLibrary();
+	assert(libLoaded);
+#endif
+}
+
 VulkanEngine::~VulkanEngine()
 {
 	m_canRender = false;
@@ -173,6 +181,11 @@ VulkanEngine::~VulkanEngine()
 		vkDestroyInstance(m_instance, nullptr);
 		m_instance = VK_NULL_HANDLE;
 	}
+
+	//maybe load/unload on DLL layer not here????
+#if defined(__ANDROID__)
+	freeVulkanLibrary();
+#endif
 }
 
 VkResult VkEngine::VulkanEngine::SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation)
@@ -195,7 +208,11 @@ VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t 
 	m_height = height;
 
 	VKE_CHECK_RESULT(CreateInstance(appName));
-	//TODO: for android is needed to load vulkan function, bc android loads it on runtime. place it here
+	
+#if defined(__ANDROID__)
+	loadVulkanFunctions(m_instance);
+#endif
+
 	uint32_t graphicsQueueIndex{};
 	VKE_CHECK_RESULT(CheckPhysicalDevices(graphicsQueueIndex));
 	VKE_CHECK_RESULT(CreateDevice(graphicsQueueIndex));

@@ -11,7 +11,7 @@
 	"include/VulkanEngine.h"
 
 	"includePublic/WheelchairGraphics.h"
- "include/VulkanSwapchain.h" "src/VulkanSwapchain.cpp" "include/VulkanCommon.h" "include/ObjectLoader.h" "src/ObjectLoader.cpp" "include/TextureHandle.h" "src/TextureHandle.cpp" "include/MeshHandle.h" "src/MeshHandle.cpp" "assetResources/assetResource.cpp" "assetResources/assetResource.h")
+ "include/VulkanSwapchain.h" "src/VulkanSwapchain.cpp" "include/VulkanCommon.h" "include/ObjectLoader.h" "src/ObjectLoader.cpp" "include/TextureHandle.h" "src/TextureHandle.cpp" "include/MeshHandle.h" "src/MeshHandle.cpp" "assetResources/assetResource.cpp" "assetResources/assetResource.h" "vulkanAndroid/vulkanandroid.cpp" "vulkanAndroid/vulkanandroid.h")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET WheelchairGraphics PROPERTY CXX_STANDARD 20)

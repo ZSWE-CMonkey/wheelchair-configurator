@@ -54,7 +54,7 @@ namespace VkEngine {
 	class VulkanEngine
 	{
 	public:
-		VulkanEngine() = default;
+		VulkanEngine();
 		~VulkanEngine();
 
 		VkResult SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation);
