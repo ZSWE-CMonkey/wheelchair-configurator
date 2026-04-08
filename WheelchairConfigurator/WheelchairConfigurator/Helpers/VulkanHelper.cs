@@ -28,9 +28,10 @@ namespace WheelchairConfigurator.Helpers
         /// Adds object to the rendered scene. You must add it first before rendering call skibidi
         /// </summary>
         /// <param name="name">Object id name in format like (without any extensions): [subfolder]/[name]</param>
-        public void AddObject(string name)
+        public VulkanHelper AddObject(string name)
         {
             _objectsId.Add(name);
+            return this;
         }
 
         public void ClearObjects()
