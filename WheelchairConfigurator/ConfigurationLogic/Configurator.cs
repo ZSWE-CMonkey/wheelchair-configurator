@@ -1,4 +1,5 @@
-﻿using WheelchairConfigurator.Data.Repositories;
+﻿using WheelchairConfigurator.Data.DTOs;
+using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.Domain.Models;
 using ConfigurationLogic.DTOs;
 using ConfigurationLogic.Enums;
@@ -33,38 +34,17 @@ public class Configurator
 		foreach (var component in components)
 		{
 			var specs = await _catalog.GetComponentDetailAsync(component.Id);
-			if (specs is null)
-			{
-				result.Issues.Add(CreateIssue(component, "specifikace", "Chybí specifikace komponenty.", EvaluationIssueSeverity.Warning));
-				continue;
-			}
+			var output = await _catalog.ToComponentOutputDtoAsync(component);
+			var issues = new List<EvaluationIssueDto>();
 
-			if (specs.WeightCapacityKg <= 0)
-			{
-				result.Issues.Add(CreateIssue(component, "specifikace", "Komponenta nemá vyplněnou nosnost.", EvaluationIssueSeverity.Warning));
-				continue;
-			}
+			EvaluateDeterministicConstraints(profile, result.Requirements, component, specs, issues);
 
-			if (profile.WeightKg > 0 && profile.WeightKg > specs.WeightCapacityKg)
-			{
-				result.Issues.Add(CreateIssue(component, "nosnost", "Komponenta nemá dostatečnou nosnost pro zadanou hmotnost.", EvaluationIssueSeverity.Critical));
-				continue;
-			}
+			result.Issues.AddRange(issues);
 
-			if (result.Requirements.MinimumSeatWidthCm.HasValue && result.Requirements.MaximumSeatWidthCm.HasValue)
+			if (!issues.Any(i => i.Severity == EvaluationIssueSeverity.Critical || i.Severity == EvaluationIssueSeverity.Warning))
 			{
-				if (!IsSeatWidthWithinRange(specs.SeatWidthCm, result.Requirements))
-				{
-					result.Issues.Add(CreateIssue(
-						component,
-						"šířka sedu",
-						$"Šířka sedu {specs.SeatWidthCm} cm neodpovídá požadavku {result.Requirements.MinimumSeatWidthCm}-{result.Requirements.MaximumSeatWidthCm} cm.",
-						EvaluationIssueSeverity.Warning));
-					continue;
-				}
+				result.EligibleComponents.Add(output);
 			}
-
-			result.EligibleComponents.Add(await _catalog.ToComponentOutputDtoAsync(component));
 		}
 
 		return result;
@@ -111,58 +91,58 @@ public class Configurator
 
 		if (profile.WeightKg >= 120)
 		{
-			AddRecommendation(result.Recommendations, "Vyšší hmotnost: preferuj pevnější podvozek a komponenty s vyšší rezervou nosnosti.");
+			AddRecommendation(result.Recommendations, "Vyšší hmotnost: Preferuj pevnější podvozek a komponenty s vyšší rezervou nosnosti.");
 		}
 
 		if (profile.TrunkStability == TrunkStabilityLevel.Poor)
 		{
-			AddRecommendation(result.Recommendations, "Špatná stabilita trupu: tilt, laterální opory a vyšší opěradlo.");
+			AddRecommendation(result.Recommendations, "Špatná stabilita trupu: Doporučují se laterální opory, funkce tilt a vyšší opěradlo.");
 		}
 		else if (profile.TrunkStability == TrunkStabilityLevel.Medium)
 		{
-			AddRecommendation(result.Recommendations, "Střední stabilita trupu: zvážit středně vysoké opěradlo a případně lehčí posturální podporu.");
+			AddRecommendation(result.Recommendations, "Střední stabilita trupu: Zvaž středně vysoké opěradlo a lehčí posturální podporu.");
 		}
 
 		if (profile.HeadControl == HeadControlLevel.No)
 		{
-			AddRecommendation(result.Recommendations, "Bez kontroly hlavy: nutná opěrka hlavy a spíše vyšší opěradlo.");
+			AddRecommendation(result.Recommendations, "Bez kontroly hlavy: Je nutná opěrka hlavy a spíše vyšší opěradlo.");
 		}
 
 		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.High)
 		{
-			AddRecommendation(result.Recommendations, "Vysoké riziko dekubitů: pressure-relief cushion, tilt a případně recline.");
+			AddRecommendation(result.Recommendations, "Vysoké riziko dekubitů: Doporučuje se antidekubitní polštář, tilt a případně recline.");
 		}
 
 		if (profile.HandFunction == HandFunctionLevel.None)
 		{
-			AddRecommendation(result.Recommendations, "Bez funkce rukou: zvaž alternativní ovládání jako head control nebo sip & puff.");
+			AddRecommendation(result.Recommendations, "Bez funkce rukou: Zvaž alternativní ovládání, například head control nebo sip and puff.");
 		}
 		else if (profile.HandFunction == HandFunctionLevel.Limited)
 		{
-			AddRecommendation(result.Recommendations, "Omezená funkce rukou: preferuj jednodušší a méně náročné ovládání.");
+			AddRecommendation(result.Recommendations, "Omezená funkce rukou: Preferuj jednodušší a méně náročné ovládání.");
 		}
 
 		if (profile.Environment == UsageEnvironment.Indoor)
 		{
-			AddRecommendation(result.Recommendations, "Indoor použití: kompaktní podvozek a vyšší manévrovatelnost, např. mid-wheel.");
+			AddRecommendation(result.Recommendations, "Indoor použití: Doporučuje se kompaktní podvozek s vyšší manévrovatelností, například mid-wheel.");
 		}
 		else if (profile.Environment == UsageEnvironment.Outdoor)
 		{
-			AddRecommendation(result.Recommendations, "Outdoor použití: robustní podvozek, větší kola a lepší odpružení.");
+			AddRecommendation(result.Recommendations, "Outdoor použití: Doporučuje se robustní podvozek, větší kola a lepší odpružení.");
 		}
 		else
 		{
-			AddRecommendation(result.Recommendations, "Kombinované použití: hledej vyvážený podvozek mezi obratností a stabilitou.");
+			AddRecommendation(result.Recommendations, "Kombinované použití: Hledej vyvážený podvozek mezi obratností a stabilitou.");
 		}
 
 		if (profile.LowerLimbCondition != LowerLimbConditionLevel.None)
 		{
-			AddRecommendation(result.Recommendations, "Dolní končetiny: nastavitelné footplates nebo elevating leg rests.");
+			AddRecommendation(result.Recommendations, "Dolní končetiny: Doporučují se nastavitelné footplates nebo elevating leg rests.");
 		}
 
 		if (profile.Pain >= SymptomSeverityLevel.Medium || profile.Fatigue >= SymptomSeverityLevel.Medium)
 		{
-			AddRecommendation(result.Recommendations, "Bolest nebo únava: upřednostni komfortní seating, lepší oporu a možnost polohování.");
+			AddRecommendation(result.Recommendations, "Bolest nebo únava: Upřednostni komfortnější seating, lepší oporu a možnost polohování.");
 		}
 	}
 
@@ -171,7 +151,7 @@ public class Configurator
 	{
 		if (profile.PelvisWidthCm <= 0)
 		{
-			return "nelze určit bez šířky pánve";
+			return "Nelze určit bez šířky pánve";
 		}
 
 		return $"{profile.PelvisWidthCm}-{profile.PelvisWidthCm + 3} cm";
@@ -182,7 +162,7 @@ public class Configurator
 	{
 		if (profile.ThighLengthCm <= 0)
 		{
-			return "nelze určit bez délky stehna";
+			return "Nelze určit bez délky stehna";
 		}
 
 		var min = Math.Max(profile.ThighLengthCm - 3, 0);
@@ -195,25 +175,25 @@ public class Configurator
 	{
 		if (profile.HeadControl == HeadControlLevel.No || profile.TrunkStability == TrunkStabilityLevel.Poor)
 		{
-			return "vyšší opěradlo";
+			return "Vyšší opěradlo";
 		}
 
 		if (profile.TrunkHeightCm >= 60)
 		{
-			return "vyšší opěradlo";
+			return "Vyšší opěradlo";
 		}
 
 		if (profile.TrunkHeightCm >= 50)
 		{
-			return "střední výška opěradla";
+			return "Střední výška opěradla";
 		}
 
 		if (profile.TrunkStability == TrunkStabilityLevel.Medium)
 		{
-			return "střední výška opěradla";
+			return "Střední výška opěradla";
 		}
 
-		return "nižší až střední opěradlo";
+		return "Nižší až střední opěradlo";
 	}
 
 	// Pick chassis type
@@ -221,9 +201,9 @@ public class Configurator
 	{
 		return profile.Environment switch
 		{
-			UsageEnvironment.Indoor => "kompaktní podvozek s vysokou manévrovatelností",
-			UsageEnvironment.Outdoor => "robustní podvozek s většími koly a lepším odpružením",
-			_ => "vyvážený podvozek pro indoor i outdoor použití"
+			UsageEnvironment.Indoor => "Kompaktní podvozek s vysokou manévrovatelností",
+			UsageEnvironment.Outdoor => "Robustní podvozek s většími koly a lepším odpružením",
+			_ => "Vyvážený podvozek pro indoor i outdoor použití"
 		};
 	}
 
@@ -236,6 +216,37 @@ public class Configurator
 		}
 
 		return seatWidthCm >= requirements.MinimumSeatWidthCm.Value && seatWidthCm <= requirements.MaximumSeatWidthCm.Value;
+	}
+
+	// Deterministic checks based on structured data only.
+	private static void EvaluateDeterministicConstraints(
+		UserProfileDto profile,
+		ProfileRequirementsDto requirements,
+		Component component,
+		ComponentSpecsDto? specs,
+		List<EvaluationIssueDto> issues)
+	{
+		if (specs is null)
+		{
+			issues.Add(CreateIssue(component, "specs_missing", "Pro tuto komponentu zatím nejsou dostupná měřitelná pravidla.", EvaluationIssueSeverity.Info));
+			return;
+		}
+
+		if (profile.WeightKg > 0 && specs.WeightCapacityKg > 0)
+		{
+			if (profile.WeightKg > specs.WeightCapacityKg)
+			{
+				issues.Add(CreateIssue(component, "weight_capacity", "Hmotnost uživatele překročila nosnost komponenty.", EvaluationIssueSeverity.Critical));
+			}
+		}
+
+		if (requirements.MinimumSeatWidthCm.HasValue
+			&& requirements.MaximumSeatWidthCm.HasValue
+			&& specs.SeatWidthCm > 0
+			&& !IsSeatWidthWithinRange(specs.SeatWidthCm, requirements))
+		{
+			issues.Add(CreateIssue(component, "seat_width", "Šířka sedu neodpovídá požadovanému rozsahu podle šířky pánve.", EvaluationIssueSeverity.Warning));
+		}
 	}
 
 	// Build issue DTO
@@ -262,3 +273,4 @@ public class Configurator
 		recommendations.Add(recommendation);
 	}
 }
+
