@@ -14,7 +14,7 @@
                                  VerticalOptions="Center"
                                  HorizontalOptions="Fill">
 
-                <Image Source="mainpage.webp"
+                <Image Source="tungtungtungsahur.png"
                        HeightRequest="185"
                        Aspect="AspectFit"
                        SemanticProperties.Description="mainpage picture" />
