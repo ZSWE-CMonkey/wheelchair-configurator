@@ -4,7 +4,6 @@
 
 */
 
-#include <iostream>
 #include <Windows.h>
 #include <stdexcept>
 
@@ -13,6 +12,9 @@
 namespace {
 	const UINT c_width = 800, c_height = 600;
 	const char* c_appName = "Test";
+
+	const char* g_pixelBuffer = nullptr;
+	HINSTANCE g_hInstance = nullptr;
 
 	HWND* g_window = nullptr;
 
@@ -81,13 +83,75 @@ namespace {
 	{
 		switch (uMsg)
 		{
+		case WM_KEYDOWN:
+		{
+			if (wParam == 'K' || wParam == 'k')
+			{
+				ValidateRect(window, NULL);
+				InvalidateRect(hWnd, NULL, TRUE);
+			}
+			else if (wParam == 'L' || wParam == 'l')
+			{
+				g_pixelBuffer = nullptr;
+			}
+			else if (wParam == 'J' || wParam == 'j')
+			{
+				if (g_hInstance == nullptr)
+					break;
+
+				wgAddObject("models/test");
+				wgSetCamera(-10.5f, 0.1f, 0.0f, 0.0f, -0.5f, -112.75f, 0.0f);
+				wgInitializeVulkanGraphicsWIN32(c_appName, c_width, c_height);
+				wgRender(&g_pixelBuffer);
+				wgDeinitializeGraphics();
+			}
+			break;
+		}
+		case WM_PAINT:
+		{
+			PAINTSTRUCT ps;
+			HDC hdc = BeginPaint(hWnd, &ps);
+			if (g_pixelBuffer == nullptr) {
+
+				RECT rect;
+				GetClientRect(hWnd, &rect);
+				HBRUSH hBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
+				FillRect(hdc, &rect, hBrush);
+
+				EndPaint(hWnd, &ps);
+				ValidateRect(window, NULL);
+				break;
+			}
+
+			
+			BITMAPINFO bmi{};
+			bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			bmi.bmiHeader.biWidth = c_width;
+			bmi.bmiHeader.biHeight = -c_height;
+			bmi.bmiHeader.biPlanes = 1;
+			bmi.bmiHeader.biBitCount = 32;
+			bmi.bmiHeader.biCompression = BI_RGB;
+
+			
+			StretchDIBits(
+				hdc,
+				0, 0, c_width, c_height,
+				0, 0, c_width, c_height,
+				g_pixelBuffer,
+				&bmi,
+				DIB_RGB_COLORS,
+				SRCCOPY
+			);
+
+			EndPaint(hWnd, &ps);
+
+			ValidateRect(window, NULL);
+		}
+		break;
 		case WM_CLOSE:
-			wgDeinitializeGraphics();
+			//wgDeinitializeGraphics();
 			DestroyWindow(hWnd);
 			PostQuitMessage(0);
-			break;
-		case WM_PAINT:
-			ValidateRect(window, NULL);
 			break;
 		}
 	}
@@ -116,7 +180,6 @@ namespace {
 					DispatchMessage(&msg);
 				}
 			}
-			wgRender();
 		}
 	}
 }
@@ -125,10 +188,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR pCmdLin
 {
 	HWND window = setupWindow(hInstance, WndProc);
 	g_window = &window;
-
-	wgInitializeVulkanGraphicsWIN32(c_appName, hInstance, window, c_width, c_height);
+	g_hInstance = hInstance;
+	
 	renderLoop();
-	wgDeinitializeGraphics();
 
 	return 0;
 }

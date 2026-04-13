@@ -7,9 +7,9 @@
             return new ImageCompositorGraphicsPluginImpl(width, height);
         }
 
-        public static IGraphicsPlugin CreateVulkanGraphicsPlugin()
+        public static IGraphicsPlugin CreateVulkanGraphicsPlugin(string appName, int width, int height)
         {
-            return new VulkanGraphicsPluginImpl();
+            return new VulkanGraphicsPluginImpl(appName, width, height);
         }
 
         public static IGraphicsPlugin CreateMoltenVulkanGraphicsPlugin()
