@@ -22,6 +22,7 @@ target_include_directories(WheelchairGraphics
 	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+if(WIN32)
 target_compile_definitions(WheelchairGraphics 
 	PRIVATE 
 		_WG_API_EXPORT_
@@ -30,6 +31,17 @@ target_compile_definitions(WheelchairGraphics
 
 find_package(Vulkan REQUIRED)
 target_link_libraries(WheelchairGraphics PRIVATE Vulkan::Vulkan)
+else()
+target_compile_definitions(WheelchairGraphics 
+	PRIVATE 
+		_WG_API_EXPORT_
+		VK_NO_PROTOTYPES
+		VK_USE_PLATFORM_ANDROID_KHR
+)
+
+target_include_directories(WheelchairGraphics PRIVATE ${Vulkan_INCLUDE_DIRS})
+endif()
+
 
 target_link_libraries(WheelchairGraphics PRIVATE assimp::assimp)
 

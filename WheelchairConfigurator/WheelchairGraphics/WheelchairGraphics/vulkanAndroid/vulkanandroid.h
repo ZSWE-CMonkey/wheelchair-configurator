@@ -22,23 +22,24 @@
 
 #if defined(__ANDROID__)
 
-#include <android/log.h>
+//#include <android/log.h>
 #include <memory>
 
-// Missing from the NDK
-namespace std
-{
-	template<typename T, typename... Args>
-	std::unique_ptr<T> make_unique(Args&&... args)
-	{
-		return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-	}
-}
-
-#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "vulkanExample", __VA_ARGS__))
-#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "vulkanExample", __VA_ARGS__))
-#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "vulkanExample", __VA_ARGS__))
-#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "vulkanExample", __VA_ARGS__))
+//My note: NDK does indeed implement this, not needed this
+//// Missing from the NDK
+//namespace std
+//{
+//	template<typename T, typename... Args>
+//	std::unique_ptr<T> make_unique(Args&&... args)
+//	{
+//		return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+//	}
+//}
+//
+//#define LOGI(...) ((void)__android_log_print(ANDROID_LOG_INFO, "vulkanExample", __VA_ARGS__))
+//#define LOGW(...) ((void)__android_log_print(ANDROID_LOG_WARN, "vulkanExample", __VA_ARGS__))
+//#define LOGD(...) ((void)__android_log_print(ANDROID_LOG_DEBUG, "vulkanExample", __VA_ARGS__))
+//#define LOGE(...) ((void)__android_log_print(ANDROID_LOG_ERROR, "vulkanExample", __VA_ARGS__))
 
 // Function pointer prototypes
 // Not complete, just the functions used in the caps viewer!

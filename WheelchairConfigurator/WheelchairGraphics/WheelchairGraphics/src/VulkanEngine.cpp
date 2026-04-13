@@ -1148,11 +1148,10 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 		return VK_ERROR_INITIALIZATION_FAILED;
 
 	for (auto& id : m_objectId) {
-		{ 
-			VkResult res = (LoadTexture(id + ".ktx")); 
-			if (res != VK_SUCCESS) 
-				return res; };
-		VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
+		{
+			VKE_CHECK_RESULT(LoadTexture(id + ".ktx"));
+			VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
+		}
 	}
 	return VK_SUCCESS;
 }
@@ -1263,6 +1262,8 @@ VkResult VkEngine::VulkanEngine::CopySwapchainImageToCPU(VkImage image, const ch
 	vkUnmapMemory(m_device, dstImageMemory);
 	vkFreeMemory(m_device, dstImageMemory, nullptr);
 	vkDestroyImage(m_device, dstImage, nullptr);
+
+	return VK_SUCCESS;
 }
 
 uint32_t VkEngine::VulkanEngine::GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)

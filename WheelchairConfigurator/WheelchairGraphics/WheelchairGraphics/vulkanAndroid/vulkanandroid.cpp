@@ -9,7 +9,7 @@
 #include "vulkanandroid.h"
 
 #if defined(__ANDROID__)
-    #include <android/log.h>
+    //#include <android/log.h>
     #include <dlfcn.h>
 
 PFN_vkCreateInstance vkCreateInstance;
@@ -116,13 +116,13 @@ void *libVulkan;
 // Dynamically load Vulkan library and base function pointers
 bool loadVulkanLibrary()
 {        
-    __android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Loading libvulkan.so...\n");
+    //__android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Loading libvulkan.so...\n");
 
     // Load vulkan library
     libVulkan = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
     if (!libVulkan)
     {
-        __android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Could not load vulkan library : %s!\n", dlerror());
+        //__android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Could not load vulkan library : %s!\n", dlerror());
         return false;
     }
 
@@ -139,7 +139,7 @@ bool loadVulkanLibrary()
 // Load instance based Vulkan function pointers
 void loadVulkanFunctions(VkInstance instance)
 {
-    __android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Loading instance based function pointers...\n");
+    //__android_log_print(ANDROID_LOG_INFO, "vulkanandroid", "Loading instance based function pointers...\n");
 
     vkEnumeratePhysicalDevices = reinterpret_cast<PFN_vkEnumeratePhysicalDevices>(vkGetInstanceProcAddr(instance, "vkEnumeratePhysicalDevices"));
     vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties"));

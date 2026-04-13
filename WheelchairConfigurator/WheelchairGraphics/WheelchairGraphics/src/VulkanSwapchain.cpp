@@ -23,13 +23,15 @@ VkEngine::VulkanSwapchain::VulkanSwapchain(VkInstance& instance, VkPhysicalDevic
 
 VkEngine::VulkanSwapchain::~VulkanSwapchain()
 {
+	//swapchain and surface not used, comments to prevent android errors on compile
+	//if needed this. fix
 	if (m_swapchain != VK_NULL_HANDLE) {
-		vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+		//vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
 		m_swapchain = VK_NULL_HANDLE;
 	}
 
 	if (m_surface != VK_NULL_HANDLE) {
-		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+		//vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
 		m_surface = VK_NULL_HANDLE;
 	}
 
@@ -347,6 +349,8 @@ VkResult VkEngine::VulkanSwapchain::CreateQueueFamilyIndex()
 		return VK_ERROR_INITIALIZATION_FAILED;
 
 	m_queueNodeIndex = graphicsQueueFamilyIndex;
+
+	return VK_SUCCESS;
 }
 
 void VkEngine::VulkanSwapchain::SetImageLayout(SetImageLayoutInfo& info)

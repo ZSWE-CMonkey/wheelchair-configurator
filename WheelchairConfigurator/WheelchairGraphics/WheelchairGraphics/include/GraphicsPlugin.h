@@ -45,7 +45,7 @@ namespace GraphicsPlugin {
 
 	class IGraphicsPlugin {
 	public:
-		~IGraphicsPlugin() = default;
+		virtual ~IGraphicsPlugin() = default;
 
 		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
 		virtual GPluginResult SetCamera(CameraSettings setting) = 0;

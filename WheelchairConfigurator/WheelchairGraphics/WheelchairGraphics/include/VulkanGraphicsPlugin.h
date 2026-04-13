@@ -11,7 +11,7 @@ namespace GraphicsPlugin {
 	{
 	public:
 		VulkanGraphicsPlugin();
-		~VulkanGraphicsPlugin();
+		~VulkanGraphicsPlugin() override;
 
 		GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) override;
 		GPluginResult SetCamera(CameraSettings setting) override;
