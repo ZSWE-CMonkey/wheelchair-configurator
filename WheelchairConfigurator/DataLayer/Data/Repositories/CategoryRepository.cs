@@ -18,4 +18,10 @@ public class CategoryRepository : GenericRepository<Category>
         => await _db.Table<Category>()
               .Where(c => c.Name == name)
               .FirstOrDefaultAsync();
+
+    /// <summary> Returns a list of categories matching the provided IDs. </summary>
+    public Task<List<Category>> GetByIdsAsync(List<int> ids)
+        => _db.Table<Category>()
+            .Where(c => ids.Contains(c.Id))
+            .ToListAsync();
 }
