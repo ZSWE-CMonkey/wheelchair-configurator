@@ -48,4 +48,11 @@ public interface IAppService
     /// </summary>
     /// <param name="specialistId">ID of the specialist.</param>
     Task<List<ConfigurationModel>> GetConfigurationsBySpecialistAsync(int specialistId);
+
+    /// <summary>
+    /// Generates a PDF for the specified saved configuration.
+    /// Returns the file path of the generated PDF.
+    /// </summary>
+    /// <param name="configurationId">ID of the configuration to export.</param>
+    Task<byte[]> ExportConfigurationAsync(int configurationId);
 }
