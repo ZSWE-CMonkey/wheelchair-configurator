@@ -8,7 +8,9 @@ namespace WheelchairConfigurator
         {
             InitializeComponent();
 
-            Routing.RegisterRoute("configurator", typeof(ConfiguratorPage1));
+            Routing.RegisterRoute("newPatientPage", typeof(NewPatientPage));
+            Routing.RegisterRoute("mainPage", typeof(MainPage));
+            Routing.RegisterRoute("patientSelectPage", typeof(PatientSelectPage));
 
         }
     }

@@ -1,0 +1,26 @@
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.NewPatientPage"
+             Shell.NavBarIsVisible="False">
+    <Grid ColumnDefinitions="*, *, *" ColumnSpacing="20" Padding="20">
+        <!-- Sloupec 1 -->
+        <ContentView x:Name="Panel1" Grid.Column="0" />
+        <!-- Sloupec 2 -->
+        <ContentView x:Name="Panel2" Grid.Column="1" />
+        <!-- Sloupec 3 - vstupy + tlačítka dole -->
+        <Grid Grid.Column="2" RowDefinitions="*, Auto, Auto">
+            <ContentView x:Name="Panel3" Grid.Row="0" />
+            <Button Grid.Row="1"
+                    Text="Dokončit"
+                    Clicked="OnFinishClicked"
+                    HorizontalOptions="Fill"
+                    Margin="20,10,20,5" />
+            <Button Grid.Row="2"
+                    Text="Zpět"
+                    Clicked="OnBackClicked"
+                    BackgroundColor="Red"
+                    HorizontalOptions="Fill"
+                    Margin="20,0,20,20" />
+        </Grid>
+    </Grid>
+</ContentPage>
