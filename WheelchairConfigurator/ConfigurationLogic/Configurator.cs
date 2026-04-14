@@ -30,14 +30,28 @@ public class Configurator
 		AddGeneralRecommendations(result, profile);
 
 		var components = await _catalog.GetAllComponentEntitiesAsync();
+		var specsByComponentId = new Dictionary<int, ComponentSpecsDto?>(components.Count);
+		var outputByComponentId = new Dictionary<int, ComponentOutputDto>(components.Count);
 
 		foreach (var component in components)
 		{
-			var specs = await _catalog.GetComponentDetailAsync(component.Id);
-			var output = await _catalog.ToComponentOutputDtoAsync(component);
+			specsByComponentId[component.Id] = await _catalog.GetComponentDetailAsync(component.Id);
+			outputByComponentId[component.Id] = await _catalog.ToComponentOutputDtoAsync(component);
+		}
+
+		var rulesByCategoryId = BuildCategoryRulesByCategoryId(components, specsByComponentId);
+
+		foreach (var component in components)
+		{
+			specsByComponentId.TryGetValue(component.Id, out var specs);
+			var output = outputByComponentId[component.Id];
+			var rules = rulesByCategoryId.GetValueOrDefault(
+				component.CategoryId,
+				new CategoryRuleSet(CheckWeightCapacity: false, CheckSeatWidth: false));
 			var issues = new List<EvaluationIssueDto>();
 
-			EvaluateDeterministicConstraints(profile, result.Requirements, component, specs, issues);
+			EvaluateDeterministicConstraints(profile, result.Requirements, component, rules, specs, issues);
+			AddUnsupportedRuleInfoIssues(profile, component, issues);
 
 			result.Issues.AddRange(issues);
 
@@ -223,24 +237,41 @@ public class Configurator
 		UserProfileDto profile,
 		ProfileRequirementsDto requirements,
 		Component component,
+		CategoryRuleSet rules,
 		ComponentSpecsDto? specs,
 		List<EvaluationIssueDto> issues)
 	{
 		if (specs is null)
 		{
-			issues.Add(CreateIssue(component, "specs_missing", "Pro tuto komponentu zatím nejsou dostupná měřitelná pravidla.", EvaluationIssueSeverity.Info));
+			var severity = rules.CheckWeightCapacity || rules.CheckSeatWidth
+				? EvaluationIssueSeverity.Warning
+				: EvaluationIssueSeverity.Info;
+			issues.Add(CreateIssue(component, "specs_missing", "Pro tuto komponentu chybí technické specifikace potřebné pro vyhodnocení.", severity));
 			return;
 		}
 
-		if (profile.WeightKg > 0 && specs.WeightCapacityKg > 0)
+		if (rules.CheckWeightCapacity && profile.WeightKg > 0)
 		{
-			if (profile.WeightKg > specs.WeightCapacityKg)
+			if (specs.WeightCapacityKg <= 0)
+			{
+				issues.Add(CreateIssue(component, "weight_capacity_missing", "Komponenta nemá vyplněnou nosnost pro kontrolu hmotnosti uživatele.", EvaluationIssueSeverity.Warning));
+			}
+			else if (profile.WeightKg > specs.WeightCapacityKg)
 			{
 				issues.Add(CreateIssue(component, "weight_capacity", "Hmotnost uživatele překročila nosnost komponenty.", EvaluationIssueSeverity.Critical));
 			}
 		}
 
-		if (requirements.MinimumSeatWidthCm.HasValue
+		if (rules.CheckSeatWidth
+			&& requirements.MinimumSeatWidthCm.HasValue
+			&& requirements.MaximumSeatWidthCm.HasValue
+			&& specs.SeatWidthCm <= 0)
+		{
+			issues.Add(CreateIssue(component, "seat_width_missing", "Komponenta nemá vyplněnou šířku sedu pro antropometrickou kontrolu.", EvaluationIssueSeverity.Warning));
+		}
+
+		if (rules.CheckSeatWidth
+			&& requirements.MinimumSeatWidthCm.HasValue
 			&& requirements.MaximumSeatWidthCm.HasValue
 			&& specs.SeatWidthCm > 0
 			&& !IsSeatWidthWithinRange(specs.SeatWidthCm, requirements))
@@ -248,6 +279,90 @@ public class Configurator
 			issues.Add(CreateIssue(component, "seat_width", "Šířka sedu neodpovídá požadovanému rozsahu podle šířky pánve.", EvaluationIssueSeverity.Warning));
 		}
 	}
+
+	// Add info issues for rules that cannot be evaluated with current DataLayer schema.
+	private static void AddUnsupportedRuleInfoIssues(UserProfileDto profile, Component component, List<EvaluationIssueDto> issues)
+	{
+		if (profile.ThighLengthCm > 0)
+		{
+			AddInfoIssueOnce(issues, component, "seat_depth_unavailable", "Kontrola hloubky sedu zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.TrunkHeightCm > 0)
+		{
+			AddInfoIssueOnce(issues, component, "backrest_height_unavailable", "Kontrola výšky opěradla zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.TrunkStability == TrunkStabilityLevel.Poor)
+		{
+			AddInfoIssueOnce(issues, component, "trunk_support_unavailable", "Kontrola posturální podpory trupu zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.HeadControl == HeadControlLevel.No)
+		{
+			AddInfoIssueOnce(issues, component, "head_control_unavailable", "Kontrola požadavku na opěrku hlavy zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.High)
+		{
+			AddInfoIssueOnce(issues, component, "pressure_relief_unavailable", "Kontrola prevence dekubitů zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.HandFunction == HandFunctionLevel.None)
+		{
+			AddInfoIssueOnce(issues, component, "alternative_control_unavailable", "Kontrola alternativního ovládání zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.Environment != UsageEnvironment.Mixed)
+		{
+			AddInfoIssueOnce(issues, component, "environment_unavailable", "Detailní kontrola prostředí použití zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.LowerLimbCondition != LowerLimbConditionLevel.None)
+		{
+			AddInfoIssueOnce(issues, component, "leg_support_unavailable", "Kontrola podpory dolních končetin zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+
+		if (profile.Pain >= SymptomSeverityLevel.Medium || profile.Fatigue >= SymptomSeverityLevel.Medium)
+		{
+			AddInfoIssueOnce(issues, component, "comfort_unavailable", "Kontrola komfortních prvků zatím není dostupná, protože chybí potřebná datová pole komponent.");
+		}
+	}
+
+	private static void AddInfoIssueOnce(List<EvaluationIssueDto> issues, Component component, string category, string message)
+	{
+		if (issues.Any(i => i.Category == category))
+		{
+			return;
+		}
+
+		issues.Add(CreateIssue(component, category, message, EvaluationIssueSeverity.Info));
+	}
+
+	// Build category rules directly from DB-backed component specs.
+	private static Dictionary<int, CategoryRuleSet> BuildCategoryRulesByCategoryId(
+		List<Component> components,
+		Dictionary<int, ComponentSpecsDto?> specsByComponentId)
+	{
+		var rulesByCategoryId = new Dictionary<int, CategoryRuleSet>();
+
+		foreach (var categoryGroup in components.GroupBy(c => c.CategoryId))
+		{
+			var checkWeightCapacity = categoryGroup.Any(c =>
+				specsByComponentId.TryGetValue(c.Id, out var specs) && specs is not null && specs.WeightCapacityKg > 0);
+
+			var checkSeatWidth = categoryGroup.Any(c =>
+				specsByComponentId.TryGetValue(c.Id, out var specs) && specs is not null && specs.SeatWidthCm > 0);
+
+			rulesByCategoryId[categoryGroup.Key] = new CategoryRuleSet(
+				CheckWeightCapacity: checkWeightCapacity,
+				CheckSeatWidth: checkSeatWidth);
+		}
+
+		return rulesByCategoryId;
+	}
+
+	private readonly record struct CategoryRuleSet(bool CheckWeightCapacity, bool CheckSeatWidth);
 
 	// Build issue DTO
 	private static EvaluationIssueDto CreateIssue(Component component, string category, string message, EvaluationIssueSeverity severity)
