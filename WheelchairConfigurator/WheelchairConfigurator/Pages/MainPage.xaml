@@ -48,11 +48,11 @@
                             Clicked="OnToPatientSelectClicked"
                             HorizontalOptions="Fill" />
 
-                    <Button x:Name="toWheelchairSelectBtn"
+                    <Button x:Name="toAddComponentBtn"
                             Grid.Row="0" Grid.Column="1"
-                            Text="Sestavené vozíky"
-                            SemanticProperties.Hint="Redirects to Wheelchair Select Page"
-                            Clicked="OnToWheelchairSelectClicked"
+                            Text="Přidat součástku"
+                            SemanticProperties.Hint="Redirects to Add Component Page"
+                            Clicked="OnToAddComponentClicked"
                             HorizontalOptions="Fill" />
 
                     <Button x:Name="ExitBtn"

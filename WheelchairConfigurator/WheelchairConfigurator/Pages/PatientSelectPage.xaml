@@ -1,12 +1,99 @@
-<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="WheelchairConfigurator.PatientSelectPage"
-             Title="PatientSelectPage">
-    <VerticalStackLayout>
-        <Label 
-            Text="Welcome to .NET MAUI!"
-            VerticalOptions="Center" 
-            HorizontalOptions="Center" />
-    </VerticalStackLayout>
+             x:Class="WheelchairConfigurator.Pages.PatientSelectPage"
+             Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="*, Auto" Padding="20" RowSpacing="20">
+
+        <!-- Horní část - seznamy -->
+        <Grid Grid.Row="0" ColumnDefinitions="300, *" ColumnSpacing="20">
+
+            <!-- Levý sloupec - seznam pacientů -->
+            <Grid Grid.Column="0" RowDefinitions="Auto, *">
+                <Label Grid.Row="0"
+                       Text="Pacienti"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       Margin="0,0,0,10" />
+                <CollectionView Grid.Row="1"
+                                x:Name="PatientList"
+                                SelectionMode="Single"
+                                SelectionChanged="OnPatientSelected">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,8"
+                                    Padding="12"
+                                    StrokeThickness="1"
+                                    Stroke="#E0E0E0">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding Id}"
+                                           FontAttributes="Bold"
+                                           FontSize="14" />
+                                    <Label Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                           FontSize="12"
+                                           TextColor="Gray" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+
+            <!-- Pravý sloupec - seznam vozíků -->
+            <Grid Grid.Column="1" RowDefinitions="Auto, *">
+                <Label Grid.Row="0"
+                       x:Name="WheelchairListTitle"
+                       Text="Vyberte pacienta"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       Margin="0,0,0,10" />
+                <CollectionView Grid.Row="1"
+                    x:Name="WheelchairList"
+                    SelectionMode="Single"
+                    SelectionChanged="OnWheelchairSelected">
+                    <CollectionView.EmptyView>
+                        <Label Text="Žádné vozíky"
+                               TextColor="Gray"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </CollectionView.EmptyView>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Margin="0,0,0,8"
+                                    Padding="12"
+                                    StrokeThickness="1"
+                                    Stroke="#E0E0E0">
+                                <VerticalStackLayout>
+                                    <Label Text="{Binding Id}"
+                                           FontAttributes="Bold"
+                                           FontSize="14" />
+                                    <Label Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
+                                           FontSize="12"
+                                           TextColor="Gray" />
+                                </VerticalStackLayout>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </Grid>
+
+        </Grid>
+
+        <!-- Dolní část - navigační tlačítka -->
+        <Grid Grid.Row="1" ColumnDefinitions="*, *" ColumnSpacing="10">
+            <Button Grid.Column="0"
+                    x:Name="BackBtn"
+                    Text="Zpět"
+                    BackgroundColor="Red"
+                    TextColor="White"
+                    Clicked="OnBackClicked"
+                    HorizontalOptions="Fill" />
+            <Button Grid.Column="1"
+                x:Name="ContinueBtn"
+                Text="Pokračovat"
+                Clicked="OnContinueClicked"
+                IsEnabled="False"
+                HorizontalOptions="Fill" />
+        </Grid>
+
+    </Grid>
 </ContentPage>

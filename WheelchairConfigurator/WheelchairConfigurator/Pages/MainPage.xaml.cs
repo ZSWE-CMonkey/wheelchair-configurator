@@ -26,12 +26,12 @@ namespace WheelchairConfigurator.Pages
         }
 
         /*
-         * OnToWheelchairSelectClicked - toWheelchairSelectBtn, redirects to WheelchairSelectPage
+         * OnToAddComponentClicked - toAddComponentBtn, redirects to AddComponentPage
          */
 
-        private async void OnToWheelchairSelectClicked(object sender, EventArgs e)
+        private async void OnToAddComponentClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("wheelchairSelectPage");
+            await Shell.Current.GoToAsync("addComponentPage");
         }
 
         /*
