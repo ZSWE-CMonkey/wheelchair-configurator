@@ -48,11 +48,11 @@
                             Clicked="OnToPatientSelectClicked"
                             HorizontalOptions="Fill" />
 
-                    <Button x:Name="toAddComponentBtn"
+                    <Button x:Name="toComponentManagerBtn"
                             Grid.Row="0" Grid.Column="1"
-                            Text="Přidat součástku"
-                            SemanticProperties.Hint="Redirects to Add Component Page"
-                            Clicked="OnToAddComponentClicked"
+                            Text="Spravovat součástky"
+                            SemanticProperties.Hint="Redirects to Component Manager Page"
+                            Clicked="OnToComponentManagerClicked"
                             HorizontalOptions="Fill" />
 
                     <Button x:Name="ExitBtn"

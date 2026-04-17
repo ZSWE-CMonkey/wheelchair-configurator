@@ -127,20 +127,23 @@ public partial class NewPatientPage : ContentPage
     /*
      * OnFinishClicked - uloží vše a pokraèuje dál
      */
-    private void OnFinishClicked(object sender, EventArgs e)
+    private async void OnFinishClicked(object sender, EventArgs e)
     {
         foreach (var panel in _panels)
         {
             if (panel is ISideBar sidebar && !sidebar.Validate())
             {
-                DisplayAlert("Chyba", "Vyplòte prosím všechna pole.", "OK");
+                await DisplayAlert("Chyba", "Vyplòte prosím všechna pole.", "OK");
                 return;
             }
         }
 
         SaveAllPanels();
         userInput.Date = DateTime.Today;
-        DisplayAlert("Hotovo", $"Výška: {userInput.BodyHeight}", "OK");
+        // Saving in db
+        // Redirection 
+        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+
     }
 
     private async void OnBackClicked(object sender, EventArgs e)

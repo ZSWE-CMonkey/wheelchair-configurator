@@ -1,5 +1,6 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:system="clr-namespace:System;assembly=mscorlib"
              x:Class="WheelchairConfigurator.Pages.PatientSelectPage"
              Shell.NavBarIsVisible="False">
     <Grid RowDefinitions="*, Auto" Padding="20" RowSpacing="20">
@@ -63,12 +64,20 @@
                                     StrokeThickness="1"
                                     Stroke="#E0E0E0">
                                 <VerticalStackLayout>
-                                    <Label Text="{Binding Id}"
-                                           FontAttributes="Bold"
-                                           FontSize="14" />
+                                    <Label Text="{Binding Name}"
+                                        FontAttributes="Bold"
+                                        FontSize="14" />
                                     <Label Text="{Binding CreatedAt, StringFormat='{0:dd.MM.yyyy}'}"
-                                           FontSize="12"
-                                           TextColor="Gray" />
+                                       FontSize="12"
+                                       TextColor="Gray">        
+                                        <Label.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                             Binding="{Binding CreatedAt}"
+                                             Value="{x:Static system:DateTime.MinValue}">
+                                                <Setter Property="IsVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Label.Triggers>
+                                    </Label>
                                 </VerticalStackLayout>
                             </Border>
                         </DataTemplate>

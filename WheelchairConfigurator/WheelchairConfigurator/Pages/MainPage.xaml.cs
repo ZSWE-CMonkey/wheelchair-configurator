@@ -29,9 +29,9 @@ namespace WheelchairConfigurator.Pages
          * OnToAddComponentClicked - toAddComponentBtn, redirects to AddComponentPage
          */
 
-        private async void OnToAddComponentClicked(object sender, EventArgs e)
+        private async void OnToComponentManagerClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("addComponentPage");
+            await Shell.Current.GoToAsync("componentManagerPage");
         }
 
         /*

@@ -74,7 +74,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
         vulkan.AddObject("models/test");
             
-
         MyImage.Source = vulkan.GetRenderedImageSource();
     }
 
@@ -185,6 +184,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private async void OnContinueClicked(object sender, EventArgs e)
     {
-        // TODO: navigace dál s vybranými komponentami
+        await Shell.Current.GoToAsync("summaryPage");
+
     }
 }

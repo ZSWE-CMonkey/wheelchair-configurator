@@ -10,6 +10,7 @@ public class WheelchairMock
 {
     public string Id { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string Name { get; set; } = string.Empty;
     public string PatientId { get; set; } = string.Empty;
 }
 
@@ -26,10 +27,10 @@ public partial class PatientSelectPage : ContentPage
 
     private readonly List<WheelchairMock> _wheelchairs =
     [
-        new WheelchairMock { Id = "WC-001", CreatedAt = new DateTime(2024, 2, 10), PatientId = "PAT-001" },
-        new WheelchairMock { Id = "WC-002", CreatedAt = new DateTime(2024, 2, 28), PatientId = "PAT-001" },
-        new WheelchairMock { Id = "WC-003", CreatedAt = new DateTime(2024, 4, 5),  PatientId = "PAT-002" },
-        new WheelchairMock { Id = "WC-004", CreatedAt = new DateTime(2024, 7, 19), PatientId = "PAT-003" },
+        new WheelchairMock { Id = "WC-001", Name="WC-001", CreatedAt = new DateTime(2024, 2, 10), PatientId = "PAT-001" },
+        new WheelchairMock { Id = "WC-002", Name="WC-002", CreatedAt = new DateTime(2024, 2, 28), PatientId = "PAT-001" },
+        new WheelchairMock { Id = "WC-003", Name="WC-003", CreatedAt = new DateTime(2024, 4, 5),  PatientId = "PAT-002" },
+        new WheelchairMock { Id = "WC-004", Name="WC-004", CreatedAt = new DateTime(2024, 7, 19), PatientId = "PAT-003" },
     ];
 
     public PatientSelectPage()
@@ -54,14 +55,18 @@ public partial class PatientSelectPage : ContentPage
         if (e.CurrentSelection.FirstOrDefault() is not PatientMock selected)
             return;
 
-        // Reset výbìru vozíku pøi zmìnì pacienta
         _selectedWheelchair = null;
         ContinueBtn.IsEnabled = false;
 
         WheelchairListTitle.Text = $"Vozíky pacienta {selected.Id}";
-        WheelchairList.ItemsSource = _wheelchairs
+
+        var items = _wheelchairs
             .Where(w => w.PatientId == selected.Id)
             .ToList();
+
+        items.Add(new WheelchairMock { Id = "new", Name = "Vytvoøit nový vozík", PatientId = selected.Id });
+
+        WheelchairList.ItemsSource = items;
     }
 
     private async void OnContinueClicked(object sender, EventArgs e)
@@ -69,7 +74,10 @@ public partial class PatientSelectPage : ContentPage
         if (_selectedWheelchair is null)
             return;
 
-        await Shell.Current.GoToAsync($"wheelchairConfiguratorPage?wheelchairId={_selectedWheelchair.Id}");
+        if (_selectedWheelchair.Name == "new")
+            await Shell.Current.GoToAsync("wheelchairConfiguratorPage"); 
+        else
+            await Shell.Current.GoToAsync($"wheelchairConfiguratorPage?wheelchairId={_selectedWheelchair.Id}");
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
