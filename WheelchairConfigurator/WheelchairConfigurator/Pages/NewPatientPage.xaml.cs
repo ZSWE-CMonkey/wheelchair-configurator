@@ -125,7 +125,7 @@ public partial class NewPatientPage : ContentPage
     }
 
     /*
-     * OnFinishClicked - uloží vše a pokraèuje dál
+     * OnFinishClicked - saves all fields and continues
      */
     private async void OnFinishClicked(object sender, EventArgs e)
     {
