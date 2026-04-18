@@ -12,5 +12,7 @@ namespace WheelchairConfigurator
          *  Save - saving whole sidebar
          */
         void Save();
+        bool Validate();
+
     }
 }

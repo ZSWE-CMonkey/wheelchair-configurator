@@ -2,22 +2,27 @@ using WheelchairConfigurator.Components;
 
 namespace WheelchairConfigurator.Pages;
 
-public partial class ConfiguratorPage1 : ContentPage
+public partial class NewPatientPage : ContentPage
 {
     public UserInput userInput = new();
     private readonly List<ContentView> _panels;
-    private int _currentPanelIndex = 0;
 
-    /*
-     * Constructor - creates panels using generic SideBarView
-     */
-    public ConfiguratorPage1()
+    public NewPatientPage()
     {
         InitializeComponent();
+
         _panels =
         [
-            new SideBarView("Informace o pacientovi I.",
+            new SideBarView("Informace o pacientovi",
             [
+            new SideBarField
+                {
+                    Label = "Identifikátor pacienta",
+                    Type = FieldType.Entry,
+                    Keyboard = Keyboard.Default,
+                    MaxLength = 20,
+                    OnSave = v => userInput.patientIdentificator = v
+                },
                 new SideBarField
                 {
                     Label = "Výška trupu (cm)",
@@ -44,7 +49,7 @@ public partial class ConfiguratorPage1 : ContentPage
                 },
             ]),
 
-            new SideBarView("Informace o pacientovi II.",
+            new SideBarView("",
             [
                 new SideBarField
                 {
@@ -83,14 +88,14 @@ public partial class ConfiguratorPage1 : ContentPage
                 },
             ]),
 
-            new SideBarView("Vozík",
+            new SideBarView("Informace o vozíku",
             [
                 new SideBarField
                 {
-                    Label = "Ovládání rukou",
+                    Label = "Ovládání",
                     Type = FieldType.Picker,
-                    Options = ["Ano", "Ne"],
-                    OnSave = v => userInput.HandControl = v == "Ano"
+                    Options = ["Hand control", " Head control", " Sip & puff"],
+                    OnSave = v => userInput.Control = v
                 },
                 new SideBarField
                 {
@@ -102,55 +107,47 @@ public partial class ConfiguratorPage1 : ContentPage
             ]),
         ];
 
-        UpdatePanel();
+        Panel1.Content = _panels[0];
+        Panel2.Content = _panels[1];
+        Panel3.Content = _panels[2];
     }
 
     /*
-     * SaveCurrentPanel - saves all inputs in current sidebar
+     * SaveAllPanels - uloží vstupy ze všech tøí panelù najednou
      */
-    private void SaveCurrentPanel()
+    private void SaveAllPanels()
     {
-        if (_panels[_currentPanelIndex] is ISideBar sidebar)
-            sidebar.Save();
-    }
-
-    /*
-     * UpdatePanel - updates panel and handles button visibility/text
-     */
-    private void UpdatePanel()
-    {
-        SidebarContainer.Content = _panels[_currentPanelIndex];
-        BackBtn.IsVisible = _currentPanelIndex > 0;
-        NextBtn.Text = _currentPanelIndex == _panels.Count - 1 ? "Dokonèit" : "Další";
-    }
-
-    /*
-     * OnNextClicked - NextBtn handler
-     */
-    private void OnNextClicked(object sender, EventArgs e)
-    {
-        SaveCurrentPanel();
-        if (_currentPanelIndex < _panels.Count - 1)
+        foreach (var panel in _panels)
         {
-            _currentPanelIndex++;
-            UpdatePanel();
-        }
-        else
-        {
-            DisplayAlert("Hotovo", $"Výška: {userInput.BodyHeight}", "OK");
+            if (panel is ISideBar sidebar)
+                sidebar.Save();
         }
     }
 
     /*
-     * OnBackClicked - BackBtn handler
+     * OnFinishClicked - saves all fields and continues
      */
-    private void OnBackClicked(object sender, EventArgs e)
+    private async void OnFinishClicked(object sender, EventArgs e)
     {
-        SaveCurrentPanel();
-        if (_currentPanelIndex > 0)
+        foreach (var panel in _panels)
         {
-            _currentPanelIndex--;
-            UpdatePanel();
+            if (panel is ISideBar sidebar && !sidebar.Validate())
+            {
+                await DisplayAlert("Chyba", "Vyplòte prosím všechna pole.", "OK");
+                return;
+            }
         }
+
+        SaveAllPanels();
+        userInput.Date = DateTime.Today;
+        // Saving in db
+        // Redirection 
+        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+
+    }
+
+    private async void OnBackClicked(object sender, EventArgs e)
+    {
+        await Shell.Current.GoToAsync("mainPage");
     }
 }
