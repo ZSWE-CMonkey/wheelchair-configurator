@@ -14,6 +14,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             _wheelchairId = value;
             // TODO: naèíst reálná data podle ID
+            // Skibidi zachod lol xddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
             LoadMockData();
         }
     }
@@ -63,8 +64,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
 
-    Point rotation;
-    VulkanHelper vulkan;
+    private VulkanHelper vulkan = default!;
 
     public WheelchairConfiguratorPage()
     {
@@ -78,10 +78,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
         vulkan.AddObject("models/test");
 
         MyImage.Source = vulkan.GetRenderedImageSource();
-
-
-        rotation = new Point(0, 0);
-
     }
 
     private void LoadMockData()
@@ -216,8 +212,11 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 var delta = new Point(e.TotalX - _panStart.X, e.TotalY - _panStart.Y);
                 _panStart = new Point(e.TotalX, e.TotalY);
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
-                rotation.X += delta.X;
-                rotation.Y += delta.Y;
+
+                //TODO: set intensity
+                vulkan.AddRotationXY((float)delta.Y, (float)delta.X);
+                //TODO: temporary solution, here not oneshot!
+                MyImage.Source = vulkan.GetRenderedImageSource();
 
                 break;
         }

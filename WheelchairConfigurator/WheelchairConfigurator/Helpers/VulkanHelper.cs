@@ -1,4 +1,5 @@
 ﻿using ConfigurationLogic.Graphics;
+using ConfigurationLogic.Graphics.Types;
 using SkiaSharp;
 using System.Runtime.InteropServices;
 
@@ -9,6 +10,20 @@ namespace WheelchairConfigurator.Helpers
     /// </summary>
     internal class VulkanHelper
     {
+        private struct Camera
+        {
+            public float Zoom;
+            public CameraPosition Position;
+            public CameraRotation Rotation;
+
+            public Camera(float zoom, CameraPosition position, CameraRotation rotation)
+            {
+                Zoom = zoom;
+                Position = position;
+                Rotation = rotation;
+            }
+        }
+
         private int _width;
         private int _height;
 
@@ -16,12 +31,23 @@ namespace WheelchairConfigurator.Helpers
 
         private IGraphicsPlugin _graphicsPlugin;
 
+        private Camera _camera;
+
+        private object _mutex = new();
+
         public VulkanHelper(string name, int widht, int height)
         {
             _width = widht;
             _height = height;
             _objectsId = new List<string>();
             _graphicsPlugin = GraphicsPluginFactory.CreateVulkanGraphicsPlugin(name, widht, height);
+
+
+            _camera = new Camera(
+                -5.5f,
+                new CameraPosition(0.1f, 1.1f, 0.0f),
+                new CameraRotation(-0.5f, -112.75f, 0.0f)
+                );
         }
 
         /// <summary>
@@ -45,6 +71,12 @@ namespace WheelchairConfigurator.Helpers
             _height = height;
         }
 
+        public void AddRotationXY(float x, float y)
+        {
+            _camera.Rotation.X += x;
+            _camera.Rotation.Y += y;
+        }
+
         /// <summary>
         /// Initialize and renders once the scene and deinitialize vulkan engine. 
         /// Outputs final image of that rendering.
@@ -53,34 +85,36 @@ namespace WheelchairConfigurator.Helpers
         /// <returns>ImageSource of pixel buffer</returns>        
         public ImageSource GetRenderedImageSource()
         {
-            foreach(string id in _objectsId)
+            lock (_mutex)
             {
-                _graphicsPlugin.AddResource(id);
+                foreach (string id in _objectsId)
+                {
+                    _graphicsPlugin.AddResource(id);
+                }
+                _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+                _graphicsPlugin.Initialize();
+                _graphicsPlugin.Render(out byte[] pixelBuffer);
+                _graphicsPlugin.Deinitialize();
+
+                ConvertBlackToTransparent(ref pixelBuffer);
+
+                GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
+                IntPtr pixels = handle.AddrOfPinnedObject();
+
+                SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+
+                using SKBitmap bitmap = new SKBitmap();
+                bitmap.InstallPixels(info, pixels, info.RowBytes);
+
+                using SKImage image = SKImage.FromBitmap(bitmap);
+                using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
+
+                byte[] bytes = data.ToArray();
+
+                ImageSource result = ImageSource.FromStream(() => new MemoryStream(bytes));
+                handle.Free();
+                return result;
             }
-
-            _graphicsPlugin.Initialize();
-            _graphicsPlugin.Render(out byte[] pixelBuffer);
-            _graphicsPlugin.Deinitialize();
-
-            ConvertBlackToTransparent(ref pixelBuffer);
-
-            GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
-            IntPtr pixels = handle.AddrOfPinnedObject();
-
-            SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
-
-            using SKBitmap bitmap = new SKBitmap();
-            bitmap.InstallPixels(info, pixels, info.RowBytes);
-
-            using SKImage image = SKImage.FromBitmap(bitmap);
-            using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-            byte[] bytes = data.ToArray();
-
-            ImageSource result = ImageSource.FromStream(() => new MemoryStream(bytes));
-            handle.Free();
-
-            return result;
         }
 
         private void ConvertBlackToTransparent(ref byte[] pixels)

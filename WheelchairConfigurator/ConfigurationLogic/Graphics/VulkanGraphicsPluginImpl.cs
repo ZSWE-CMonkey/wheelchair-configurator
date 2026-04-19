@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using ConfigurationLogic.Graphics.Types;
+using System.Runtime.InteropServices;
 
 namespace ConfigurationLogic.Graphics
 {
@@ -59,6 +60,11 @@ namespace ConfigurationLogic.Graphics
         public void ClearResources()
         {
             //throw new NotImplementedException();
+        }
+
+        public void SetCamera(float zoom, CameraPosition position, CameraRotation rotation)
+        {
+            wgSetCamera(zoom, position.X, position.Y, position.Z, rotation.X, rotation.Y, rotation.Z);
         }
     }
 }
