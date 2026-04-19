@@ -214,7 +214,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
 
                 //TODO: set intensity
-                vulkan.AddRotationXY((float)delta.Y, (float)delta.X);
+                vulkan.AddRotationXY(-(float)delta.Y, (float)delta.X);
                 //TODO: temporary solution, here not oneshot!
                 MyImage.Source = vulkan.GetRenderedImageSource();
 

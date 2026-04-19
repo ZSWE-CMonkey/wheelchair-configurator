@@ -96,7 +96,7 @@ namespace WheelchairConfigurator.Helpers
                 _graphicsPlugin.Render(out byte[] pixelBuffer);
                 _graphicsPlugin.Deinitialize();
 
-                ConvertBlackToTransparent(ref pixelBuffer);
+                ConvertMangetaToTransparent(ref pixelBuffer);
 
                 GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
                 IntPtr pixels = handle.AddrOfPinnedObject();
@@ -117,7 +117,7 @@ namespace WheelchairConfigurator.Helpers
             }
         }
 
-        private void ConvertBlackToTransparent(ref byte[] pixels)
+        private void ConvertMangetaToTransparent(ref byte[] pixels)
         {
             for (int i = 0; i < pixels.Length; i += 4)
             {
@@ -125,7 +125,7 @@ namespace WheelchairConfigurator.Helpers
                 byte g = pixels[i + 1];
                 byte r = pixels[i + 2];
 
-                if (r == 0 && g == 0 && b == 0)
+                if (r == 255 && g == 0 && b == 255)
                 {
                     pixels[i + 3] = 0;
                 }
