@@ -187,4 +187,29 @@ public partial class WheelchairConfiguratorPage : ContentPage
         await Shell.Current.GoToAsync("summaryPage");
 
     }
+
+    private Point _panStart;
+    private bool _panStartSet = false;
+
+    private void OnPanUpdated(object sender, PanUpdatedEventArgs e)
+    {
+        switch (e.StatusType)
+        {
+            case GestureStatus.Started:
+                _panStartSet = false;
+                break;
+
+            case GestureStatus.Running:
+                if (!_panStartSet)
+                {
+                    _panStart = new Point(e.TotalX, e.TotalY);
+                    _panStartSet = true;
+                    break;
+                }
+                var delta = new Point(e.TotalX - _panStart.X, e.TotalY - _panStart.Y);
+                _panStart = new Point(e.TotalX, e.TotalY);
+                System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
+                break;
+        }
+    }
 }

@@ -50,10 +50,18 @@
 
             <!-- Pravý panel - náhled vozíku -->
             <Border Grid.Column="2"
-                    Padding="15"
-                    StrokeThickness="1"
-                    Stroke="#E0E0E0">
-                <Image x:Name="MyImage" />
+            Padding="15"
+            StrokeThickness="1"
+            Stroke="#E0E0E0">
+                <Grid>
+                    <BoxView Color="White">
+                        <BoxView.GestureRecognizers>
+                            <PanGestureRecognizer PanUpdated="OnPanUpdated" />
+                        </BoxView.GestureRecognizers>
+                    </BoxView>
+                    <Image x:Name="MyImage" />
+
+                </Grid>
             </Border>
 
         </Grid>
