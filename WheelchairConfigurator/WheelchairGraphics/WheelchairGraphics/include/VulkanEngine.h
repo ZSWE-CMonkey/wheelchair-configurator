@@ -140,7 +140,7 @@ namespace VkEngine {
 		VkQueue m_queue;
 
 		VkFormat m_depthFormat;
-		VkClearColorValue m_defaultClearColor = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+		VkClearColorValue m_defaultClearColor = { { 1.0f, 0.0f, 1.0f, 1.0f } };
 
 		VkCommandPool m_cmdPool;
 		VkCommandBuffer m_setupCmdBuffer;
