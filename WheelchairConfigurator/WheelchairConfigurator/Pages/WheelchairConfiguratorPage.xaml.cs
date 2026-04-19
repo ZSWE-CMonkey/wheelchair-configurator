@@ -63,6 +63,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
 
+    Point rotation;
+    VulkanHelper vulkan;
+
     public WheelchairConfiguratorPage()
     {
         InitializeComponent();
@@ -70,11 +73,15 @@ public partial class WheelchairConfiguratorPage : ContentPage
         foreach (var category in ComponentCategories.All)
             _selectedComponents[category] = null;
 
-        VulkanHelper vulkan = new VulkanHelper("app", 800, 600);
+        vulkan = new VulkanHelper("app", 800, 600);
 
         vulkan.AddObject("models/test");
-            
+
         MyImage.Source = vulkan.GetRenderedImageSource();
+
+
+        rotation = new Point(0, 0);
+
     }
 
     private void LoadMockData()
@@ -209,6 +216,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 var delta = new Point(e.TotalX - _panStart.X, e.TotalY - _panStart.Y);
                 _panStart = new Point(e.TotalX, e.TotalY);
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
+                rotation.X += delta.X;
+                rotation.Y += delta.Y;
+
                 break;
         }
     }
