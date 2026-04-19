@@ -1,4 +1,5 @@
 #include "MeshHandle.h"
+#include "../assetResources/assetResource.h"
 
 VkLoader::MeshHandle::~MeshHandle()
 {
@@ -9,23 +10,9 @@ VkResult VkLoader::MeshHandle::LoadMesh(std::string const& filename)
 {
 	const int flags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
 
-#if defined(__ANDROID__)
-	AAsset* asset = AAssetManager_open(assetManager, filename.c_str(), AASSET_MODE_STREAMING);
-	assert(asset);
-	size_t size = AAsset_getLength(asset);
+	auto model = getEmbeddedAsset(filename);
 
-	assert(size > 0);
-
-	void* meshData = malloc(size);
-	AAsset_read(asset, meshData, size);
-	AAsset_close(asset);
-
-	pScene = Importer.ReadFileFromMemory(meshData, size, flags);
-
-	free(meshData);
-#else
-	m_scene = m_importer.ReadFile(filename.c_str(), flags);
-#endif
+	m_scene = m_importer.ReadFileFromMemory(model->data, model->size, flags, "dae");
 
 	if (!m_scene)
 		return VK_ERROR_UNKNOWN;

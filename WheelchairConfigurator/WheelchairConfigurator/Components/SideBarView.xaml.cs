@@ -17,27 +17,24 @@ public partial class SideBarView : ContentView, ISideBar
     private void BuildUI(string title)
     {
         var layout = new VerticalStackLayout { Padding = new Thickness(20), Spacing = 10 };
-
         layout.Add(new Label
         {
             Text = title,
             FontAttributes = FontAttributes.Bold,
             FontSize = 18
         });
-
         foreach (var field in _fields)
         {
             layout.Add(new Label { Text = field.Label });
-
             if (field.Type == FieldType.Entry)
             {
                 var entry = new Entry
                 {
                     Placeholder = "Zadejte",
                     PlaceholderColor = Colors.Gray,
-                    Keyboard = Keyboard.Numeric,
-                    BackgroundColor = Color.FromArgb("F5F5F5"),
-                    MaxLength = 3
+                    Keyboard = field.Keyboard,
+                    BackgroundColor = Color.FromArgb("FFFFFF"),
+                    MaxLength = field.MaxLength,
                 };
                 entry.TextChanged += (_, _) => field.OnSave(entry.Text ?? String.Empty);
                 _inputs.Add(entry);
@@ -45,21 +42,32 @@ public partial class SideBarView : ContentView, ISideBar
             }
             else
             {
-                var picker = new Picker { Title = "Vyberte" };
+                var picker = new Picker
+                {
+                    Title = "Vyberte",
+                    HorizontalOptions = LayoutOptions.Fill
+                };
                 foreach (var option in field.Options)
                     picker.Items.Add(option);
-
                 picker.SelectedIndexChanged += (_, _) =>
                     field.OnSave(picker.SelectedItem as string ?? String.Empty);
-
                 _inputs.Add(picker);
                 layout.Add(picker);
             }
         }
-
         Content = new Border
         {
-            BackgroundColor = Color.FromArgb("F8F8F8"),
+            BackgroundColor = Color.FromArgb("FFFFFF"),
+            StrokeThickness = 0,
+            HorizontalOptions = LayoutOptions.Fill,
+            Content = layout
+        };
+    
+
+
+    Content = new Border
+        {
+            BackgroundColor = Color.FromArgb("FFFFFF"),
             StrokeThickness = 0,
             WidthRequest = 250,
             Content = layout
@@ -78,5 +86,17 @@ public partial class SideBarView : ContentView, ISideBar
             else if (_inputs[i] is Picker picker)
                 _fields[i].OnSave(picker.SelectedItem as string ?? String.Empty);
         }
+    }
+
+    public bool Validate()
+    {
+        foreach (var input in _inputs)
+        {
+            if (input is Entry entry && string.IsNullOrWhiteSpace(entry.Text))
+                return false;
+            if (input is Picker picker && picker.SelectedIndex == -1)
+                return false;
+        }
+        return true;
     }
 }

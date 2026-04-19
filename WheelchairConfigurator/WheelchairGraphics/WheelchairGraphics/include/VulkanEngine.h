@@ -39,25 +39,33 @@ namespace VkEngine {
 		VkDescriptorBufferInfo* descriptor;
 	};
 
+	struct Mesh {
+		struct {
+			VkBuffer buf;
+			VkDeviceMemory mem;
+		} vertices;
+		struct {
+			int count;
+			VkBuffer buf;
+			VkDeviceMemory mem;
+		} indices;
+	};
+
 	class VulkanEngine
 	{
 	public:
-		VulkanEngine() = default;
+		VulkanEngine();
 		~VulkanEngine();
+
+		VkResult SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation);
+
+		VkResult AddObject(std::string objectId);
 
 		VkResult InitVulkan(std::string appName, uint32_t width, uint32_t height);
 
-#ifdef _WIN32
-		VkResult InitSwapchain(void* platformHandle, void* platformWindow);
-#elif __ANDROID__
-		VkResult InitSwapchain(ANativeWindow* window);
-#else
-		VkResult InitSwapchain();
-#endif
-
 		VkResult Prepare();
 		
-		VkResult Render();
+		VkResult Render(const char** imagedata);
 
 	private:
 
@@ -80,7 +88,7 @@ namespace VkEngine {
 		VkResult SetupDescriptorSetLayout();
 		VkResult PreparePipelines();
 		VkResult SetupDescriptorPool();
-		VkResult SetupDescriptorSet();
+		VkResult SetupDescriptorSet(VulkanTexture& vulkanTexture, VkDescriptorSet& descriptorSet);
 		VkResult BuildCommandBuffers();
 
 		VkResult SubmitPostPresentBarrier(VkImage image);
@@ -101,7 +109,15 @@ namespace VkEngine {
 
 		VkResult LoadResources();
 
-		VkResult LoadMesh();
+		VkResult CopySwapchainImageToCPU(VkImage image, const char** imagedata);
+
+		uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties);
+
+		VkResult CreateOffscreenImage();
+		VkResult CreateOffscreenFrameBuffer();
+
+		VkResult LoadMesh(std::string id);
+		VkResult LoadTexture(std::string id);
 		VkResult LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out);
 
 		std::unique_ptr<VulkanSwapchain> m_vulkanSwapchain = nullptr;
@@ -144,13 +160,22 @@ namespace VkEngine {
 		VkDescriptorSetLayout m_descriptorSetLayout;
 		VkPipelineLayout m_pipelineLayout;
 		VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-		VkDescriptorSet m_descriptorSet;
 
-		VulkanTexture m_colorMap{};
+		std::vector<VkDescriptorSet> m_descriptorSets{};
+		std::vector<VulkanTexture> m_colorMaps{};
 
 		VkPipelineStageFlags m_submitPipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
 		UniformData m_uniformData{};
+
+		VkImage m_offscreenImage;
+		VkMemoryRequirements m_memReq;
+		VkDeviceMemory m_offscreenImageMemory;
+		VkFramebuffer m_offscreenFramebuffer;
+
+		std::vector<Mesh> m_meshes{};
+
+		std::vector<std::string> m_objectId{};
 
 		struct {
 			VkSemaphore presentComplete;
@@ -175,17 +200,6 @@ namespace VkEngine {
 			glm::vec4 lightPos = glm::vec4(25.0f, 5.0f, 5.0f, 1.0f);
 		} m_uboVS;
 
-		struct Mesh {
-			struct {
-				VkBuffer buf;
-				VkDeviceMemory mem;
-			} vertices;
-			struct {
-				int count;
-				VkBuffer buf;
-				VkDeviceMemory mem;
-			} indices;
-		} m_mesh;
 	};
 
 }

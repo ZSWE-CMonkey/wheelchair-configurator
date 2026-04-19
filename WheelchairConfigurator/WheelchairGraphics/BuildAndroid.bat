@@ -7,7 +7,7 @@ set ANDROID_NDK=C:\Android-NDK\android-ndk-r27d
 
 set PATH=C:\ninja-build;%PATH%
 
-set ANDROID_PLATFORM=android-21
+set ANDROID_PLATFORM=android-24
 
 set ABIS=armeabi-v7a arm64-v8a x86 x86_64
 

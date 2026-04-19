@@ -12,4 +12,6 @@ public class SideBarField
     public FieldType Type { get; set; }
     public List<string> Options { get; set; } = [];
     public Action<string> OnSave { get; set; } = _ => { };
+    public Keyboard Keyboard { get; set; } = Keyboard.Numeric;
+    public int MaxLength { get; set; } = 3;
 }

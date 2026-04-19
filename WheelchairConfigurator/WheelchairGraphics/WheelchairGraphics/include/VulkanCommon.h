@@ -1,7 +1,10 @@
 #pragma once
 
+#ifdef WIN32
 #include <vulkan/vulkan.h>
-
+#else
+#include "../vulkanAndroid/vulkanandroid.h"
+#endif
 #define VKE_CHECK_RESULT(caller) { VkResult res = (caller); if (res != VK_SUCCESS) return res; }
 
 namespace VkEngine {

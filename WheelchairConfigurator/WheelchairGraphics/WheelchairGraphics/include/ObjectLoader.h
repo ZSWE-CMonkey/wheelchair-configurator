@@ -14,11 +14,7 @@ namespace VkLoader {
 		
 		static std::unique_ptr<MeshHandle> CreateMeshHandle();
 
-#if defined(__ANDROID__)
-		static VkResult LoadShader(AAssetManager* assetManager, const char* fileName, VkDevice device, VkShaderStageFlagBits stage, VkShaderModule& out);
-#else
 		static VkResult LoadShader(const char* fileName, VkDevice device, VkShaderStageFlagBits stage, VkShaderModule& out);
-#endif
 	private:
 
 	};

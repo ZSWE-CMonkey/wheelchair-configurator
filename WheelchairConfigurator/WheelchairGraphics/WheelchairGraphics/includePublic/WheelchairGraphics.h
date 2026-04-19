@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <cstdint>
+
 #ifdef _WIN32
 #ifdef _WG_API_EXPORT_
 #define WG_API __declspec(dllexport)
@@ -14,12 +16,16 @@
 
 //TODO: ADD android as well
 
-extern "C" WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, void* platformHandle, void* platformWindow, int width, int height);
+extern "C" WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, int width, int height);
 
 extern "C" WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int width, int height);
 
 //--Common--//
 
-extern "C" WG_API void wgRender();
+extern "C" WG_API void wgSetCamera(float zoom, float x, float y, float z, float rX, float rY, float rZ);
+
+extern "C" WG_API void wgAddObject(const char* objectId);
+
+extern "C" WG_API void wgRender(const char** out);
 
 extern "C" WG_API void wgDeinitializeGraphics();
