@@ -57,8 +57,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Fonts\Roboto-Regular.ttf" />
 	  <None Remove="Resources\Images\skibidi.png" />
 	  <None Remove="Resources\Images\tungtungtungsahur.png" />
+	  <None Remove="Resources\Images\warmDolphin.jpg" />
 	  <None Remove="Resources\libs\arm64-v8a\libWheelchairGraphics.so" />
 	  <None Remove="Resources\libs\armeabi-v7a\libWheelchairGraphics.so" />
 	  <None Remove="Resources\libs\x86\libWheelchairGraphics.so" />
@@ -82,6 +84,7 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\ConfigurationLogic\ConfigurationLogic.csproj" />
 	  <ProjectReference Include="..\DataLayer\DataLayer.csproj" />
+	  <ProjectReference Include="..\ExportLayer\ExportLayer.csproj" />
 	  <ProjectReference Include="..\ServiceLayer\ServiceLayer.csproj" />
 	</ItemGroup>
 

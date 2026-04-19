@@ -39,7 +39,7 @@ public class SignatureComponent : IPdfComponent
         table.AddColumn(Unit.FromCentimeter(7));
 
         var row1 = table.AddRow();
-        row1.VerticalAlignment = VerticalAlignment.Bottom;
+        row1.VerticalAlignment = MigraDoc.DocumentObjectModel.Tables.VerticalAlignment.Bottom;
         row1.Format.Font.Size = 10;
 
         // 3. Left Column: Location and Date placeholders

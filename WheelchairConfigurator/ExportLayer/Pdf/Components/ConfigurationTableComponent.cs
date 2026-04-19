@@ -144,7 +144,7 @@ public class ConfigurationTableComponent : IPdfComponent
     /// <param name="cell">The cell to format.</param>
     /// <param name="text">The header text.</param>
     /// <param name="alignment">The paragraph alignment.</param>
-    private static void SetHeaderCell(Cell cell, string text, ParagraphAlignment alignment)
+    private static void SetHeaderCell(MigraDoc.DocumentObjectModel.Tables.Cell cell, string text, ParagraphAlignment alignment)
     {
         cell.Format.Alignment = alignment;
         cell.Borders.Bottom.Width = 0.5;

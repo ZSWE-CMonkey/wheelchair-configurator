@@ -34,7 +34,7 @@ public class HeaderComponent
         table.AddColumn(Unit.FromCentimeter(5));
 
         var row = table.AddRow();
-        row.VerticalAlignment = VerticalAlignment.Top;
+        row.VerticalAlignment = MigraDoc.DocumentObjectModel.Tables.VerticalAlignment.Top;
 
         // ---------------------------------------------------------------------
         // 1. Text Section (Left)
@@ -43,7 +43,7 @@ public class HeaderComponent
         var title = textCell.AddParagraph("Wheelchair Configuration");
         title.Format.Font.Size = 18;
         title.Format.Font.Bold = true;
-        title.Format.Font.Color = new Color(30, 144, 255);
+        title.Format.Font.Color = new MigraDoc.DocumentObjectModel.Color(30, 144, 255);
 
         var subtitle = textCell.AddParagraph("Vygenerováno systémem");
         subtitle.Format.Font.Size = 10;
