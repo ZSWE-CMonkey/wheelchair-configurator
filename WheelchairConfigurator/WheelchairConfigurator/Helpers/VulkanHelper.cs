@@ -33,6 +33,8 @@ namespace WheelchairConfigurator.Helpers
 
         private Camera _camera;
 
+        private ImageSource _renderedScene;
+
         private object _mutex = new();
 
         public VulkanHelper(string name, int widht, int height)
@@ -48,6 +50,11 @@ namespace WheelchairConfigurator.Helpers
                 new CameraPosition(0.1f, 1.1f, 0.0f),
                 new CameraRotation(-0.5f, -112.75f, 0.0f)
                 );
+        }
+
+        ~VulkanHelper()
+        {
+            _graphicsPlugin.Deinitialize();
         }
 
         /// <summary>
@@ -75,26 +82,15 @@ namespace WheelchairConfigurator.Helpers
         {
             _camera.Rotation.X += x;
             _camera.Rotation.Y += y;
+
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
         }
 
-        /// <summary>
-        /// Initialize and renders once the scene and deinitialize vulkan engine. 
-        /// Outputs final image of that rendering.
-        /// You must add object first before this call :3
-        /// </summary>
-        /// <returns>ImageSource of pixel buffer</returns>        
-        public ImageSource GetRenderedImageSource()
+        public void Render()
         {
-            lock (_mutex)
+            lock (_mutex) //not needed?
             {
-                foreach (string id in _objectsId)
-                {
-                    _graphicsPlugin.AddResource(id);
-                }
-                _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
-                _graphicsPlugin.Initialize();
                 _graphicsPlugin.Render(out byte[] pixelBuffer);
-                _graphicsPlugin.Deinitialize();
 
                 ConvertMangetaToTransparent(ref pixelBuffer);
 
@@ -111,10 +107,30 @@ namespace WheelchairConfigurator.Helpers
 
                 byte[] bytes = data.ToArray();
 
-                ImageSource result = ImageSource.FromStream(() => new MemoryStream(bytes));
+                _renderedScene = ImageSource.FromStream(() => new MemoryStream(bytes));
                 handle.Free();
-                return result;
             }
+        }
+
+        public void Initialize()
+        {
+            foreach (string id in _objectsId)
+            {
+                _graphicsPlugin.AddResource(id);
+            }
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+            _graphicsPlugin.Initialize();
+        }
+
+        /// <summary>
+        /// Initialize and renders once the scene and deinitialize vulkan engine. 
+        /// Outputs final image of that rendering.
+        /// You must add object first before this call :3
+        /// </summary>
+        /// <returns>ImageSource of pixel buffer</returns>        
+        public ImageSource GetRenderedImageSource()
+        {
+            return _renderedScene;//copy?
         }
 
         private void ConvertMangetaToTransparent(ref byte[] pixels)

@@ -1,3 +1,4 @@
+using Microsoft.Maui.Dispatching;
 using WheelchairConfigurator.Helpers;
 
 namespace WheelchairConfigurator.Pages;
@@ -64,7 +65,8 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
 
-    private VulkanHelper vulkan = default!;
+    private VulkanHelper? vulkan = null;
+    private CancellationTokenSource _cts = default!;
 
     public WheelchairConfiguratorPage()
     {
@@ -76,10 +78,58 @@ public partial class WheelchairConfiguratorPage : ContentPage
         vulkan = new VulkanHelper("app", 800, 600);
 
         vulkan.AddObject("models/test");
-
+        vulkan.Initialize();
+        vulkan.Render();
         MyImage.Source = vulkan.GetRenderedImageSource();
+
+        StartRenderLoop();
+        StartTimer();
     }
 
+    ~WheelchairConfiguratorPage()
+    {
+        StopRenderLoop();//time shares same cts as render loop
+    }
+
+    private void StartRenderLoop()
+    {
+        _cts = new CancellationTokenSource();
+
+        _ = Task.Run(async () =>
+        {
+            while (!_cts.Token.IsCancellationRequested)
+            {
+                vulkan?.Render();
+                await Task.Yield();
+            }
+        });
+    }
+
+    private void StopRenderLoop()
+    {
+        _cts?.Cancel();
+        vulkan = null;
+    }
+    private void StartTimer()
+    {
+        _cts = new CancellationTokenSource();
+
+        _ = Task.Run(async () =>
+        {
+            var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+
+            while (await timer.WaitForNextTickAsync(_cts.Token))
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    if (vulkan != null)
+                    {
+                        MyImage.Source = vulkan.GetRenderedImageSource();
+                    }
+                });
+            }
+        });
+    }
     private void LoadMockData()
     {
         // Info o pacientovi
@@ -214,9 +264,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
 
                 //TODO: set intensity
-                vulkan.AddRotationXY(-(float)delta.Y, (float)delta.X);
-                //TODO: temporary solution, here not oneshot!
-                MyImage.Source = vulkan.GetRenderedImageSource();
+                vulkan?.AddRotationXY(-(float)delta.Y, (float)delta.X);
 
                 break;
         }
