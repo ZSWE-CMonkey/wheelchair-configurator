@@ -28,7 +28,11 @@ public class Catalog
     {
         var categories = await _categoryRepository.GetAllAsync();
         return categories
-            .Select(c => new CategoryDto { Name = c.Name })
+            .Select(c => new CategoryDto
+            {
+                Name = c.Name,
+                RoleKey = c.RoleKey
+            })
             .ToList();
     }
 
@@ -67,7 +71,19 @@ public class Catalog
             ComponentName = component?.Name ?? string.Empty,
             WeightCapacityKg = specs.WeightCapacityKg,
             SeatWidthCm = specs.SeatWidthCm,
-            MaxSpeedKmh = specs.MaxSpeedKmh
+            SeatDepthCm = specs.SeatDepthCm,
+            BackrestHeightLevel = specs.BackrestHeightLevel,
+            MaxSpeedKmh = specs.MaxSpeedKmh,
+            DrivePowerLevel = specs.DrivePowerLevel,
+            SupportsTilt = specs.SupportsTilt,
+            SupportsRecline = specs.SupportsRecline,
+            SupportsLateralSupport = specs.SupportsLateralSupport,
+            HasHeadSupport = specs.HasHeadSupport,
+            PressureReliefLevel = specs.PressureReliefLevel,
+            ControlMode = specs.ControlMode,
+            EnvironmentType = specs.EnvironmentType,
+            SupportsLegRestAdjustment = specs.SupportsLegRestAdjustment,
+            ComfortLevel = specs.ComfortLevel
         };
     }
 
@@ -96,6 +112,7 @@ public class Catalog
             Id = component.Id,
             Name = component.Name,
             CategoryName = category?.Name ?? string.Empty,
+            CategoryRoleKey = category?.RoleKey ?? "unknown",
             CatalogUrl = component.CatalogUrl,
             Price = component.Price
         };

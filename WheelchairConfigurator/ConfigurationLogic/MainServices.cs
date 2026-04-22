@@ -52,9 +52,10 @@ public class MainServices
             .Select(c => c.Id)
             .ToHashSet();
 
-        var issuesByComponent = evaluation.Issues
+        var criticalIssueMessagesByComponent = evaluation.Issues
+            .Where(i => i.Severity == Enums.EvaluationIssueSeverity.Critical)
             .GroupBy(i => i.ComponentId)
-            .ToDictionary(g => g.Key, g => g.Select(x => x.Category).Distinct().ToList());
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Message).Distinct().ToList());
 
         var entities = await Catalog.GetAllComponentEntitiesAsync();
         var outputs = new List<ComponentOutputDto>(entities.Count);
@@ -68,7 +69,7 @@ public class MainServices
         // Hard fail: keep only profile-eligible components in selected set.
         // Soft fail: keep at most one selected component per category.
         var selectedIds = new HashSet<int>();
-        var selectedCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var selectedCategoryRoles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var selectedId in request.SelectedComponentIds.Where(id => id > 0).Distinct())
         {
             if (!outputById.TryGetValue(selectedId, out var selectedOutput))
@@ -81,18 +82,19 @@ public class MainServices
                 continue;
             }
 
-            if (selectedCategories.Contains(selectedOutput.CategoryName))
+            var selectedRole = GetSelectionGroupKey(selectedOutput);
+            if (selectedCategoryRoles.Contains(selectedRole))
             {
                 continue;
             }
 
             selectedIds.Add(selectedId);
-            selectedCategories.Add(selectedOutput.CategoryName);
+            selectedCategoryRoles.Add(selectedRole);
         }
 
-        var selectedCategoryById = selectedIds
+        var selectedCategoryRoleById = selectedIds
             .Where(id => outputById.ContainsKey(id))
-            .ToDictionary(id => id, id => outputById[id].CategoryName);
+            .ToDictionary(id => id, id => GetSelectionGroupKey(outputById[id]));
 
         var states = new List<ComponentStateDto>(outputs.Count);
 
@@ -104,9 +106,9 @@ public class MainServices
 
             if (!isEnabled)
             {
-                if (issuesByComponent.TryGetValue(component.Id, out var categories) && categories.Count > 0)
+                if (criticalIssueMessagesByComponent.TryGetValue(component.Id, out var messages) && messages.Count > 0)
                 {
-                    disableReasons.AddRange(categories.Select(c => $"Komponenta nevyhovuje profilu uživatele (pravidlo: {c})."));
+                    disableReasons.AddRange(messages);
                 }
                 else
                 {
@@ -117,13 +119,14 @@ public class MainServices
             // Allow only one selected component per category.
             if (isEnabled)
             {
-                var hasDifferentSelectedInCategory = selectedCategoryById
-                    .Any(x => x.Value == component.CategoryName && x.Key != component.Id);
+                var componentRole = GetSelectionGroupKey(component);
+                var hasDifferentSelectedInCategory = selectedCategoryRoleById
+                    .Any(x => x.Value == componentRole && x.Key != component.Id);
 
                 if (hasDifferentSelectedInCategory)
                 {
                     isEnabled = false;
-                    disableReasons.Add($"V kategorii '{component.CategoryName}' už je vybraná jiná komponenta.");
+                    disableReasons.Add($"V roli '{component.CategoryName}' už je vybraná jiná komponenta.");
                 }
             }
 
@@ -223,12 +226,29 @@ public class MainServices
 
             if (componentById.TryGetValue(clickedComponentId, out var clickedEntity))
             {
+                var clickedGroupKey = GetSelectionGroupKey(await Catalog.ToComponentOutputDtoAsync(clickedEntity));
+
                 var sameCategoryIds = selected
                     .Where(id => id != clickedComponentId)
-                    .Where(id => componentById.TryGetValue(id, out var candidate) && candidate.CategoryId == clickedEntity.CategoryId)
+                    .Where(id => componentById.TryGetValue(id, out var candidate))
                     .ToList();
 
+                var idsToRemove = new List<int>();
                 foreach (var sameCategoryId in sameCategoryIds)
+                {
+                    if (!componentById.TryGetValue(sameCategoryId, out var candidate))
+                    {
+                        continue;
+                    }
+
+                    var candidateGroupKey = GetSelectionGroupKey(await Catalog.ToComponentOutputDtoAsync(candidate));
+                    if (string.Equals(candidateGroupKey, clickedGroupKey, StringComparison.OrdinalIgnoreCase))
+                    {
+                        idsToRemove.Add(sameCategoryId);
+                    }
+                }
+
+                foreach (var sameCategoryId in idsToRemove)
                 {
                     selected.Remove(sameCategoryId);
                 }
@@ -312,8 +332,32 @@ public class MainServices
             ComponentName = specs.ComponentName,
             WeightCapacityKg = specs.WeightCapacityKg,
             SeatWidthCm = specs.SeatWidthCm,
-            MaxSpeedKmh = specs.MaxSpeedKmh
+            SeatDepthCm = specs.SeatDepthCm,
+            BackrestHeightLevel = specs.BackrestHeightLevel,
+            MaxSpeedKmh = specs.MaxSpeedKmh,
+            DrivePowerLevel = specs.DrivePowerLevel,
+            SupportsTilt = specs.SupportsTilt,
+            SupportsRecline = specs.SupportsRecline,
+            SupportsLateralSupport = specs.SupportsLateralSupport,
+            HasHeadSupport = specs.HasHeadSupport,
+            PressureReliefLevel = specs.PressureReliefLevel,
+            ControlMode = specs.ControlMode,
+            EnvironmentType = specs.EnvironmentType,
+            SupportsLegRestAdjustment = specs.SupportsLegRestAdjustment,
+            ComfortLevel = specs.ComfortLevel
         };
+    }
+
+    // Normalize selection group to role key; fallback keeps backward compatibility.
+    private static string GetSelectionGroupKey(ComponentOutputDto component)
+    {
+        if (!string.IsNullOrWhiteSpace(component.CategoryRoleKey) &&
+            !string.Equals(component.CategoryRoleKey, "unknown", StringComparison.OrdinalIgnoreCase))
+        {
+            return component.CategoryRoleKey;
+        }
+
+        return component.CategoryName;
     }
 
     // Load saved configurations for specialist

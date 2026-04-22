@@ -8,6 +8,9 @@ public class ProfileRequirementsDto
     public int? MinimumSeatDepthCm { get; set; }
     public int? MaximumSeatDepthCm { get; set; }
     public int MinimumWeightCapacityKg { get; set; }
+    public int MinimumDrivePowerLevel { get; set; }
+    public int MinimumPressureReliefLevel { get; set; }
+    public int MinimumComfortLevel { get; set; }
     public string BackrestHeightRecommendation { get; set; } = string.Empty;
     public string ChassisRecommendation { get; set; } = string.Empty;
     public bool NeedsHeadrest { get; set; }

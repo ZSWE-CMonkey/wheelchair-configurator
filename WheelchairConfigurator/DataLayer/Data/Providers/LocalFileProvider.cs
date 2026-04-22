@@ -15,7 +15,7 @@ public class LocalFileProvider
     {
         return new string[]
         {
-            "Resources/seed_data.json"
+            "Resources/Raw/seed_data.json"
         };
     }
 }

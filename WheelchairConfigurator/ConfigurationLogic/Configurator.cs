@@ -12,6 +12,21 @@ public class Configurator
 	private readonly Catalog _catalog;
 	private readonly CompatibilityRuleRepository _compatibilityRuleRepository;
 
+	// Stable category roles from database RoleKey.
+	private enum ComponentCategoryRole
+	{
+		Unknown,
+		Chassis,
+		Wheel,
+		Drive,
+		Battery,
+		Seat,
+		Backrest,
+		HeadSupport,
+		Control,
+		LegSupport
+	}
+
 	// Initialize evaluator dependencies
 	public Configurator(Catalog catalog, CompatibilityRuleRepository compatibilityRuleRepository)
 	{
@@ -39,23 +54,18 @@ public class Configurator
 			outputByComponentId[component.Id] = await _catalog.ToComponentOutputDtoAsync(component);
 		}
 
-		var rulesByCategoryId = BuildCategoryRulesByCategoryId(components, specsByComponentId);
-
 		foreach (var component in components)
 		{
 			specsByComponentId.TryGetValue(component.Id, out var specs);
 			var output = outputByComponentId[component.Id];
-			var rules = rulesByCategoryId.GetValueOrDefault(
-				component.CategoryId,
-				new CategoryRuleSet(CheckWeightCapacity: false, CheckSeatWidth: false));
+			var role = ParseRole(output.CategoryRoleKey);
 			var issues = new List<EvaluationIssueDto>();
 
-			EvaluateDeterministicConstraints(profile, result.Requirements, component, rules, specs, issues);
-			AddUnsupportedRuleInfoIssues(profile, component, issues);
-
+			EvaluateDeterministicConstraints(profile, result.Requirements, component, role, specs, issues);
 			result.Issues.AddRange(issues);
 
-			if (!issues.Any(i => i.Severity == EvaluationIssueSeverity.Critical || i.Severity == EvaluationIssueSeverity.Warning))
+			// Hard fail only on critical rules; warnings are informational.
+			if (!issues.Any(i => i.Severity == EvaluationIssueSeverity.Critical))
 			{
 				result.EligibleComponents.Add(output);
 			}
@@ -80,6 +90,9 @@ public class Configurator
 			MaximumSeatWidthCm = profile.PelvisWidthCm > 0 ? profile.PelvisWidthCm + 3 : null,
 			MinimumSeatDepthCm = profile.ThighLengthCm > 0 ? Math.Max(profile.ThighLengthCm - 3, 0) : null,
 			MaximumSeatDepthCm = profile.ThighLengthCm > 0 ? profile.ThighLengthCm + 2 : null,
+			MinimumDrivePowerLevel = GetRequiredDrivePowerLevel(profile.WeightKg),
+			MinimumPressureReliefLevel = GetRequiredPressureReliefLevel(profile),
+			MinimumComfortLevel = GetRequiredComfortLevel(profile),
 			BackrestHeightRecommendation = GetBackrestHeightRecommendation(profile),
 			ChassisRecommendation = GetChassisRecommendation(profile),
 			NeedsHeadrest = profile.HeadControl == HeadControlLevel.No,
@@ -102,62 +115,6 @@ public class Configurator
 			? $"Výška trupu {profile.TrunkHeightCm} cm: {GetBackrestHeightRecommendation(profile)}."
 			: $"Doporučení pro opěradlo: {GetBackrestHeightRecommendation(profile)}.");
 		AddRecommendation(result.Recommendations, $"Doporučení podvozku: {GetChassisRecommendation(profile)}.");
-
-		if (profile.WeightKg >= 120)
-		{
-			AddRecommendation(result.Recommendations, "Vyšší hmotnost: Preferuj pevnější podvozek a komponenty s vyšší rezervou nosnosti.");
-		}
-
-		if (profile.TrunkStability == TrunkStabilityLevel.Poor)
-		{
-			AddRecommendation(result.Recommendations, "Špatná stabilita trupu: Doporučují se laterální opory, funkce tilt a vyšší opěradlo.");
-		}
-		else if (profile.TrunkStability == TrunkStabilityLevel.Medium)
-		{
-			AddRecommendation(result.Recommendations, "Střední stabilita trupu: Zvaž středně vysoké opěradlo a lehčí posturální podporu.");
-		}
-
-		if (profile.HeadControl == HeadControlLevel.No)
-		{
-			AddRecommendation(result.Recommendations, "Bez kontroly hlavy: Je nutná opěrka hlavy a spíše vyšší opěradlo.");
-		}
-
-		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.High)
-		{
-			AddRecommendation(result.Recommendations, "Vysoké riziko dekubitů: Doporučuje se antidekubitní polštář, tilt a případně recline.");
-		}
-
-		if (profile.HandFunction == HandFunctionLevel.None)
-		{
-			AddRecommendation(result.Recommendations, "Bez funkce rukou: Zvaž alternativní ovládání, například head control nebo sip and puff.");
-		}
-		else if (profile.HandFunction == HandFunctionLevel.Limited)
-		{
-			AddRecommendation(result.Recommendations, "Omezená funkce rukou: Preferuj jednodušší a méně náročné ovládání.");
-		}
-
-		if (profile.Environment == UsageEnvironment.Indoor)
-		{
-			AddRecommendation(result.Recommendations, "Indoor použití: Doporučuje se kompaktní podvozek s vyšší manévrovatelností, například mid-wheel.");
-		}
-		else if (profile.Environment == UsageEnvironment.Outdoor)
-		{
-			AddRecommendation(result.Recommendations, "Outdoor použití: Doporučuje se robustní podvozek, větší kola a lepší odpružení.");
-		}
-		else
-		{
-			AddRecommendation(result.Recommendations, "Kombinované použití: Hledej vyvážený podvozek mezi obratností a stabilitou.");
-		}
-
-		if (profile.LowerLimbCondition != LowerLimbConditionLevel.None)
-		{
-			AddRecommendation(result.Recommendations, "Dolní končetiny: Doporučují se nastavitelné footplates nebo elevating leg rests.");
-		}
-
-		if (profile.Pain >= SymptomSeverityLevel.Medium || profile.Fatigue >= SymptomSeverityLevel.Medium)
-		{
-			AddRecommendation(result.Recommendations, "Bolest nebo únava: Upřednostni komfortnější seating, lepší oporu a možnost polohování.");
-		}
 	}
 
 	// Compute seat width range
@@ -221,148 +178,427 @@ public class Configurator
 		};
 	}
 
-	// Validate seat width fit
-	private static bool IsSeatWidthWithinRange(int seatWidthCm, ProfileRequirementsDto requirements)
-	{
-		if (!requirements.MinimumSeatWidthCm.HasValue || !requirements.MaximumSeatWidthCm.HasValue)
-		{
-			return true;
-		}
-
-		return seatWidthCm >= requirements.MinimumSeatWidthCm.Value && seatWidthCm <= requirements.MaximumSeatWidthCm.Value;
-	}
-
-	// Deterministic checks based on structured data only.
+	// Deterministic checks based on profile, role and structured specs.
 	private static void EvaluateDeterministicConstraints(
 		UserProfileDto profile,
 		ProfileRequirementsDto requirements,
 		Component component,
-		CategoryRuleSet rules,
+		ComponentCategoryRole role,
 		ComponentSpecsDto? specs,
 		List<EvaluationIssueDto> issues)
 	{
 		if (specs is null)
 		{
-			var severity = rules.CheckWeightCapacity || rules.CheckSeatWidth
-				? EvaluationIssueSeverity.Warning
-				: EvaluationIssueSeverity.Info;
-			issues.Add(CreateIssue(component, "specs_missing", "Pro tuto komponentu chybí technické specifikace potřebné pro vyhodnocení.", severity));
+			issues.Add(CreateIssue(component, "specs_missing", "Komponenta nemá technické specifikace potřebné pro vyhodnocení.", EvaluationIssueSeverity.Warning));
 			return;
 		}
 
-		if (rules.CheckWeightCapacity && profile.WeightKg > 0)
+		switch (role)
 		{
-			if (specs.WeightCapacityKg <= 0)
-			{
-				issues.Add(CreateIssue(component, "weight_capacity_missing", "Komponenta nemá vyplněnou nosnost pro kontrolu hmotnosti uživatele.", EvaluationIssueSeverity.Warning));
-			}
-			else if (profile.WeightKg > specs.WeightCapacityKg)
-			{
-				issues.Add(CreateIssue(component, "weight_capacity", "Hmotnost uživatele překročila nosnost komponenty.", EvaluationIssueSeverity.Critical));
-			}
-		}
+			case ComponentCategoryRole.Chassis:
+				CheckWeightCapacity(profile, component, specs, issues);
+				CheckSeatWidth(requirements, component, specs, issues);
+				CheckSeatDepth(requirements, component, specs, issues);
+				CheckComfort(requirements, component, specs, issues);
+				CheckEnvironment(profile, component, specs, issues);
+				break;
 
-		if (rules.CheckSeatWidth
-			&& requirements.MinimumSeatWidthCm.HasValue
-			&& requirements.MaximumSeatWidthCm.HasValue
-			&& specs.SeatWidthCm <= 0)
-		{
-			issues.Add(CreateIssue(component, "seat_width_missing", "Komponenta nemá vyplněnou šířku sedu pro antropometrickou kontrolu.", EvaluationIssueSeverity.Warning));
-		}
+			case ComponentCategoryRole.Wheel:
+				// Wheel rows in current dataset usually do not carry explicit capacity.
+				CheckWeightCapacity(profile, component, specs, issues, requireValue: false);
+				CheckEnvironment(profile, component, specs, issues);
+				break;
 
-		if (rules.CheckSeatWidth
-			&& requirements.MinimumSeatWidthCm.HasValue
-			&& requirements.MaximumSeatWidthCm.HasValue
-			&& specs.SeatWidthCm > 0
-			&& !IsSeatWidthWithinRange(specs.SeatWidthCm, requirements))
-		{
-			issues.Add(CreateIssue(component, "seat_width", "Šířka sedu neodpovídá požadovanému rozsahu podle šířky pánve.", EvaluationIssueSeverity.Warning));
+			case ComponentCategoryRole.Drive:
+			case ComponentCategoryRole.Battery:
+				CheckDrivePower(requirements, component, specs, issues);
+				CheckWeightCapacity(profile, component, specs, issues, requireValue: false);
+				CheckEnvironment(profile, component, specs, issues);
+				break;
+
+			case ComponentCategoryRole.Seat:
+				CheckSeatWidth(requirements, component, specs, issues);
+				CheckSeatDepth(requirements, component, specs, issues);
+				CheckPressureRelief(requirements, component, specs, issues);
+				CheckComfort(requirements, component, specs, issues);
+				break;
+
+			case ComponentCategoryRole.Backrest:
+				CheckBackrestHeight(profile, component, specs, issues);
+				CheckTrunkSupport(profile, component, specs, issues);
+				CheckComfort(requirements, component, specs, issues);
+				break;
+
+			case ComponentCategoryRole.HeadSupport:
+				CheckHeadSupport(requirements, component, specs, issues);
+				break;
+
+			case ComponentCategoryRole.Control:
+				CheckControl(profile, component, specs, issues);
+				break;
+
+			case ComponentCategoryRole.LegSupport:
+				CheckLegSupport(profile, component, specs, issues);
+				break;
+
+			default:
+				// Fallback safety check for unknown role.
+				CheckWeightCapacity(profile, component, specs, issues);
+				break;
 		}
 	}
 
-	// Add info issues for rules that cannot be evaluated with current DataLayer schema.
-	private static void AddUnsupportedRuleInfoIssues(UserProfileDto profile, Component component, List<EvaluationIssueDto> issues)
+	// Check patient weight vs component capacity.
+	private static void CheckWeightCapacity(
+		UserProfileDto profile,
+		Component component,
+		ComponentSpecsDto specs,
+		List<EvaluationIssueDto> issues,
+		bool requireValue = true)
 	{
-		if (profile.ThighLengthCm > 0)
+		if (profile.WeightKg <= 0)
 		{
-			AddInfoIssueOnce(issues, component, "seat_depth_unavailable", "Kontrola hloubky sedu zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			return;
 		}
 
-		if (profile.TrunkHeightCm > 0)
+		if (!specs.WeightCapacityKg.HasValue || specs.WeightCapacityKg.Value <= 0)
 		{
-			AddInfoIssueOnce(issues, component, "backrest_height_unavailable", "Kontrola výšky opěradla zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			if (requireValue)
+			{
+				issues.Add(CreateIssue(component, "weight_capacity_missing", "Komponenta nemá vyplněnou nosnost pro kontrolu hmotnosti uživatele.", EvaluationIssueSeverity.Warning));
+			}
+			return;
 		}
 
-		if (profile.TrunkStability == TrunkStabilityLevel.Poor)
+		if (profile.WeightKg > specs.WeightCapacityKg.Value)
 		{
-			AddInfoIssueOnce(issues, component, "trunk_support_unavailable", "Kontrola posturální podpory trupu zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			issues.Add(CreateIssue(component, "weight_capacity", "Hmotnost uživatele překročila nosnost komponenty.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check seat width range.
+	private static void CheckSeatWidth(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (!requirements.MinimumSeatWidthCm.HasValue || !requirements.MaximumSeatWidthCm.HasValue)
+		{
+			return;
 		}
 
-		if (profile.HeadControl == HeadControlLevel.No)
+		if (!specs.SeatWidthCm.HasValue || specs.SeatWidthCm.Value <= 0)
 		{
-			AddInfoIssueOnce(issues, component, "head_control_unavailable", "Kontrola požadavku na opěrku hlavy zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			issues.Add(CreateIssue(component, "seat_width_missing", "Komponenta nemá vyplněnou šířku sedu pro antropometrickou kontrolu.", EvaluationIssueSeverity.Warning));
+			return;
 		}
 
-		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.High)
+		if (specs.SeatWidthCm.Value < requirements.MinimumSeatWidthCm.Value || specs.SeatWidthCm.Value > requirements.MaximumSeatWidthCm.Value)
 		{
-			AddInfoIssueOnce(issues, component, "pressure_relief_unavailable", "Kontrola prevence dekubitů zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			issues.Add(CreateIssue(component, "seat_width", "Šířka sedu neodpovídá požadovanému rozsahu podle šířky pánve.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check seat depth range.
+	private static void CheckSeatDepth(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (!requirements.MinimumSeatDepthCm.HasValue || !requirements.MaximumSeatDepthCm.HasValue)
+		{
+			return;
+		}
+
+		if (!specs.SeatDepthCm.HasValue || specs.SeatDepthCm.Value <= 0)
+		{
+			issues.Add(CreateIssue(component, "seat_depth_missing", "Komponenta nemá vyplněnou hloubku sedu pro antropometrickou kontrolu.", EvaluationIssueSeverity.Warning));
+			return;
+		}
+
+		if (specs.SeatDepthCm.Value < requirements.MinimumSeatDepthCm.Value || specs.SeatDepthCm.Value > requirements.MaximumSeatDepthCm.Value)
+		{
+			issues.Add(CreateIssue(component, "seat_depth", "Hloubka sedu neodpovídá požadovanému rozsahu podle délky stehna.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check backrest height level.
+	private static void CheckBackrestHeight(UserProfileDto profile, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		var requiredLevel = GetRequiredBackrestHeightLevel(profile);
+		if (requiredLevel <= 0)
+		{
+			return;
+		}
+
+		if (!specs.BackrestHeightLevel.HasValue || specs.BackrestHeightLevel.Value <= 0)
+		{
+			issues.Add(CreateIssue(component, "backrest_height_missing", "Komponenta nemá vyplněnou úroveň výšky opěradla.", EvaluationIssueSeverity.Warning));
+			return;
+		}
+
+		if (specs.BackrestHeightLevel.Value < requiredLevel)
+		{
+			issues.Add(CreateIssue(component, "backrest_height", "Výška opěradla není dostatečná pro zadaný profil.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check trunk support features.
+	private static void CheckTrunkSupport(UserProfileDto profile, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (profile.TrunkStability != TrunkStabilityLevel.Poor)
+		{
+			return;
+		}
+
+		if (!specs.SupportsTilt.HasValue)
+		{
+			issues.Add(CreateIssue(component, "tilt_missing", "Komponenta nemá vyplněno, zda podporuje funkci tilt.", EvaluationIssueSeverity.Warning));
+		}
+		else if (!specs.SupportsTilt.Value)
+		{
+			issues.Add(CreateIssue(component, "tilt_required", "Profil vyžaduje funkci tilt kvůli nízké stabilitě trupu.", EvaluationIssueSeverity.Critical));
+		}
+
+		if (!specs.SupportsLateralSupport.HasValue)
+		{
+			issues.Add(CreateIssue(component, "lateral_support_missing", "Komponenta nemá vyplněno, zda podporuje laterální opory.", EvaluationIssueSeverity.Warning));
+		}
+		else if (!specs.SupportsLateralSupport.Value)
+		{
+			issues.Add(CreateIssue(component, "lateral_support_required", "Profil vyžaduje laterální opory kvůli nízké stabilitě trupu.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check head support requirement.
+	private static void CheckHeadSupport(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (!requirements.NeedsHeadrest)
+		{
+			return;
+		}
+
+		if (!specs.HasHeadSupport.HasValue)
+		{
+			issues.Add(CreateIssue(component, "head_support_missing", "Komponenta nemá vyplněno, zda obsahuje opěrku hlavy.", EvaluationIssueSeverity.Warning));
+		}
+		else if (!specs.HasHeadSupport.Value)
+		{
+			issues.Add(CreateIssue(component, "head_support_required", "Profil bez kontroly hlavy vyžaduje opěrku hlavy.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check pressure relief and positioning.
+	private static void CheckPressureRelief(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (requirements.MinimumPressureReliefLevel > 0 && (!specs.PressureReliefLevel.HasValue || specs.PressureReliefLevel.Value <= 0))
+		{
+			issues.Add(CreateIssue(component, "pressure_relief_missing", "Komponenta nemá vyplněnou úroveň antidekubitní ochrany.", EvaluationIssueSeverity.Warning));
+			return;
+		}
+
+		if (specs.PressureReliefLevel.HasValue && specs.PressureReliefLevel.Value < requirements.MinimumPressureReliefLevel)
+		{
+			issues.Add(CreateIssue(component, "pressure_relief", "Antidekubitní ochrana komponenty je pro profil nedostatečná.", EvaluationIssueSeverity.Critical));
+		}
+
+		if (requirements.NeedsTilt)
+		{
+			var tiltKnown = specs.SupportsTilt.HasValue;
+			var reclineKnown = specs.SupportsRecline.HasValue;
+			var hasTiltOrRecline = specs.SupportsTilt == true || specs.SupportsRecline == true;
+
+			if (!hasTiltOrRecline && !tiltKnown && !reclineKnown)
+			{
+				issues.Add(CreateIssue(component, "positioning_missing", "Komponenta nemá vyplněno, zda podporuje polohování tilt nebo recline.", EvaluationIssueSeverity.Warning));
+			}
+			else if (!hasTiltOrRecline)
+			{
+				issues.Add(CreateIssue(component, "positioning_required", "Profil vyžaduje polohování, ale komponenta nepodporuje tilt ani recline.", EvaluationIssueSeverity.Critical));
+			}
+		}
+	}
+
+	// Check control mode suitability.
+	private static void CheckControl(UserProfileDto profile, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		var mode = NormalizeKey(specs.ControlMode);
+		if (string.IsNullOrWhiteSpace(mode))
+		{
+			issues.Add(CreateIssue(component, "control_mode_missing", "Komponenta nemá vyplněný typ ovládání.", EvaluationIssueSeverity.Warning));
+			return;
 		}
 
 		if (profile.HandFunction == HandFunctionLevel.None)
 		{
-			AddInfoIssueOnce(issues, component, "alternative_control_unavailable", "Kontrola alternativního ovládání zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			var supported = mode is "head" or "sip_puff" or "switch" or "voice";
+			if (!supported)
+			{
+				issues.Add(CreateIssue(component, "alternative_control", "Bez funkce rukou je nutné alternativní ovládání.", EvaluationIssueSeverity.Critical));
+			}
+			return;
 		}
 
-		if (profile.Environment != UsageEnvironment.Mixed)
+		if (profile.HandFunction == HandFunctionLevel.Limited)
 		{
-			AddInfoIssueOnce(issues, component, "environment_unavailable", "Detailní kontrola prostředí použití zatím není dostupná, protože chybí potřebná datová pole komponent.");
-		}
-
-		if (profile.LowerLimbCondition != LowerLimbConditionLevel.None)
-		{
-			AddInfoIssueOnce(issues, component, "leg_support_unavailable", "Kontrola podpory dolních končetin zatím není dostupná, protože chybí potřebná datová pole komponent.");
-		}
-
-		if (profile.Pain >= SymptomSeverityLevel.Medium || profile.Fatigue >= SymptomSeverityLevel.Medium)
-		{
-			AddInfoIssueOnce(issues, component, "comfort_unavailable", "Kontrola komfortních prvků zatím není dostupná, protože chybí potřebná datová pole komponent.");
+			var tooDemanding = mode is "manual_only" or "joystick_advanced";
+			if (tooDemanding)
+			{
+				issues.Add(CreateIssue(component, "control_demanding", "Zvolený typ ovládání je příliš náročný pro omezenou funkci rukou.", EvaluationIssueSeverity.Critical));
+			}
 		}
 	}
 
-	private static void AddInfoIssueOnce(List<EvaluationIssueDto> issues, Component component, string category, string message)
+	// Check environment suitability.
+	private static void CheckEnvironment(UserProfileDto profile, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
 	{
-		if (issues.Any(i => i.Category == category))
+		var environmentType = NormalizeKey(specs.EnvironmentType);
+		if (string.IsNullOrWhiteSpace(environmentType))
+		{
+			issues.Add(CreateIssue(component, "environment_missing", "Komponenta nemá vyplněné prostředí použití.", EvaluationIssueSeverity.Warning));
+			return;
+		}
+
+		if (profile.Environment == UsageEnvironment.Indoor && environmentType == "outdoor")
+		{
+			issues.Add(CreateIssue(component, "environment_indoor", "Komponenta je určená pouze pro outdoor prostředí.", EvaluationIssueSeverity.Critical));
+		}
+		else if (profile.Environment == UsageEnvironment.Outdoor && environmentType == "indoor")
+		{
+			issues.Add(CreateIssue(component, "environment_outdoor", "Komponenta je určená pouze pro indoor prostředí.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Check lower limb adaptation features.
+	private static void CheckLegSupport(UserProfileDto profile, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (profile.LowerLimbCondition == LowerLimbConditionLevel.None)
 		{
 			return;
 		}
 
-		issues.Add(CreateIssue(component, category, message, EvaluationIssueSeverity.Info));
+		if (!specs.SupportsLegRestAdjustment.HasValue)
+		{
+			issues.Add(CreateIssue(component, "leg_support_missing", "Komponenta nemá vyplněno, zda podporuje nastavitelné opory dolních končetin.", EvaluationIssueSeverity.Warning));
+		}
+		else if (!specs.SupportsLegRestAdjustment.Value)
+		{
+			issues.Add(CreateIssue(component, "leg_support", "Profil vyžaduje nastavitelné opory dolních končetin.", EvaluationIssueSeverity.Critical));
+		}
 	}
 
-	// Build category rules directly from DB-backed component specs.
-	private static Dictionary<int, CategoryRuleSet> BuildCategoryRulesByCategoryId(
-		List<Component> components,
-		Dictionary<int, ComponentSpecsDto?> specsByComponentId)
+	// Check comfort level.
+	private static void CheckComfort(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
 	{
-		var rulesByCategoryId = new Dictionary<int, CategoryRuleSet>();
-
-		foreach (var categoryGroup in components.GroupBy(c => c.CategoryId))
+		if (requirements.MinimumComfortLevel > 0 && (!specs.ComfortLevel.HasValue || specs.ComfortLevel.Value <= 0))
 		{
-			var checkWeightCapacity = categoryGroup.Any(c =>
-				specsByComponentId.TryGetValue(c.Id, out var specs) && specs is not null && specs.WeightCapacityKg > 0);
-
-			var checkSeatWidth = categoryGroup.Any(c =>
-				specsByComponentId.TryGetValue(c.Id, out var specs) && specs is not null && specs.SeatWidthCm > 0);
-
-			rulesByCategoryId[categoryGroup.Key] = new CategoryRuleSet(
-				CheckWeightCapacity: checkWeightCapacity,
-				CheckSeatWidth: checkSeatWidth);
+			issues.Add(CreateIssue(component, "comfort_missing", "Komponenta nemá vyplněnou úroveň komfortu.", EvaluationIssueSeverity.Warning));
+			return;
 		}
 
-		return rulesByCategoryId;
+		if (specs.ComfortLevel.HasValue && specs.ComfortLevel.Value < requirements.MinimumComfortLevel)
+		{
+			issues.Add(CreateIssue(component, "comfort", "Úroveň komfortu komponenty je pro profil nedostatečná.", EvaluationIssueSeverity.Critical));
+		}
 	}
 
-	private readonly record struct CategoryRuleSet(bool CheckWeightCapacity, bool CheckSeatWidth);
+	// Check drive performance level.
+	private static void CheckDrivePower(ProfileRequirementsDto requirements, Component component, ComponentSpecsDto specs, List<EvaluationIssueDto> issues)
+	{
+		if (requirements.MinimumDrivePowerLevel <= 0)
+		{
+			return;
+		}
+
+		if (!specs.DrivePowerLevel.HasValue || specs.DrivePowerLevel.Value <= 0)
+		{
+			issues.Add(CreateIssue(component, "drive_power_missing", "Komponenta nemá vyplněnou úroveň výkonu.", EvaluationIssueSeverity.Warning));
+			return;
+		}
+
+		if (specs.DrivePowerLevel.Value < requirements.MinimumDrivePowerLevel)
+		{
+			issues.Add(CreateIssue(component, "drive_power", "Výkon komponenty je nedostatečný vzhledem k hmotnosti uživatele.", EvaluationIssueSeverity.Critical));
+		}
+	}
+
+	// Map role key from database to internal enum.
+	private static ComponentCategoryRole ParseRole(string? roleKey)
+	{
+		return NormalizeKey(roleKey) switch
+		{
+			"chassis" => ComponentCategoryRole.Chassis,
+			"wheel" => ComponentCategoryRole.Wheel,
+			"drive" => ComponentCategoryRole.Drive,
+			"battery" => ComponentCategoryRole.Battery,
+			"seat" => ComponentCategoryRole.Seat,
+			"backrest" => ComponentCategoryRole.Backrest,
+			"head_support" => ComponentCategoryRole.HeadSupport,
+			"control" => ComponentCategoryRole.Control,
+			"leg_support" => ComponentCategoryRole.LegSupport,
+			_ => ComponentCategoryRole.Unknown
+		};
+	}
+
+	// Normalize database key values.
+	private static string NormalizeKey(string? value)
+	{
+		return (value ?? string.Empty).Trim().ToLowerInvariant();
+	}
+
+	// Derive required backrest level (1 low, 2 medium, 3 high).
+	private static int GetRequiredBackrestHeightLevel(UserProfileDto profile)
+	{
+		if (profile.HeadControl == HeadControlLevel.No || profile.TrunkStability == TrunkStabilityLevel.Poor || profile.TrunkHeightCm >= 60)
+		{
+			return 3;
+		}
+
+		if (profile.TrunkHeightCm >= 50 || profile.TrunkStability == TrunkStabilityLevel.Medium)
+		{
+			return 2;
+		}
+
+		return 1;
+	}
+
+	// Derive required drive power level by weight.
+	private static int GetRequiredDrivePowerLevel(int weightKg)
+	{
+		if (weightKg >= 120)
+		{
+			return 3;
+		}
+
+		if (weightKg >= 90)
+		{
+			return 2;
+		}
+
+		return weightKg > 0 ? 1 : 0;
+	}
+
+	// Derive required pressure relief level (0-3).
+	private static int GetRequiredPressureReliefLevel(UserProfileDto profile)
+	{
+		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.High)
+		{
+			return 3;
+		}
+
+		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.Medium)
+		{
+			return 2;
+		}
+
+		if (profile.PressureInjuryRisk == PressureInjuryRiskLevel.Low)
+		{
+			return 1;
+		}
+
+		return 0;
+	}
+
+	// Derive required comfort level (0-3).
+	private static int GetRequiredComfortLevel(UserProfileDto profile)
+	{
+		var maxSymptom = Math.Max((int)profile.Pain, (int)profile.Fatigue);
+		return Math.Clamp(maxSymptom, 0, 3);
+	}
 
 	// Build issue DTO
 	private static EvaluationIssueDto CreateIssue(Component component, string category, string message, EvaluationIssueSeverity severity)
