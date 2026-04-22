@@ -14,31 +14,9 @@ GraphicsPlugin::VulkanGraphicsPlugin::~VulkanGraphicsPlugin()
     CleanUp();
 }
 
-#if _WIN32
-void GraphicsPlugin::VulkanGraphicsPlugin::SetHandles(void* platformHandle, void* platformWindow)
-{
-    m_platformHandle = platformHandle;
-    m_platformWindow = platformWindow;
-}
-#elif __ANDROID__
-void GraphicsPlugin::VulkanGraphicsPlugin::SetHandles(ANativeWindow* window)
-{
-    throw std::runtime_error("Not implemented");
-}
-#else
-void GraphicsPlugin::VulkanGraphicsPlugin::SetHandles()
-{
-    throw std::runtime_error("Not implemented");
-}
-#endif
-
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appName, uint32_t width, uint32_t height)
 {
     if (m_vulkanEngine->InitVulkan(appName, width, height) != VK_SUCCESS)
-        return GP_INITIALIZATION_FAILED;
-
-    //TODO: PLATFORM SPECIFIC
-    if (m_vulkanEngine->InitSwapchain(m_platformHandle, m_platformWindow) != VK_SUCCESS)
         return GP_INITIALIZATION_FAILED;
 
     if (m_vulkanEngine->Prepare() != VK_SUCCESS)
@@ -47,16 +25,38 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Initialize(std::string appNa
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetObject()
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::SetCamera(CameraSettings setting)
 {
+    float zoom = setting.zoom;
+    glm::vec3 position(setting.position.x, setting.position.y, setting.position.z);
+    glm::vec3 rotation(setting.rotation.x, setting.rotation.y, setting.rotation.z);
+
+    if (m_vulkanEngine->SetCamera(zoom, position, rotation) != VK_SUCCESS)
+        return GP_SET_CAMERA_ERROR;
+
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render()
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObject(std::string objectId)
 {
+    if (m_vulkanEngine->AddObject(objectId) != VK_SUCCESS)
+        return GP_ADD_OBJECT_ERROR;
+
+    return GP_SUCCESS;
+}
+
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render(const char** out)
+{
+    if (out == nullptr)
+        return GP_NULL_PARAM_ERROR;
+
     if (!m_vulkanEngine)
         return GP_SUCCESS;
-    return m_vulkanEngine->Render() == VK_SUCCESS ? GP_SUCCESS : GP_RENDERING_ERROR;
+
+    if (*out)
+        *out = nullptr;
+
+    return m_vulkanEngine->Render(out) == VK_SUCCESS ? GP_SUCCESS : GP_RENDERING_ERROR;
 }
 
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::DeInitialize()

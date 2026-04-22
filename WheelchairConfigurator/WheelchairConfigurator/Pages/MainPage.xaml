@@ -29,18 +29,40 @@
                        HorizontalTextAlignment="Center"
                        SemanticProperties.HeadingLevel="Level2" />
 
-                <Button x:Name="toConfiguratorBtn"
-                        Text="Sestavit nový vozík" 
-                        SemanticProperties.Hint="Redirects to configurator"
-                        Clicked="OnToConfiguratorClicked"
-                        HorizontalOptions="Fill" />
+                <Grid ColumnDefinitions="*,*"
+                      ColumnSpacing="15"
+                      RowDefinitions="Auto,Auto"
+                      RowSpacing="15">
 
-                <Button x:Name="ExitBtn"
-                        Text="Zavřít aplikaci"
-                        Clicked="OnExitClicked"
-                        BackgroundColor="Red"
-                        TextColor="White"
-                        HorizontalOptions="Fill" />
+                    <Button x:Name="toNewPatientBtn"
+                            Grid.Row="0" Grid.Column="0"
+                            Text="Přidat pacienta"
+                            SemanticProperties.Hint="Redirects to New Patient Page"
+                            Clicked="OnToNewPatientClicked"
+                            HorizontalOptions="Fill" />
+
+                    <Button x:Name="toPatientSelectBtn"
+                            Grid.Row="1" Grid.Column="0"
+                            Text="Vybrat pacienta"
+                            SemanticProperties.Hint="Redirects to Patient Select Page"
+                            Clicked="OnToPatientSelectClicked"
+                            HorizontalOptions="Fill" />
+
+                    <Button x:Name="toComponentManagerBtn"
+                            Grid.Row="0" Grid.Column="1"
+                            Text="Spravovat součástky"
+                            SemanticProperties.Hint="Redirects to Component Manager Page"
+                            Clicked="OnToComponentManagerClicked"
+                            HorizontalOptions="Fill" />
+
+                    <Button x:Name="ExitBtn"
+                            Grid.Row="1" Grid.Column="1"
+                            Text="Zavřít aplikaci"
+                            Clicked="OnExitClicked"
+                            BackgroundColor="Red"
+                            TextColor="White"
+                            HorizontalOptions="Fill" />
+                </Grid>
             </VerticalStackLayout>
         </ScrollView>
 

@@ -19,17 +19,187 @@ namespace {
 		vInputAttribDescription.offset = offset;
 		return vInputAttribDescription;
 	}
+
+
+	void InsertImageMemoryBarrier(
+		VkCommandBuffer cmdbuffer,
+		VkImage image,
+		VkAccessFlags srcAccessMask,
+		VkAccessFlags dstAccessMask,
+		VkImageLayout oldImageLayout,
+		VkImageLayout newImageLayout,
+		VkPipelineStageFlags srcStageMask,
+		VkPipelineStageFlags dstStageMask,
+		VkImageSubresourceRange subresourceRange)
+	{
+		VkImageMemoryBarrier imageMemoryBarrier{};
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageMemoryBarrier.srcAccessMask = srcAccessMask;
+		imageMemoryBarrier.dstAccessMask = dstAccessMask;
+		imageMemoryBarrier.oldLayout = oldImageLayout;
+		imageMemoryBarrier.newLayout = newImageLayout;
+		imageMemoryBarrier.image = image;
+		imageMemoryBarrier.subresourceRange = subresourceRange;
+
+		vkCmdPipelineBarrier(
+			cmdbuffer,
+			srcStageMask,
+			dstStageMask,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &imageMemoryBarrier);
+	}
 }
 
+
+VkEngine::VulkanEngine::VulkanEngine()
+{
+#if defined(__ANDROID__)
+	bool libLoaded = loadVulkanLibrary();
+	assert(libLoaded);
+#endif
+}
 
 VulkanEngine::~VulkanEngine()
 {
 	m_canRender = false;
-	vkDeviceWaitIdle(m_device);
-	vkDestroySemaphore(m_device, m_semaphores.presentComplete, nullptr);
-	vkDestroySemaphore(m_device, m_semaphores.renderComplete, nullptr);
-	vkDestroyDevice(m_device, nullptr);
-	vkDestroyInstance(m_instance, nullptr);
+	m_vulkanSwapchain = nullptr;
+
+	m_objectId.clear();
+
+	if (m_device != VK_NULL_HANDLE) {
+		vkDeviceWaitIdle(m_device);
+	}
+
+	if (m_semaphores.presentComplete != VK_NULL_HANDLE) {
+		vkDestroySemaphore(m_device, m_semaphores.presentComplete, nullptr);
+	}
+	if (m_semaphores.renderComplete != VK_NULL_HANDLE) {
+		vkDestroySemaphore(m_device, m_semaphores.renderComplete, nullptr);
+	}
+
+	for (auto framebuffer : m_frameBuffers) {
+		vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+	}
+	m_frameBuffers.clear();
+
+	if (m_pipeline != VK_NULL_HANDLE) {
+		vkDestroyPipeline(m_device, m_pipeline, nullptr);
+	}
+
+	if (m_pipelineCache != VK_NULL_HANDLE) {
+		vkDestroyPipelineCache(m_device, m_pipelineCache, nullptr);
+	}
+
+	for (auto shaderModule : m_shaderModules) {
+		vkDestroyShaderModule(m_device, shaderModule, nullptr);
+	}
+	m_shaderModules.clear();
+
+	if (m_descriptorPool != VK_NULL_HANDLE) {
+		vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+	}
+
+	if (m_descriptorSetLayout != VK_NULL_HANDLE) {
+		vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+	}
+
+	if (m_pipelineLayout != VK_NULL_HANDLE) {
+		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+	}
+
+	if (m_cmdPool != VK_NULL_HANDLE) {
+		vkDestroyCommandPool(m_device, m_cmdPool, nullptr);
+	}
+
+	if (m_offscreenFramebuffer != VK_NULL_HANDLE) {
+		vkDestroyFramebuffer(m_device, m_offscreenFramebuffer, nullptr);
+	}
+
+	if (m_offscreenImage != VK_NULL_HANDLE) {
+		vkDestroyImage(m_device, m_offscreenImage, nullptr);
+	}
+	if (m_offscreenImageMemory != VK_NULL_HANDLE) {
+		vkFreeMemory(m_device, m_offscreenImageMemory, nullptr);
+	}
+
+	if (m_depthStencil.view != VK_NULL_HANDLE) {
+		vkDestroyImageView(m_device, m_depthStencil.view, nullptr);
+	}
+	if (m_depthStencil.image != VK_NULL_HANDLE) {
+		vkDestroyImage(m_device, m_depthStencil.image, nullptr);
+	}
+	if (m_depthStencil.mem != VK_NULL_HANDLE) {
+		vkFreeMemory(m_device, m_depthStencil.mem, nullptr);
+	}
+
+	for (int i = 0; i < m_meshes.size(); i++)
+	{
+		vkDestroyBuffer(m_device, m_meshes[i].vertices.buf, nullptr);
+		vkFreeMemory(m_device, m_meshes[i].vertices.mem, nullptr);
+		vkDestroyBuffer(m_device, m_meshes[i].indices.buf, nullptr);
+		vkFreeMemory(m_device, m_meshes[i].indices.mem, nullptr);
+	}
+	m_meshes.clear();
+
+	for (int i = 0; i < m_colorMaps.size(); i++)
+	{
+		if (m_colorMaps[i].view != VK_NULL_HANDLE) {
+			vkDestroyImageView(m_device, m_colorMaps[i].view, nullptr);
+			m_colorMaps[i].view = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].image != VK_NULL_HANDLE) {
+			vkDestroyImage(m_device, m_colorMaps[i].image, nullptr);
+			m_colorMaps[i].image = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].deviceMemory != VK_NULL_HANDLE) {
+			vkFreeMemory(m_device, m_colorMaps[i].deviceMemory, nullptr);
+			m_colorMaps[i].deviceMemory = VK_NULL_HANDLE;
+		}
+		if (m_colorMaps[i].sampler != VK_NULL_HANDLE) {
+			vkDestroySampler(m_device, m_colorMaps[i].sampler, nullptr);
+			m_colorMaps[i].sampler = VK_NULL_HANDLE;
+		}
+	}
+
+	if (m_uniformData.mapped != nullptr)
+	{
+		vkUnmapMemory(m_device, m_uniformData.memory);
+	}
+	vkDestroyBuffer(m_device, m_uniformData.buffer, nullptr);
+	vkFreeMemory(m_device, m_uniformData.memory, nullptr);
+
+	if (m_device != VK_NULL_HANDLE) {
+		vkDestroyDevice(m_device, nullptr);
+		m_device = VK_NULL_HANDLE;
+	}
+
+	if (m_instance != VK_NULL_HANDLE) {
+		vkDestroyInstance(m_instance, nullptr);
+		m_instance = VK_NULL_HANDLE;
+	}
+
+	//maybe load/unload on DLL layer not here????
+#if defined(__ANDROID__)
+	freeVulkanLibrary();
+#endif
+}
+
+VkResult VkEngine::VulkanEngine::SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation)
+{
+	m_zoom = zoom;
+	m_cameraPos = position;
+	m_rotation = rotation;
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::AddObject(std::string objectId)
+{
+	m_objectId.push_back(objectId);
+	return VK_SUCCESS;
 }
 
 VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t height)
@@ -38,7 +208,11 @@ VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t 
 	m_height = height;
 
 	VKE_CHECK_RESULT(CreateInstance(appName));
-	//TODO: for android is needed to load vulkan function, bc android loads it on runtime. place it here
+	
+#if defined(__ANDROID__)
+	loadVulkanFunctions(m_instance);
+#endif
+
 	uint32_t graphicsQueueIndex{};
 	VKE_CHECK_RESULT(CheckPhysicalDevices(graphicsQueueIndex));
 	VKE_CHECK_RESULT(CreateDevice(graphicsQueueIndex));
@@ -53,22 +227,10 @@ VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t 
 
 	CreateSumbitInfo();
 
-	return VK_SUCCESS;
-}
-#if _WIN32
-VkResult VulkanEngine::InitSwapchain(void* platformHandle, void* platformWindow)
-#elif __ANDROID__
-VkResult VulkanEngine::InitSwapchain(ANativeWindow* window)
-#else
-VkResult VulkanEngine::InitSwapchain()
-#endif
-{
+	//Altought swapchain class, it is used for offscreen image as well without creating VkSwapchainKHR
 	m_vulkanSwapchain = std::make_unique<VulkanSwapchain>(m_instance, m_physicalDevice, m_device);
-	
-	//TODO: android version implement as well!!
-	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSurface(platformHandle, platformWindow));
+	m_vulkanSwapchain->CreateQueueFamilyIndex();
 
-	VKE_CHECK_RESULT(m_vulkanSwapchain->InitSurface());
 	return VK_SUCCESS;
 }
 
@@ -76,7 +238,8 @@ VkResult VkEngine::VulkanEngine::Prepare()
 {
 	VKE_CHECK_RESULT(CreateCommandPool());
 	VKE_CHECK_RESULT(CreateSetupCommandBuffer());
-	VKE_CHECK_RESULT(m_vulkanSwapchain->CreateSwapchain(m_setupCmdBuffer, m_width, m_height));
+	VKE_CHECK_RESULT(CreateOffscreenImage());
+	VKE_CHECK_RESULT(m_vulkanSwapchain->SetupOffscreenImage(m_setupCmdBuffer, m_offscreenImage, VK_FORMAT_R8G8B8A8_UNORM));
 	VKE_CHECK_RESULT(CreateCommandBuffers());
 	VKE_CHECK_RESULT(SetupDepthStencil());
 	VKE_CHECK_RESULT(SetupRenderPass());
@@ -87,34 +250,34 @@ VkResult VkEngine::VulkanEngine::Prepare()
 	VKE_CHECK_RESULT(LoadResources())
 	SetupVertexDescriptions();
 	VKE_CHECK_RESULT(PrepareUniformBuffers());
+	VKE_CHECK_RESULT(CreateOffscreenFrameBuffer());
 	VKE_CHECK_RESULT(SetupDescriptorSetLayout());
 	VKE_CHECK_RESULT(PreparePipelines());
 	VKE_CHECK_RESULT(SetupDescriptorPool());
-	VKE_CHECK_RESULT(SetupDescriptorSet());
+	for (int i = 0; i < m_colorMaps.size(); i++) {
+		VKE_CHECK_RESULT(SetupDescriptorSet(m_colorMaps[i], m_descriptorSets[i]));
+	}
 	VKE_CHECK_RESULT(BuildCommandBuffers());
 
 	m_canRender = true;
 	return VK_SUCCESS;
 }
 
-VkResult VkEngine::VulkanEngine::Render()
+VkResult VkEngine::VulkanEngine::Render(const char** imagedata)
 {
 	if (!m_canRender)
 		return VK_SUCCESS; //bc is not initialized, not problem
 
-	VKE_CHECK_RESULT(m_vulkanSwapchain->AcquireNextImage(m_semaphores.presentComplete, &m_currentBuffer));
-
-	VKE_CHECK_RESULT(SubmitPostPresentBarrier(m_vulkanSwapchain->GetSwapchainBuffer(m_currentBuffer).image));
+	VKE_CHECK_RESULT(SubmitPostPresentBarrier(m_offscreenImage));
 
 	m_submitInfo.commandBufferCount = 1;
 	m_submitInfo.pCommandBuffers = &m_drawCmdBuffers[m_currentBuffer];
 
 	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &m_submitInfo, VK_NULL_HANDLE));
 
-	VKE_CHECK_RESULT(SubmitPrePresentBarrier(m_vulkanSwapchain->GetSwapchainBuffer(m_currentBuffer).image));
+	VKE_CHECK_RESULT(SubmitPrePresentBarrier(m_offscreenImage));
 
-	VKE_CHECK_RESULT(m_vulkanSwapchain->QueuePresent(m_queue, m_currentBuffer, m_semaphores.renderComplete));
-
+	CopySwapchainImageToCPU(m_offscreenImage, imagedata);
 	return vkQueueWaitIdle(m_queue);
 }
 
@@ -583,8 +746,8 @@ VkResult VkEngine::VulkanEngine::PreparePipelines()
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
 
-	VKE_CHECK_RESULT(LoadShader("mesh.vert.spv", VK_SHADER_STAGE_VERTEX_BIT, shaderStages[0]));
-	VKE_CHECK_RESULT(LoadShader("mesh.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, shaderStages[1]));
+	VKE_CHECK_RESULT(LoadShader("shader/mesh.vert.spv", VK_SHADER_STAGE_VERTEX_BIT, shaderStages[0]));
+	VKE_CHECK_RESULT(LoadShader("shader/mesh.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, shaderStages[1]));
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo{};
 	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -610,11 +773,11 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorPool()
 {
 	VkDescriptorPoolSize descriptorPoolSizeUBO{};
 	descriptorPoolSizeUBO.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorPoolSizeUBO.descriptorCount = 1;
+	descriptorPoolSizeUBO.descriptorCount = m_colorMaps.size();
 
 	VkDescriptorPoolSize descriptorPoolSizeSampler{};
 	descriptorPoolSizeSampler.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorPoolSizeSampler.descriptorCount = 1;
+	descriptorPoolSizeSampler.descriptorCount = m_colorMaps.size();
 
 	std::vector<VkDescriptorPoolSize> poolSizes =
 	{
@@ -627,12 +790,12 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorPool()
 	descriptorPoolInfo.pNext = NULL;
 	descriptorPoolInfo.poolSizeCount = poolSizes.size();
 	descriptorPoolInfo.pPoolSizes = poolSizes.data();
-	descriptorPoolInfo.maxSets = 1;
+	descriptorPoolInfo.maxSets = m_colorMaps.size();
 
 	return vkCreateDescriptorPool(m_device, &descriptorPoolInfo, nullptr, &m_descriptorPool);
 }
 
-VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
+VkResult VkEngine::VulkanEngine::SetupDescriptorSet(VulkanTexture& vulkanTexture, VkDescriptorSet& descriptorSet)
 {
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -641,17 +804,17 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
 	allocInfo.pSetLayouts = &m_descriptorSetLayout;
 	allocInfo.descriptorSetCount = 1;
 
-	VKE_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, &m_descriptorSet));
+	VKE_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, &descriptorSet));
 
 	VkDescriptorImageInfo texDescriptor{};
-	texDescriptor.sampler = m_colorMap.sampler;
-	texDescriptor.imageView = m_colorMap.view;
+	texDescriptor.sampler = vulkanTexture.sampler;
+	texDescriptor.imageView = vulkanTexture.view;
 	texDescriptor.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 	VkWriteDescriptorSet writeDescriptorSetUniform{};
 	writeDescriptorSetUniform.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSetUniform.pNext = NULL;
-	writeDescriptorSetUniform.dstSet = m_descriptorSet;
+	writeDescriptorSetUniform.dstSet = descriptorSet;
 	writeDescriptorSetUniform.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	writeDescriptorSetUniform.dstBinding = 0;
 	writeDescriptorSetUniform.pBufferInfo = &m_uniformData.descriptor;
@@ -660,7 +823,7 @@ VkResult VkEngine::VulkanEngine::SetupDescriptorSet()
 	VkWriteDescriptorSet writeDescriptorSetColorMap = {};
 	writeDescriptorSetColorMap.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescriptorSetColorMap.pNext = NULL;
-	writeDescriptorSetColorMap.dstSet = m_descriptorSet;
+	writeDescriptorSetColorMap.dstSet = descriptorSet;
 	writeDescriptorSetColorMap.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	writeDescriptorSetColorMap.dstBinding = 1;
 	writeDescriptorSetColorMap.pImageInfo = &texDescriptor;
@@ -698,9 +861,9 @@ VkResult VkEngine::VulkanEngine::BuildCommandBuffers()
 	renderPassBeginInfo.clearValueCount = 2;
 	renderPassBeginInfo.pClearValues = clearValues;
 
-	for (int32_t i = 0; i < m_drawCmdBuffers.size(); ++i)
+	for (int32_t i = 0; i < 1/*m_drawCmdBuffers.size()*/ /*??? Check ???*/; ++i)
 	{
-		renderPassBeginInfo.framebuffer = m_frameBuffers[i];
+		renderPassBeginInfo.framebuffer = m_offscreenFramebuffer;
 
 		VKE_CHECK_RESULT(vkBeginCommandBuffer(m_drawCmdBuffers[i], &cmdBufInfo));
 
@@ -720,13 +883,16 @@ VkResult VkEngine::VulkanEngine::BuildCommandBuffers()
 		scissor.offset.y = 0;
 		vkCmdSetScissor(m_drawCmdBuffers[i], 0, 1, &scissor);
 
-		vkCmdBindDescriptorSets(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSet, 0, NULL);
-		vkCmdBindPipeline(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+		for (int m = 0; m < m_meshes.size(); m++)
+		{
+			vkCmdBindDescriptorSets(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[m], 0, NULL);
+			vkCmdBindPipeline(m_drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
-		VkDeviceSize offsets[1] = { 0 };
-		vkCmdBindVertexBuffers(m_drawCmdBuffers[i], 0, 1, &m_mesh.vertices.buf, offsets);
-		vkCmdBindIndexBuffer(m_drawCmdBuffers[i], m_mesh.indices.buf, 0, VK_INDEX_TYPE_UINT32);
-		vkCmdDrawIndexed(m_drawCmdBuffers[i], m_mesh.indices.count, 1, 0, 0, 0);
+			VkDeviceSize offsets[1] = { 0 };
+			vkCmdBindVertexBuffers(m_drawCmdBuffers[i], 0, 1, &m_meshes[m].vertices.buf, offsets);
+			vkCmdBindIndexBuffer(m_drawCmdBuffers[i], m_meshes[m].indices.buf, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdDrawIndexed(m_drawCmdBuffers[i], m_meshes[m].indices.count, 1, 0, 0, 0);
+		}
 
 		vkCmdEndRenderPass(m_drawCmdBuffers[i]);
 
@@ -981,21 +1147,148 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 	if (!m_textureHandle)
 		return VK_ERROR_INITIALIZATION_FAILED;
 
-	VKE_CHECK_RESULT(m_textureHandle->LoadTexture(
-		"test.ktx",
-		VK_FORMAT_BC3_UNORM_BLOCK,
-		&m_colorMap));
-
-	return LoadMesh();
+	for (auto& id : m_objectId) {
+		{
+			VKE_CHECK_RESULT(LoadTexture(id + ".ktx"));
+			VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
+		}
+	}
+	return VK_SUCCESS;
 }
 
-VkResult VkEngine::VulkanEngine::LoadMesh()
+VkResult VkEngine::VulkanEngine::CopySwapchainImageToCPU(VkImage image, const char** imagedata)
+{
+	VkImageCreateInfo imgCreateInfo{};
+	imgCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imgCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imgCreateInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	imgCreateInfo.extent.width = m_width;
+	imgCreateInfo.extent.height = m_height;
+	imgCreateInfo.extent.depth = 1;
+	imgCreateInfo.arrayLayers = 1;
+	imgCreateInfo.mipLevels = 1;
+	imgCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imgCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imgCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
+	imgCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+	
+	VkImage dstImage;
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &imgCreateInfo, nullptr, &dstImage));
+	
+	VkMemoryRequirements memRequirements;
+	VkMemoryAllocateInfo memAllocInfo{};
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	VkDeviceMemory dstImageMemory;
+	vkGetImageMemoryRequirements(m_device, dstImage, &memRequirements);
+	memAllocInfo.allocationSize = memRequirements.size;
+	
+	memAllocInfo.memoryTypeIndex = GetMemoryTypeIndex(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &memAllocInfo, nullptr, &dstImageMemory));
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, dstImage, dstImageMemory, 0));
+
+	VkCommandBufferAllocateInfo cmdBufAllocateInfo{};
+	cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBufAllocateInfo.commandPool = m_cmdPool;
+	cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBufAllocateInfo.commandBufferCount = 1;
+	VkCommandBuffer copyCmd;
+	VKE_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &cmdBufAllocateInfo, &copyCmd));
+	VkCommandBufferBeginInfo cmdBufInfo{};
+	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	VKE_CHECK_RESULT(vkBeginCommandBuffer(copyCmd, &cmdBufInfo));
+
+	InsertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		0,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	VkImageCopy imageCopyRegion{};
+	imageCopyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageCopyRegion.srcSubresource.layerCount = 1;
+	imageCopyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageCopyRegion.dstSubresource.layerCount = 1;
+	imageCopyRegion.extent.width = m_width;
+	imageCopyRegion.extent.height = m_height;
+	imageCopyRegion.extent.depth = 1;
+
+	vkCmdCopyImage(
+		copyCmd,
+		image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+		dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		1,
+		&imageCopyRegion);
+
+	InsertImageMemoryBarrier(
+		copyCmd,
+		dstImage,
+		VK_ACCESS_TRANSFER_WRITE_BIT,
+		VK_ACCESS_MEMORY_READ_BIT,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		VK_IMAGE_LAYOUT_GENERAL,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 });
+
+	VKE_CHECK_RESULT(vkEndCommandBuffer(copyCmd));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &copyCmd;
+	VkFenceCreateInfo fenceInfo{};
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = 0;
+	VkFence fence;
+	VKE_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &fence));
+	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &submitInfo, fence));
+	VKE_CHECK_RESULT(vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX));
+	vkDestroyFence(m_device, fence, nullptr);
+
+	VkImageSubresource subResource{};
+	subResource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	VkSubresourceLayout subResourceLayout;
+
+	vkGetImageSubresourceLayout(m_device, dstImage, &subResource, &subResourceLayout);
+
+	vkMapMemory(m_device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)imagedata);
+	*imagedata += subResourceLayout.offset;
+
+	vkUnmapMemory(m_device, dstImageMemory);
+	vkFreeMemory(m_device, dstImageMemory, nullptr);
+	vkDestroyImage(m_device, dstImage, nullptr);
+
+	return VK_SUCCESS;
+}
+
+uint32_t VkEngine::VulkanEngine::GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties)
+{
+	VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+	vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &deviceMemoryProperties);
+	for (uint32_t i = 0; i < deviceMemoryProperties.memoryTypeCount; i++) {
+		if ((typeBits & 1) == 1) {
+			if ((deviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+				return i;
+			}
+		}
+		typeBits >>= 1;
+	}
+	return 0;
+}
+
+VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 {
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
-#if defined(__ANDROID__)
-	meshHandle->assetManager = androidApp->activity->assetManager;
-#endif
-	meshHandle->LoadMesh("test.dae");
+	meshHandle->LoadMesh(id);
+
+	m_meshes.push_back({});
+
+	Mesh& newMesh = m_meshes[m_meshes.size() - 1];
 
 	float scale = 1.0f;
 	std::vector<Vertex> vertexBuffer;
@@ -1025,7 +1318,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		}
 	}
 	uint32_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
-	m_mesh.indices.count = indexBuffer.size();
+	newMesh.indices.count = indexBuffer.size();
 
 	bool useStaging = true;
 
@@ -1057,16 +1350,16 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			vertexBufferSize,
 			nullptr,
-			&m_mesh.vertices.buf,
-			&m_mesh.vertices.mem));
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
 
 		VKE_CHECK_RESULT(CreateBuffer(
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			indexBufferSize,
 			nullptr,
-			&m_mesh.indices.buf,
-			&m_mesh.indices.mem));
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
 
 		VkCommandBuffer copyCmd{};
 		VKE_CHECK_RESULT(CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true, copyCmd));
@@ -1077,7 +1370,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		vkCmdCopyBuffer(
 			copyCmd,
 			vertexStaging.buffer,
-			m_mesh.vertices.buf,
+			newMesh.vertices.buf,
 			1,
 			&copyRegion);
 
@@ -1085,7 +1378,7 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 		vkCmdCopyBuffer(
 			copyCmd,
 			indexStaging.buffer,
-			m_mesh.indices.buf,
+			newMesh.indices.buf,
 			1,
 			&copyRegion);
 
@@ -1104,16 +1397,16 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			vertexBufferSize,
 			vertexBuffer.data(),
-			&m_mesh.vertices.buf,
-			&m_mesh.vertices.mem));
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
 
 		VKE_CHECK_RESULT(CreateBuffer(
 			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 			indexBufferSize,
 			indexBuffer.data(),
-			&m_mesh.indices.buf,
-			&m_mesh.indices.mem));
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
 	}
 
 	meshHandle = nullptr;
@@ -1121,17 +1414,90 @@ VkResult VkEngine::VulkanEngine::LoadMesh()
 	return VK_SUCCESS;
 }
 
+VkResult VkEngine::VulkanEngine::LoadTexture(std::string id)
+{
+	m_colorMaps.push_back({});
+	m_descriptorSets.push_back({});
+
+	VulkanTexture& vulkanTexture = m_colorMaps[m_colorMaps.size() - 1];
+
+	return m_textureHandle->LoadTexture(
+		id,
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		&vulkanTexture);
+}
+
 VkResult VkEngine::VulkanEngine::LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out)
 {
 	out.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	out.stage = stage;
-#if defined(__ANDROID__)
-	VKE_CHECK_RESULT(ObjectLoader::LoadShader(androidApp->activity->assetManager, fileName.c_str(), device, stage, out.module));
-#else
+
 	VKE_CHECK_RESULT(VkLoader::ObjectLoader::LoadShader(fileName.c_str(), m_device, stage, out.module));
-#endif
+
 	out.pName = "main";
 	assert(out.module != NULL);
 	m_shaderModules.push_back(out.module);
 	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::CreateOffscreenImage()
+{
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	imageInfo.extent.width = m_width;
+	imageInfo.extent.height = m_height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &imageInfo, nullptr, &m_offscreenImage));
+	
+	vkGetImageMemoryRequirements(m_device, m_offscreenImage, &m_memReq);
+
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = m_memReq.size;
+	allocInfo.memoryTypeIndex = GetMemoryType(m_memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &allocInfo, nullptr, &m_offscreenImageMemory));
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, m_offscreenImage, m_offscreenImageMemory, 0));
+
+	return VK_SUCCESS;
+}
+
+VkResult VkEngine::VulkanEngine::CreateOffscreenFrameBuffer()
+{
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = m_offscreenImage;
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	viewInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
+	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 1;
+
+	VkImageView offscreenImageView;
+	VKE_CHECK_RESULT(vkCreateImageView(m_device, &viewInfo, nullptr, &offscreenImageView));
+
+	VkFramebufferCreateInfo fbInfo{};
+	fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	fbInfo.renderPass = m_renderPass;
+	fbInfo.attachmentCount = 1;
+	fbInfo.pAttachments = &offscreenImageView;
+	fbInfo.width = m_width;
+	fbInfo.height = m_height;
+	fbInfo.layers = 1;
+
+	return vkCreateFramebuffer(m_device, &fbInfo, nullptr, &m_offscreenFramebuffer);
 }

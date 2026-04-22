@@ -11,19 +11,12 @@ namespace GraphicsPlugin {
 	{
 	public:
 		VulkanGraphicsPlugin();
-		~VulkanGraphicsPlugin();
-
-#ifdef _WIN32
-		void SetHandles(void* platformHandle, void* platformWindow) override;
-#elif __ANDROID__
-		void SetHandles(ANativeWindow* window) override;
-#else
-		void SetHandles() override;
-#endif
+		~VulkanGraphicsPlugin() override;
 
 		GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) override;
-		GPluginResult SetObject(/*TODO: parameter/s*/) override;
-		GPluginResult Render() override;
+		GPluginResult SetCamera(CameraSettings setting) override;
+		GPluginResult AddObject(std::string objectId) override;
+		GPluginResult Render(const char** out) override;
 		GPluginResult DeInitialize() override;
 	private:
 		void CleanUp();
@@ -32,13 +25,6 @@ namespace GraphicsPlugin {
 
 		uint32_t m_width;
 		uint32_t m_height;
-
-#ifdef _WIN32
-		void* m_platformHandle;
-		void* m_platformWindow;
-#elif __ANDROID__
-		ANativeWindow* m_window;
-#endif
 	};
 
 }

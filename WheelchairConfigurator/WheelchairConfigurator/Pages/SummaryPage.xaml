@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.SummaryPage"
+             Shell.NavBarIsVisible="False">
+    <Grid RowDefinitions="*, Auto" Padding="20" RowSpacing="15">
+
+        <!-- Horní část -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, *, 2*" ColumnSpacing="15">
+
+            <!-- Levý panel - info o pacientovi -->
+            <Border Grid.Column="0"
+                    Padding="15"
+                    StrokeThickness="1"
+                    Stroke="#E0E0E0">
+                <ScrollView>
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Pacient"
+                               FontAttributes="Bold"
+                               FontSize="16"
+                               Margin="0,0,0,8" />
+                        <Label x:Name="PatientIdLabel"     FontAttributes="Bold" FontSize="14" />
+                        <Label x:Name="DateLabel"          FontSize="13" TextColor="Gray" />
+                        <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,6" />
+                        <Label x:Name="BodyHeightLabel"    FontSize="13" />
+                        <Label x:Name="PelvisWidthLabel"   FontSize="13" />
+                        <Label x:Name="ThighLengthLabel"   FontSize="13" />
+                        <Label x:Name="WeightLabel"        FontSize="13" />
+                        <BoxView HeightRequest="1" Color="#E0E0E0" Margin="0,6" />
+                        <Label x:Name="BodyStabilityLabel" FontSize="13" />
+                        <Label x:Name="HeadStabilityLabel" FontSize="13" />
+                        <Label x:Name="BedsoreRiskLabel"   FontSize="13" />
+                        <Label x:Name="ControlLabel"       FontSize="13" />
+                        <Label x:Name="EnvironmentLabel"   FontSize="13" />
+                        <Label x:Name="LegsLabel"          FontSize="13" />
+                        <Label x:Name="PainLabel"          FontSize="13" />
+                    </VerticalStackLayout>
+                </ScrollView>
+            </Border>
+
+            <!-- Prostřední panel - seznam vybraných komponent -->
+            <Border Grid.Column="1"
+                    Padding="15"
+                    StrokeThickness="1"
+                    Stroke="#E0E0E0">
+                <ScrollView>
+                    <VerticalStackLayout x:Name="ComponentsLayout" Spacing="4" />
+                </ScrollView>
+            </Border>
+
+            <!-- Pravý panel - náhled vozíku -->
+            <Border Grid.Column="2"
+            Padding="15"
+            StrokeThickness="1"
+            Stroke="#E0E0E0">
+                <Grid>
+                    <BoxView Color="White">
+                        <BoxView.GestureRecognizers>
+                            <PanGestureRecognizer PanUpdated="OnPanUpdated" />
+                        </BoxView.GestureRecognizers>
+                    </BoxView>
+                    <Image x:Name="MyImage" />
+
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- Dolní část - tlačítka -->
+        <Grid Grid.Row="1" ColumnDefinitions="*, *, *" ColumnSpacing="10">
+            <Button Grid.Column="0"
+                    Text="Hlavní menu"
+                    Clicked="OnMainMenuClicked"
+                    HorizontalOptions="Fill" />
+            <Button Grid.Column="1"
+                    Text="Zpět"
+                    Clicked="OnBackClicked"
+                    HorizontalOptions="Fill" />
+            <Button Grid.Column="2"
+                    Text="Exportovat"
+                    Clicked="OnExportClicked"
+                    HorizontalOptions="Fill" />
+        </Grid>
+
+    </Grid>
+</ContentPage>
