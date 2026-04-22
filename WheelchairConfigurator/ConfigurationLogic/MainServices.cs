@@ -230,7 +230,7 @@ public class MainServices
 
                 var sameCategoryIds = selected
                     .Where(id => id != clickedComponentId)
-                    .Where(id => componentById.TryGetValue(id, out var candidate))
+                    .Where(id => componentById.ContainsKey(id))
                     .ToList();
 
                 var idsToRemove = new List<int>();
