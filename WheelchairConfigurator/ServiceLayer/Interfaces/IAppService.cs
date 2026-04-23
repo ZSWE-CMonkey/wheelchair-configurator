@@ -38,10 +38,10 @@ public interface IAppService
 
     /// <summary>
     /// Generates a PDF for the specified saved configuration.
-    /// Returns the file path of the generated PDF.
+    /// Returns the byte array of the generated PDF.
     /// </summary>
     /// <param name="configurationId">ID of the configuration to export.</param>
-    ///  Task<string> ExportConfigurationAsync(int configurationId);
+    Task<byte[]> ExportConfigurationAsync(int configurationId);
 
     /// <summary>
     /// Retrieves all past configurations created by the specified specialist.
