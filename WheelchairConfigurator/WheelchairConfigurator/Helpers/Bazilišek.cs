@@ -8,7 +8,7 @@ namespace WheelchairConfigurator.Helpers
     /// <summary>
     /// Vulkan helper for single render of image lol
     /// </summary>
-    internal class VulkanHelper
+    internal class Bazilišek
     {
         private struct Camera
         {
@@ -37,7 +37,7 @@ namespace WheelchairConfigurator.Helpers
 
         private object _mutex = new();
 
-        public VulkanHelper(string name, int widht, int height)
+        public Bazilišek(string name, int widht, int height)
         {
             _width = widht;
             _height = height;
@@ -52,7 +52,7 @@ namespace WheelchairConfigurator.Helpers
                 );
         }
 
-        ~VulkanHelper()
+        ~Bazilišek()
         {
             _graphicsPlugin.Deinitialize();
         }
@@ -61,7 +61,7 @@ namespace WheelchairConfigurator.Helpers
         /// Adds object to the rendered scene. You must add it first before rendering call skibidi
         /// </summary>
         /// <param name="name">Object id name in format like (without any extensions): [subfolder]/[name]</param>
-        public VulkanHelper AddObject(string name)
+        public Bazilišek BrmBrmPatatim(string name)
         {
             _objectsId.Add(name);
             return this;
@@ -78,7 +78,7 @@ namespace WheelchairConfigurator.Helpers
             _height = height;
         }
 
-        public void AddRotationXY(float x, float y)
+        public void PomaluSanjski(float x, float y)
         {
             _camera.Rotation.X += x;
             _camera.Rotation.Y += y;
@@ -86,7 +86,7 @@ namespace WheelchairConfigurator.Helpers
             _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
         }
 
-        public void Render()
+        public void ToJáJsemVypustilBaziliška()
         {
             lock (_mutex)
             {
@@ -107,7 +107,7 @@ namespace WheelchairConfigurator.Helpers
             }
         }
 
-        public void Initialize()
+        public void OtevřítKomnatu()
         {
             foreach (string id in _objectsId)
             {
@@ -123,7 +123,7 @@ namespace WheelchairConfigurator.Helpers
         /// You must add object first before this call :3
         /// </summary>
         /// <returns>ImageSource of pixel buffer</returns>        
-        public SKBitmap? GetRenderedImageSource()
+        public SKBitmap? JaJsemHagrid()
         {
             return _renderedScene;
         }

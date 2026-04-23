@@ -66,7 +66,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
 
-    private VulkanHelper? vulkan = null;
+    private Baziliöek? _tungTungTungSahur = null;
     private CancellationTokenSource _cts = default!;
 
     private SKBitmap? _skibidiFrame = null;
@@ -80,12 +80,12 @@ public partial class WheelchairConfiguratorPage : ContentPage
         foreach (var category in ComponentCategories.All)
             _selectedComponents[category] = null;
 
-        vulkan = new VulkanHelper("app", 800, 600);
+        _tungTungTungSahur = new Baziliöek("app", 800, 600);
 
-        vulkan.AddObject("models/test");
-        vulkan.Initialize();
-        vulkan.Render();
-        _skibidiFrame = vulkan.GetRenderedImageSource();
+        _tungTungTungSahur.BrmBrmPatatim("models/test");
+        _tungTungTungSahur.Otev¯ÌtKomnatu();
+        _tungTungTungSahur.ToJ·JsemVypustilBaziliöka();
+        _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
 
         StartRenderLoop();
     }
@@ -103,13 +103,13 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             while (!_cts.Token.IsCancellationRequested)
             {
-                if (vulkan == null)
+                if (_tungTungTungSahur == null)
                 {
                     await Task.Yield();
                     continue;
                 }    
-                vulkan.Render();
-                SKBitmap? frame = vulkan.GetRenderedImageSource();
+                _tungTungTungSahur.ToJ·JsemVypustilBaziliöka();
+                SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
 
                 if (frame == null)
                 {
@@ -132,7 +132,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
     private void StopRenderLoop()
     {
         _cts?.Cancel();
-        vulkan = null;
+        _tungTungTungSahur = null;
     }
 
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
@@ -284,7 +284,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
 
                 //TODO: set intensity
-                vulkan?.AddRotationXY(-(float)delta.Y, (float)delta.X);
+                _tungTungTungSahur?.PomaluSanjski(-(float)delta.Y, (float)delta.X);
 
                 break;
         }
