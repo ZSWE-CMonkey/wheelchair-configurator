@@ -92,6 +92,7 @@ namespace {
 			}
 			else if (wParam == 'L' || wParam == 'l')
 			{
+				wgDeinitializeGraphics();
 				g_pixelBuffer = nullptr;
 			}
 			else if (wParam == 'J' || wParam == 'j')
@@ -100,10 +101,16 @@ namespace {
 					break;
 
 				wgAddObject("models/test");
-				wgSetCamera(-10.5f, 0.1f, 0.0f, 0.0f, -0.5f, -112.75f, 0.0f);
+				//wgSetCamera(-10.5f, 0.1f, 0.0f, 0.0f, -0.5f, -112.75f, 0.0f);
 				wgInitializeVulkanGraphicsWIN32(c_appName, c_width, c_height);
+			}
+			else if (wParam == 'H' || wParam == 'h')
+			{
 				wgRender(&g_pixelBuffer);
-				wgDeinitializeGraphics();
+			}
+			else if (wParam == 'G' || wParam == 'g')
+			{
+				wgSetCamera(-10.5f, 0.1f, 0.0f, 0.0f, -0.5f, 112.75f, 0.0f);
 			}
 			break;
 		}

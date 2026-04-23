@@ -8,7 +8,7 @@ namespace WheelchairConfigurator.Helpers
     /// <summary>
     /// Vulkan helper for single render of image lol
     /// </summary>
-    internal class VulkanHelper
+    internal class Bazilišek
     {
         private struct Camera
         {
@@ -33,9 +33,11 @@ namespace WheelchairConfigurator.Helpers
 
         private Camera _camera;
 
+        private SKBitmap? _renderedScene = null;
+
         private object _mutex = new();
 
-        public VulkanHelper(string name, int widht, int height)
+        public Bazilišek(string name, int widht, int height)
         {
             _width = widht;
             _height = height;
@@ -50,11 +52,16 @@ namespace WheelchairConfigurator.Helpers
                 );
         }
 
+        ~Bazilišek()
+        {
+            _graphicsPlugin.Deinitialize();
+        }
+
         /// <summary>
         /// Adds object to the rendered scene. You must add it first before rendering call skibidi
         /// </summary>
         /// <param name="name">Object id name in format like (without any extensions): [subfolder]/[name]</param>
-        public VulkanHelper AddObject(string name)
+        public Bazilišek BrmBrmPatatim(string name)
         {
             _objectsId.Add(name);
             return this;
@@ -71,30 +78,19 @@ namespace WheelchairConfigurator.Helpers
             _height = height;
         }
 
-        public void AddRotationXY(float x, float y)
+        public void PomaluSanjski(float x, float y)
         {
             _camera.Rotation.X += x;
             _camera.Rotation.Y += y;
+
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
         }
 
-        /// <summary>
-        /// Initialize and renders once the scene and deinitialize vulkan engine. 
-        /// Outputs final image of that rendering.
-        /// You must add object first before this call :3
-        /// </summary>
-        /// <returns>ImageSource of pixel buffer</returns>        
-        public ImageSource GetRenderedImageSource()
+        public void ToJáJsemVypustilBaziliška()
         {
             lock (_mutex)
             {
-                foreach (string id in _objectsId)
-                {
-                    _graphicsPlugin.AddResource(id);
-                }
-                _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
-                _graphicsPlugin.Initialize();
                 _graphicsPlugin.Render(out byte[] pixelBuffer);
-                _graphicsPlugin.Deinitialize();
 
                 ConvertMangetaToTransparent(ref pixelBuffer);
 
@@ -103,18 +99,33 @@ namespace WheelchairConfigurator.Helpers
 
                 SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
 
-                using SKBitmap bitmap = new SKBitmap();
+                SKBitmap bitmap = new SKBitmap();
                 bitmap.InstallPixels(info, pixels, info.RowBytes);
 
-                using SKImage image = SKImage.FromBitmap(bitmap);
-                using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-                byte[] bytes = data.ToArray();
-
-                ImageSource result = ImageSource.FromStream(() => new MemoryStream(bytes));
-                handle.Free();
-                return result;
+                _renderedScene?.Dispose();
+                _renderedScene = bitmap;
             }
+        }
+
+        public void OtevřítKomnatu()
+        {
+            foreach (string id in _objectsId)
+            {
+                _graphicsPlugin.AddResource(id);
+            }
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+            _graphicsPlugin.Initialize();
+        }
+
+        /// <summary>
+        /// Initialize and renders once the scene and deinitialize vulkan engine. 
+        /// Outputs final image of that rendering.
+        /// You must add object first before this call :3
+        /// </summary>
+        /// <returns>ImageSource of pixel buffer</returns>        
+        public SKBitmap? JaJsemHagrid()
+        {
+            return _renderedScene;
         }
 
         private void ConvertMangetaToTransparent(ref byte[] pixels)

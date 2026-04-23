@@ -1,3 +1,5 @@
+using SkiaSharp;
+using SkiaSharp.Views.Maui;
 using WheelchairConfigurator.Helpers;
 
 namespace WheelchairConfigurator.Pages;
@@ -64,7 +66,12 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
 
-    private VulkanHelper vulkan = default!;
+    private Bazilišek? _tungTungTungSahur = null;
+    private CancellationTokenSource _cts = default!;
+
+    private SKBitmap? _skibidiFrame = null;
+
+    private readonly object _mutex = new();
 
     public WheelchairConfiguratorPage()
     {
@@ -73,11 +80,74 @@ public partial class WheelchairConfiguratorPage : ContentPage
         foreach (var category in ComponentCategories.All)
             _selectedComponents[category] = null;
 
-        vulkan = new VulkanHelper("app", 800, 600);
+        _tungTungTungSahur = new Bazilišek("app", 800, 600);
 
-        vulkan.AddObject("models/test");
+        _tungTungTungSahur.BrmBrmPatatim("models/test");
+        _tungTungTungSahur.OtevøítKomnatu();
+        _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+        _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
 
-        MyImage.Source = vulkan.GetRenderedImageSource();
+        StartRenderLoop();
+    }
+
+    ~WheelchairConfiguratorPage()
+    {
+        StopRenderLoop();//time shares same cts as render loop
+    }
+
+    private void StartRenderLoop()
+    {
+        _cts = new CancellationTokenSource();
+
+        _ = Task.Run(async () =>
+        {
+            while (!_cts.Token.IsCancellationRequested)
+            {
+                if (_tungTungTungSahur == null)
+                {
+                    await Task.Yield();
+                    continue;
+                }    
+                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+                SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
+
+                if (frame == null)
+                {
+                    await Task.Yield();
+                    continue;
+                }
+
+                _skibidiFrame = frame;
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Canvas.InvalidateSurface();
+                });
+
+                await Task.Delay(6); //so we dont cook device :3
+            }
+        });
+    }
+
+    private void StopRenderLoop()
+    {
+        _cts?.Cancel();
+        _tungTungTungSahur = null;
+    }
+
+    void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
+    {
+        if (_skibidiFrame == null)
+            return;
+
+        var canvas = e.Surface.Canvas;
+        canvas.Clear();
+
+        lock (_mutex)
+        {
+            var dest = e.Info.Rect;
+            canvas.DrawBitmap(_skibidiFrame, dest);
+        }
     }
 
     private void LoadMockData()
@@ -214,9 +284,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 System.Diagnostics.Debug.WriteLine($"Delta: {delta.X:F1}, {delta.Y:F1}");
 
                 //TODO: set intensity
-                vulkan.AddRotationXY(-(float)delta.Y, (float)delta.X);
-                //TODO: temporary solution, here not oneshot!
-                MyImage.Source = vulkan.GetRenderedImageSource();
+                _tungTungTungSahur?.PomaluSanjski(-(float)delta.Y, (float)delta.X);
 
                 break;
         }

@@ -193,6 +193,12 @@ VkResult VkEngine::VulkanEngine::SetCamera(float zoom, glm::vec3 position, glm::
 	m_zoom = zoom;
 	m_cameraPos = position;
 	m_rotation = rotation;
+
+	if (m_canRender)
+	{
+		UpdateUniformBuffers();
+	}
+
 	return VK_SUCCESS;
 }
 

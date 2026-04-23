@@ -40,11 +40,11 @@ public partial class SummaryPage : ContentPage
         LoadPatientData();
         BuildComponentsList();
 
-        VulkanHelper vulkan = new VulkanHelper("app", 800, 600);
+        Bazilišek vulkan = new Bazilišek("app", 800, 600);
 
-        vulkan.AddObject("models/test");
+        vulkan.BrmBrmPatatim("models/test");
 
-        MyImage.Source = vulkan.GetRenderedImageSource();
+        //MyImage.Source = vulkan.GetRenderedImageSource();
     }
 
     /*
