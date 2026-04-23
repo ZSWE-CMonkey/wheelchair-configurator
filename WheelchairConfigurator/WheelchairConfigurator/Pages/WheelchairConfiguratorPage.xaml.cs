@@ -1,4 +1,5 @@
-using Microsoft.Maui.Dispatching;
+using SkiaSharp;
+using SkiaSharp.Views.Maui;
 using WheelchairConfigurator.Helpers;
 
 namespace WheelchairConfigurator.Pages;
@@ -68,6 +69,10 @@ public partial class WheelchairConfiguratorPage : ContentPage
     private VulkanHelper? vulkan = null;
     private CancellationTokenSource _cts = default!;
 
+    private SKBitmap? _skibidiFrame = null;
+
+    private readonly object _mutex = new();
+
     public WheelchairConfiguratorPage()
     {
         InitializeComponent();
@@ -80,10 +85,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
         vulkan.AddObject("models/test");
         vulkan.Initialize();
         vulkan.Render();
-        MyImage.Source = vulkan.GetRenderedImageSource();
+        _skibidiFrame = vulkan.GetRenderedImageSource();
 
         StartRenderLoop();
-        StartTimer();
     }
 
     ~WheelchairConfiguratorPage()
@@ -99,8 +103,28 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             while (!_cts.Token.IsCancellationRequested)
             {
-                vulkan?.Render();
-                await Task.Yield();
+                if (vulkan == null)
+                {
+                    await Task.Yield();
+                    continue;
+                }    
+                vulkan.Render();
+                SKBitmap? frame = vulkan.GetRenderedImageSource();
+
+                if (frame == null)
+                {
+                    await Task.Yield();
+                    continue;
+                }
+
+                _skibidiFrame = frame;
+
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Canvas.InvalidateSurface();
+                });
+
+                await Task.Delay(6); //so we dont cook device :3
             }
         });
     }
@@ -110,26 +134,22 @@ public partial class WheelchairConfiguratorPage : ContentPage
         _cts?.Cancel();
         vulkan = null;
     }
-    private void StartTimer()
+
+    void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
-        _cts = new CancellationTokenSource();
+        if (_skibidiFrame == null)
+            return;
 
-        _ = Task.Run(async () =>
+        var canvas = e.Surface.Canvas;
+        canvas.Clear();
+
+        lock (_mutex)
         {
-            var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
-
-            while (await timer.WaitForNextTickAsync(_cts.Token))
-            {
-                MainThread.BeginInvokeOnMainThread(() =>
-                {
-                    if (vulkan != null)
-                    {
-                        MyImage.Source = vulkan.GetRenderedImageSource();
-                    }
-                });
-            }
-        });
+            var dest = e.Info.Rect;
+            canvas.DrawBitmap(_skibidiFrame, dest);
+        }
     }
+
     private void LoadMockData()
     {
         // Info o pacientovi

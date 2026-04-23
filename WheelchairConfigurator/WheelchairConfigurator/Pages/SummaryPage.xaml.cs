@@ -44,7 +44,7 @@ public partial class SummaryPage : ContentPage
 
         vulkan.AddObject("models/test");
 
-        MyImage.Source = vulkan.GetRenderedImageSource();
+        //MyImage.Source = vulkan.GetRenderedImageSource();
     }
 
     /*

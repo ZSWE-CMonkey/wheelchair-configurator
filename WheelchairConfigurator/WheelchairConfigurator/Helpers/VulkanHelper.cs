@@ -33,7 +33,7 @@ namespace WheelchairConfigurator.Helpers
 
         private Camera _camera;
 
-        private ImageSource _renderedScene;
+        private SKBitmap? _renderedScene = null;
 
         private object _mutex = new();
 
@@ -88,7 +88,7 @@ namespace WheelchairConfigurator.Helpers
 
         public void Render()
         {
-            lock (_mutex) //not needed?
+            lock (_mutex)
             {
                 _graphicsPlugin.Render(out byte[] pixelBuffer);
 
@@ -99,16 +99,11 @@ namespace WheelchairConfigurator.Helpers
 
                 SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
 
-                using SKBitmap bitmap = new SKBitmap();
+                SKBitmap bitmap = new SKBitmap();
                 bitmap.InstallPixels(info, pixels, info.RowBytes);
 
-                using SKImage image = SKImage.FromBitmap(bitmap);
-                using SKData data = image.Encode(SKEncodedImageFormat.Png, 100);
-
-                byte[] bytes = data.ToArray();
-
-                _renderedScene = ImageSource.FromStream(() => new MemoryStream(bytes));
-                handle.Free();
+                _renderedScene?.Dispose();
+                _renderedScene = bitmap;
             }
         }
 
@@ -128,9 +123,9 @@ namespace WheelchairConfigurator.Helpers
         /// You must add object first before this call :3
         /// </summary>
         /// <returns>ImageSource of pixel buffer</returns>        
-        public ImageSource GetRenderedImageSource()
+        public SKBitmap? GetRenderedImageSource()
         {
-            return _renderedScene;//copy?
+            return _renderedScene;
         }
 
         private void ConvertMangetaToTransparent(ref byte[] pixels)
