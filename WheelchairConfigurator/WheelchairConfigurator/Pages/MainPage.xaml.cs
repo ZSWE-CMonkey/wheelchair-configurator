@@ -31,7 +31,7 @@ namespace WheelchairConfigurator.Pages
 
         private async void OnToComponentManagerClicked(object sender, EventArgs e)
         {
-            await Shell.Current.GoToAsync("summaryPage");
+            await Shell.Current.GoToAsync("componentManagerPage");
         }
 
         /*
