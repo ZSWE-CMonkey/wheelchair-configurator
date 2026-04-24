@@ -1,4 +1,4 @@
-using WheelchairConfigurator.Components;
+Ôªøusing WheelchairConfigurator.Components;
 
 namespace WheelchairConfigurator.Pages;
 
@@ -6,6 +6,11 @@ public partial class NewPatientPage : ContentPage
 {
     public UserInput userInput = new();
     private readonly List<ContentView> _panels;
+
+    private readonly Button _continueBtn;
+    private readonly Button _backBtn;
+
+    private bool _isLandscape;
 
     public NewPatientPage()
     {
@@ -15,138 +20,184 @@ public partial class NewPatientPage : ContentPage
         [
             new SideBarView("Informace o pacientovi",
             [
-            new SideBarField
-                {
-                    Label = "Identifik·tor pacienta",
-                    Type = FieldType.Entry,
-                    Keyboard = Keyboard.Default,
-                    MaxLength = 20,
-                    OnSave = v => userInput.patientIdentificator = v
-                },
-                new SideBarField
-                {
-                    Label = "V˝öka trupu (cm)",
-                    Type = FieldType.Entry,
-                    OnSave = v => userInput.BodyHeight = double.TryParse(v, out var x) ? x : 0
-                },
-                new SideBarField
-                {
-                    Label = "Hmotnost (kg)",
-                    Type = FieldType.Entry,
-                    OnSave = v => userInput.Weight = double.TryParse(v, out var x) ? x : 0
-                },
-                new SideBarField
-                {
-                    Label = "äÌ¯ka p·nve (cm)",
-                    Type = FieldType.Entry,
-                    OnSave = v => userInput.PelvisWidth = double.TryParse(v, out var x) ? x : 0
-                },
-                new SideBarField
-                {
-                    Label = "DÈlka stehna (cm)",
-                    Type = FieldType.Entry,
-                    OnSave = v => userInput.ThighLength = double.TryParse(v, out var x) ? x : 0
-                },
+                new SideBarField { Label = "Identifik√°tor pacienta", Type = FieldType.Entry, Keyboard = Keyboard.Default, MaxLength = 20, OnSave = v => userInput.patientIdentificator = v },
+                new SideBarField { Label = "V√Ω≈°ka trupu (cm)",        Type = FieldType.Entry, OnSave = v => userInput.BodyHeight   = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "Hmotnost (kg)",           Type = FieldType.Entry, OnSave = v => userInput.Weight       = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "≈†√≠≈ôka p√°nve (cm)",        Type = FieldType.Entry, OnSave = v => userInput.PelvisWidth  = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "D√©lka stehna (cm)",       Type = FieldType.Entry, OnSave = v => userInput.ThighLength  = double.TryParse(v, out var x) ? x : 0 },
             ]),
 
             new SideBarView("",
             [
-                new SideBarField
-                {
-                    Label = "Stabilita trupu",
-                    Type = FieldType.Picker,
-                    Options = ["Dobr·", "St¯ednÌ", "äpatn·"],
-                    OnSave = v => userInput.BodyStability = v
-                },
-                new SideBarField
-                {
-                    Label = "Kontrola hlavy",
-                    Type = FieldType.Picker,
-                    Options = ["Ano", "Ne"],
-                    OnSave = v => userInput.HeadStability = v == "Ano"
-                },
-                new SideBarField
-                {
-                    Label = "Riziko dekubit˘ (proleûenin)",
-                    Type = FieldType.Picker,
-                    Options = ["NÌzkÈ", "St¯ednÌ", "VysokÈ"],
-                    OnSave = v => userInput.BedsoreRisk = v
-                },
-                new SideBarField
-                {
-                    Label = "Bolesti a ˙nava",
-                    Type = FieldType.Picker,
-                    Options = ["NÌzkÈ", "St¯ednÌ", "VysokÈ"],
-                    OnSave = v => userInput.Pain = v
-                },
-                new SideBarField
-                {
-                    Label = "DolnÌ konËetiny",
-                    Type = FieldType.Picker,
-                    Options = ["Ano", "Ne"],
-                    OnSave = v => userInput.Legs = v == "Ano"
-                },
+                new SideBarField { Label = "Stabilita trupu",             Type = FieldType.Picker, Options = ["Dobr√°", "St≈ôedn√≠", "≈†patn√°"],   OnSave = v => userInput.BodyStability  = v },
+                new SideBarField { Label = "Kontrola hlavy",              Type = FieldType.Picker, Options = ["Ano", "Ne"],                    OnSave = v => userInput.HeadStability  = v == "Ano" },
+                new SideBarField { Label = "Riziko dekubit≈Ø (prole≈æenin)",Type = FieldType.Picker, Options = ["N√≠zk√©", "St≈ôedn√≠", "Vysok√©"],   OnSave = v => userInput.BedsoreRisk    = v },
+                new SideBarField { Label = "Bolesti a √∫nava",             Type = FieldType.Picker, Options = ["N√≠zk√©", "St≈ôedn√≠", "Vysok√©"],   OnSave = v => userInput.Pain           = v },
+                new SideBarField { Label = "Doln√≠ konƒçetiny",             Type = FieldType.Picker, Options = ["Ano", "Ne"],                    OnSave = v => userInput.Legs           = v == "Ano" },
             ]),
 
-            new SideBarView("Informace o vozÌku",
+            new SideBarView("Informace o voz√≠ku",
             [
-                new SideBarField
-                {
-                    Label = "Ovl·d·nÌ",
-                    Type = FieldType.Picker,
-                    Options = ["Hand control", " Head control", " Sip & puff"],
-                    OnSave = v => userInput.Control = v
-                },
-                new SideBarField
-                {
-                    Label = "TerÈn a prost¯edÌ",
-                    Type = FieldType.Picker,
-                    Options = ["Indoor", "Outdoor", "Kombinace"],
-                    OnSave = v => userInput.Environment = v
-                },
+                new SideBarField { Label = "Ovl√°d√°n√≠",       Type = FieldType.Picker, Options = ["Hand control", "Head control", "Sip & puff"],  OnSave = v => userInput.Control     = v },
+                new SideBarField { Label = "Ter√©n a prost≈ôed√≠", Type = FieldType.Picker, Options = ["Indoor", "Outdoor", "Kombinace"],           OnSave = v => userInput.Environment = v },
             ]),
         ];
 
-        Panel1.Content = _panels[0];
-        Panel2.Content = _panels[1];
-        Panel3.Content = _panels[2];
+        _continueBtn = new Button
+        {
+            Text = "Pokraƒçovat",
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        _continueBtn.Clicked += OnFinishClicked;
+
+        _backBtn = new Button
+        {
+            Text = "Zpƒõt",
+            BackgroundColor = Colors.Red,
+            HorizontalOptions = LayoutOptions.Fill
+        };
+        _backBtn.Clicked += OnBackClicked;
     }
 
-    /*
-     * SaveAllPanels - uloûÌ vstupy ze vöech t¯Ì panel˘ najednou
-     */
-    private void SaveAllPanels()
+    protected override void OnSizeAllocated(double width, double height)
     {
-        foreach (var panel in _panels)
+        base.OnSizeAllocated(width, height);
+
+        if (width <= 0 || height <= 0) return;
+
+        bool landscape = width > height;
+        if (landscape == _isLandscape && MainContent.Content != null) return;
+
+        _isLandscape = landscape;
+        DetachSharedViews();
+        MainContent.Content = landscape ? BuildLandscapeLayout() : BuildPortraitLayout();
+    }
+
+    private void DetachSharedViews()
+    {
+        View[] shared = [_panels[0], _panels[1], _panels[2], _continueBtn, _backBtn];
+
+        foreach (var view in shared)
         {
-            if (panel is ISideBar sidebar)
-                sidebar.Save();
+            if (view.Parent is Layout layout)
+                layout.Remove(view);
+            else if (view.Parent is Grid grid)
+                grid.Children.Remove(view);
+            else if (view.Parent is ContentView cv)
+                cv.Content = null;
         }
     }
 
-    /*
-     * OnFinishClicked - saves all fields and continues
-     */
-    private async void OnFinishClicked(object sender, EventArgs e)
+
+    private View BuildLandscapeLayout()
+    {
+        var grid = new Grid
+        {
+            Padding = new Thickness(20),
+            ColumnSpacing = 20,
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+            }
+        };
+
+        Grid.SetColumn(_panels[0], 0);
+        Grid.SetColumn(_panels[1], 1);
+        grid.Children.Add(_panels[0]);
+        grid.Children.Add(_panels[1]);
+
+        var col3 = new Grid
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+            }
+        };
+        Grid.SetRow(_panels[2], 0);
+        Grid.SetRow(_continueBtn, 1);
+        Grid.SetRow(_backBtn, 2);
+        col3.Children.Add(_panels[2]);
+        col3.Children.Add(_continueBtn);
+        col3.Children.Add(_backBtn);
+
+        Grid.SetColumn(col3, 2);
+        grid.Children.Add(col3);
+
+        return grid;
+    }
+
+
+    private View BuildPortraitLayout()
+    {
+        var grid = new Grid
+        {
+            Padding = new Thickness(20),
+            ColumnSpacing = 20,
+            RowSpacing = 20,
+            ColumnDefinitions =
+        {
+            new ColumnDefinition(GridLength.Star),
+            new ColumnDefinition(GridLength.Star),
+        },
+            RowDefinitions =
+        {
+            new RowDefinition(GridLength.Auto),  
+            new RowDefinition(GridLength.Auto), 
+        }
+        };
+
+        Grid.SetRow(_panels[0], 0); Grid.SetColumn(_panels[0], 0);
+        Grid.SetRow(_panels[1], 0); Grid.SetColumn(_panels[1], 1);
+        grid.Children.Add(_panels[0]);
+        grid.Children.Add(_panels[1]);
+
+        Grid.SetRow(_panels[2], 1); Grid.SetColumn(_panels[2], 0);
+        grid.Children.Add(_panels[2]);
+
+        var btnStack = new VerticalStackLayout
+        {
+            Spacing = 8,
+            VerticalOptions = LayoutOptions.End 
+        };
+        btnStack.Children.Add(_continueBtn);
+        btnStack.Children.Add(_backBtn);
+
+        Grid.SetRow(btnStack, 1); Grid.SetColumn(btnStack, 1);
+        grid.Children.Add(btnStack);
+
+        return grid;
+    }
+
+
+    private void SaveAllPanels()
+    {
+        foreach (var panel in _panels)
+            if (panel is ISideBar sidebar)
+                sidebar.Save();
+    }
+
+    private async void OnFinishClicked(object? sender, EventArgs e)
     {
         foreach (var panel in _panels)
         {
             if (panel is ISideBar sidebar && !sidebar.Validate())
             {
-                await DisplayAlert("Chyba", "VyplÚte prosÌm vöechna pole.", "OK");
+                await DisplayAlert("Chyba", "Vypl≈àte pros√≠m v≈°echna pole.", "OK");
                 return;
             }
         }
 
         SaveAllPanels();
         userInput.Date = DateTime.Today;
-        // Saving in db
-        // Redirection 
         await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
-
     }
 
-    private async void OnBackClicked(object sender, EventArgs e)
+    private async void OnBackClicked(object? sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("mainPage");
     }
