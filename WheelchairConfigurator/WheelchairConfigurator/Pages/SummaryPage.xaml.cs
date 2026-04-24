@@ -7,8 +7,6 @@ namespace WheelchairConfigurator.Pages;
 
 public partial class SummaryPage : ContentPage
 {
-    // ── Mock data ────────────────────────────────────────────────────────────
-
     private readonly PatientData _patient = new()
     {
         PatientIdentificator = "PAT-001",
@@ -36,14 +34,10 @@ public partial class SummaryPage : ContentPage
         new ComponentMock { Id = "OPE-002", Name = "Opěrka Sklopná",    Category = "Opěrka",  IsAvailable = true },
     ];
 
-    // ── Render ───────────────────────────────────────────────────────────────
-
     private Bazilišek? _tungTungTungSahur = null;
     private CancellationTokenSource _cts = default!;
     private SKBitmap? _skibidiFrame = null;
     private readonly object _mutex = new();
-
-    // ── Sdílené Views ────────────────────────────────────────────────────────
 
     private Border _patientPanel = default!;
     private Border _componentsPanel = default!;
@@ -68,11 +62,9 @@ public partial class SummaryPage : ContentPage
     private Label LegsLabel = default!;
     private Label PainLabel = default!;
     private VerticalStackLayout ComponentsLayout = default!;
-    private SKCanvasView Canvas = default!;  // ← SKCanvasView místo Image
+    private SKCanvasView Canvas = default!; 
 
     private bool _isLandscape;
-
-    // ── Konstruktor ──────────────────────────────────────────────────────────
 
     public SummaryPage()
     {
@@ -95,8 +87,6 @@ public partial class SummaryPage : ContentPage
     {
         StopRenderLoop();
     }
-
-    // ── Sestavení sdílených Views ────────────────────────────────────────────
 
     private void BuildSharedViews()
     {
@@ -157,7 +147,6 @@ public partial class SummaryPage : ContentPage
             Content = new ScrollView { Content = ComponentsLayout }
         };
 
-        // Render panel – stejný jako WheelchairConfiguratorPage
         Canvas = new SKCanvasView();
         Canvas.PaintSurface += OnPaintSurface;
 
@@ -211,8 +200,6 @@ public partial class SummaryPage : ContentPage
         _exportBtn.Clicked += OnExportClicked;
     }
 
-    // ── Přepínač náhledu ─────────────────────────────────────────────────────
-
     private void OnPreviewToggleClicked(object? sender, EventArgs e)
     {
         _previewVisible = !_previewVisible;
@@ -228,8 +215,6 @@ public partial class SummaryPage : ContentPage
             ? "◀  Zpět na přehled"
             : "▶  Zobrazit náhled";
     }
-
-    // ── Responsivní layout ───────────────────────────────────────────────────
 
     protected override void OnSizeAllocated(double width, double height)
     {
@@ -265,8 +250,6 @@ public partial class SummaryPage : ContentPage
                 cv.Content = null;
         }
     }
-
-    // ── Landscape ────────────────────────────────────────────────────────────
 
     private View BuildLandscapeLayout()
     {
@@ -329,12 +312,10 @@ public partial class SummaryPage : ContentPage
         return outer;
     }
 
-    // ── Portrait ─────────────────────────────────────────────────────────────
-
     private View BuildPortraitLayout()
     {
-        _renderPanel.HeightRequest = 630;
-        _renderPanel.WidthRequest = 830;
+        _renderPanel.HeightRequest = 330;
+        _renderPanel.WidthRequest = 430;
         _renderPanel.HorizontalOptions = LayoutOptions.Center;
         _patientPanel.HeightRequest = 220;
         _componentsPanel.HeightRequest = 400;
@@ -386,8 +367,6 @@ public partial class SummaryPage : ContentPage
         return new ScrollView { Content = outer };
     }
 
-    // ── Render loop ──────────────────────────────────────────────────────────
-
     private void StartRenderLoop()
     {
         _cts = new CancellationTokenSource();
@@ -425,8 +404,6 @@ public partial class SummaryPage : ContentPage
         lock (_mutex)
             canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
     }
-
-    // ── Data ─────────────────────────────────────────────────────────────────
 
     private void LoadPatientData()
     {
@@ -486,8 +463,6 @@ public partial class SummaryPage : ContentPage
         }
     }
 
-    // ── Navigace ─────────────────────────────────────────────────────────────
-
     private async void OnMainMenuClicked(object sender, EventArgs e)
         => await Shell.Current.GoToAsync("mainPage");
 
@@ -498,8 +473,6 @@ public partial class SummaryPage : ContentPage
     {
         // Here will be exporting to pdf
     }
-
-    // ── Pan gesta ────────────────────────────────────────────────────────────
 
     private Point _panStart;
     private bool _panStartSet = false;
