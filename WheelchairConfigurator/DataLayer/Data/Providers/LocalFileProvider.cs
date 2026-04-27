@@ -15,7 +15,7 @@ public class LocalFileProvider
     {
         return new string[]
         {
-            "Resources/Raw/seed_data.json"
+            Path.Combine(FileSystem.AppDataDirectory, "seed_data.json")
         };
     }
 }
