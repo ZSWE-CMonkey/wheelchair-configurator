@@ -31,6 +31,39 @@ public class DbService
         _db.CreateTable<Specialist>();
         _db.CreateTable<Configuration>();
         _db.CreateTable<ConfigurationItem>();
+
+        EnsureSchemaUpgrades();
+    }
+
+    // Adds newly introduced columns when database already exists.
+    private void EnsureSchemaUpgrades()
+    {
+        TryAddColumn("Category", "RoleKey", "TEXT NOT NULL DEFAULT 'unknown'");
+
+        TryAddColumn("ComponentSpecs", "SeatDepthCm", "INTEGER");
+        TryAddColumn("ComponentSpecs", "BackrestHeightLevel", "INTEGER");
+        TryAddColumn("ComponentSpecs", "DrivePowerLevel", "INTEGER");
+        TryAddColumn("ComponentSpecs", "SupportsTilt", "INTEGER");
+        TryAddColumn("ComponentSpecs", "SupportsRecline", "INTEGER");
+        TryAddColumn("ComponentSpecs", "SupportsLateralSupport", "INTEGER");
+        TryAddColumn("ComponentSpecs", "HasHeadSupport", "INTEGER");
+        TryAddColumn("ComponentSpecs", "PressureReliefLevel", "INTEGER");
+        TryAddColumn("ComponentSpecs", "ControlMode", "TEXT");
+        TryAddColumn("ComponentSpecs", "EnvironmentType", "TEXT");
+        TryAddColumn("ComponentSpecs", "SupportsLegRestAdjustment", "INTEGER");
+        TryAddColumn("ComponentSpecs", "ComfortLevel", "INTEGER");
+    }
+
+    private void TryAddColumn(string tableName, string columnName, string columnDefinition)
+    {
+        var columns = _db.GetTableInfo(tableName);
+        var exists = columns.Any(c => string.Equals(c.Name, columnName, StringComparison.OrdinalIgnoreCase));
+        if (exists)
+        {
+            return;
+        }
+
+        _db.Execute($"ALTER TABLE {tableName} ADD COLUMN {columnName} {columnDefinition};");
     }
 
     /// <summary>

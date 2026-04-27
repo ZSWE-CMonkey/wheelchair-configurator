@@ -29,7 +29,19 @@ public class ComponentSpecsSeeder
                 ComponentId = compId,
                 WeightCapacityKg = dto.WeightCapacityKg,
                 SeatWidthCm = dto.SeatWidthCm,
-                MaxSpeedKmh = dto.MaxSpeedKmh
+                SeatDepthCm = dto.SeatDepthCm,
+                BackrestHeightLevel = dto.BackrestHeightLevel,
+                MaxSpeedKmh = dto.MaxSpeedKmh,
+                DrivePowerLevel = dto.DrivePowerLevel,
+                SupportsTilt = dto.SupportsTilt,
+                SupportsRecline = dto.SupportsRecline,
+                SupportsLateralSupport = dto.SupportsLateralSupport,
+                HasHeadSupport = dto.HasHeadSupport,
+                PressureReliefLevel = dto.PressureReliefLevel,
+                ControlMode = dto.ControlMode,
+                EnvironmentType = dto.EnvironmentType,
+                SupportsLegRestAdjustment = dto.SupportsLegRestAdjustment,
+                ComfortLevel = dto.ComfortLevel
             });
             count++;
         }
