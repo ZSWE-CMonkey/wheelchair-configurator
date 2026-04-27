@@ -5,6 +5,7 @@ using WheelchairConfigurator.Data;
 using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.ServiceLayer;
 using WheelchairConfigurator.ServiceLayer.Interfaces;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 namespace WheelchairConfigurator
 {
@@ -15,6 +16,7 @@ namespace WheelchairConfigurator
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
+                .UseSkiaSharp()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

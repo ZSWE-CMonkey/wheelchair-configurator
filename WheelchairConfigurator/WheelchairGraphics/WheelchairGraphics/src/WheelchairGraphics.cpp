@@ -56,6 +56,9 @@ WG_API void wgSetCamera(float zoom, float x, float y, float z, float rX, float r
 	g_cameraSettings->rotation.x = rX;
 	g_cameraSettings->rotation.y = rY;
 	g_cameraSettings->rotation.z = rZ;
+
+	if (g_graphicsPlugin)
+		g_graphicsPlugin->SetCamera(*g_cameraSettings);
 }
 
 WG_API void wgAddObject(const char* objectId) {
