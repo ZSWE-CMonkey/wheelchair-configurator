@@ -1,8 +1,10 @@
-namespace WheelchairConfigurator.Data.DTOs;
+﻿namespace ConfigurationLogic.DTOs;
 
-public class ComponentSpecsDto
+// Component specs payload
+public class ComponentSpecsOutputDto
 {
-    public string ComponentName { get; set; } = string.Empty; // Vazba na konkrétní díl
+    public int ComponentId { get; set; }
+    public string ComponentName { get; set; } = string.Empty;
     public int? WeightCapacityKg { get; set; }
     public int? SeatWidthCm { get; set; }
     public int? SeatDepthCm { get; set; }
@@ -19,3 +21,4 @@ public class ComponentSpecsDto
     public bool? SupportsLegRestAdjustment { get; set; }
     public int? ComfortLevel { get; set; }
 }
+
