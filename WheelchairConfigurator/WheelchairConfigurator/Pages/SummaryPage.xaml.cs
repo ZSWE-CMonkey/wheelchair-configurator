@@ -464,10 +464,23 @@ public partial class SummaryPage : ContentPage
     }
 
     private async void OnMainMenuClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("mainPage");
+    {
+        if (_tungTungTungSahur != null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+        }
+        await Shell.Current.GoToAsync("mainPage");
+    }
 
     private async void OnBackClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+    {
+        if (_tungTungTungSahur != null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+        }
+        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+
+    }
 
     private async void OnExportClicked(object sender, EventArgs e)
     {
@@ -501,6 +514,10 @@ public partial class SummaryPage : ContentPage
 
     protected override void OnDisappearing()
     {
+        if (_tungTungTungSahur != null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+        }
         base.OnDisappearing();
         StopRenderLoop();
     }

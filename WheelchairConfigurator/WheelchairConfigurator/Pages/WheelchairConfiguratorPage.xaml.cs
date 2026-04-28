@@ -512,10 +512,23 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
 
     private async void OnBackClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("patientSelectPage");
+    {
+        if (_tungTungTungSahur != null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+        }
+        await Shell.Current.GoToAsync("patientSelectPage");
+    }
 
     private async void OnContinueClicked(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("summaryPage");
+    {
+        if (_tungTungTungSahur != null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+        }
+        await Shell.Current.GoToAsync("summaryPage");
+    }
+
 
 
     private Point _panStart;
