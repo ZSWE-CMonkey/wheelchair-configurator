@@ -10,4 +10,7 @@ public class Category
 
     [NotNull]
     public string Name { get; set; } = string.Empty;
+
+    [NotNull]
+    public string RoleKey { get; set; } = "unknown";
 }

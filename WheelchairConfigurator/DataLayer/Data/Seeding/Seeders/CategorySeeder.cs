@@ -19,7 +19,11 @@ public class CategorySeeder
 
         foreach (var dto in dtos)
         {
-            var entity = new Category { Name = dto.Name };
+            var entity = new Category
+            {
+                Name = dto.Name,
+                RoleKey = string.IsNullOrWhiteSpace(dto.RoleKey) ? "unknown" : dto.RoleKey.Trim().ToLowerInvariant()
+            };
             db.Insert(entity);
             map[dto.Name] = entity.Id;
         }
