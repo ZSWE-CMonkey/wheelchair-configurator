@@ -52,9 +52,17 @@ namespace WheelchairConfigurator.Helpers
                 );
         }
 
-        ~Bazilišek()
+        /*~Bazilišek()
         {
             _graphicsPlugin.Deinitialize();
+        }*/
+
+        public void ZabijBaziliška()
+        {
+            if (_graphicsPlugin != null)
+            {
+                _graphicsPlugin.Deinitialize();
+            }
         }
 
         /// <summary>
