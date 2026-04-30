@@ -21,13 +21,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
-		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\DataLayer\DataLayer.csproj" />
-	  <ProjectReference Include="..\ExportLayer\ExportLayer.csproj" />
-	  <ProjectReference Include="..\ServiceLayer\ServiceLayer.csproj" />
+		<PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
 	</ItemGroup>
 
 </Project>

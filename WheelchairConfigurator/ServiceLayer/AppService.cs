@@ -1,6 +1,6 @@
 using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.Domain.Models;
-//using WheelchairConfigurator.Export;
+using WheelchairConfigurator.Export;
 using WheelchairConfigurator.ServiceLayer.Interfaces;
 using WheelchairConfigurator.ServiceLayer.Mappers;
 using WheelchairConfigurator.ServiceLayer.Models;
@@ -21,7 +21,7 @@ public class AppService : IAppService
     private readonly ConfigurationItemRepository _configurationItemRepo;
     private readonly SpecialistRepository _specialistRepo;
     private readonly IConfigurationEngine _engine;
-    // private readonly IExportFileBuilder _fileBuilder;
+    private readonly IExportFileBuilder _fileBuilder;
 
     public AppService(
         CategoryRepository categoryRepo,
@@ -29,9 +29,9 @@ public class AppService : IAppService
         ConfigurationRepository configurationRepo,
         ConfigurationItemRepository configurationItemRepo,
         SpecialistRepository specialistRepo,
-        IConfigurationEngine engine
-       // IExportFileBuilder fileBuilder
-       )
+        IConfigurationEngine engine,
+        IExportFileBuilder fileBuilder
+        )
     {
         _categoryRepo = categoryRepo;
         _componentRepo = componentRepo;
@@ -39,7 +39,7 @@ public class AppService : IAppService
         _configurationItemRepo = configurationItemRepo;
         _specialistRepo = specialistRepo;
         _engine = engine;
-        // _fileBuilder = fileBuilder;
+        _fileBuilder = fileBuilder;
     }
 
     /// <inheritdoc/>
@@ -114,26 +114,25 @@ public class AppService : IAppService
     }
 
     /// <inheritdoc/>
-    /// 
-    // public async Task<string> ExportConfigurationAsync(int configurationId)
-    // {
-    //     // 1. Load configuration from DB
-    //     var config = await _configurationRepo.GetByIdAsync(configurationId);
-    //     var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
-    //     var specialist = await _specialistRepo.GetByIdAsync(config!.SpecialistId);
+    public async Task<byte[]> ExportConfigurationAsync(int configurationId)
+    {
+        // 1. Load configuration from DB
+        var config = await _configurationRepo.GetByIdAsync(configurationId);
+        var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
+        var specialist = await _specialistRepo.GetByIdAsync(config!.SpecialistId);
 
-    //     // 2. Build export model via mapper
-    //     var exportModel = await ExportMapper.MapAsync(
-    //         config,
-    //         items,
-    //         specialist!,
-    //         _componentRepo,
-    //         _categoryRepo
-    //     );
+        // 2. Build export model via mapper
+        var exportModel = await ExportMapper.MapAsync(
+            config,
+            items,
+            specialist!,
+            _componentRepo,
+            _categoryRepo
+        );
 
-    //     // 3. Build PDF directly
-    //     return _fileBuilder.Build(exportModel);
-    // }
+        // 3. Build PDF directly
+        return _fileBuilder.Build(exportModel);
+    }
 
     /// <inheritdoc/>
     public async Task<List<ConfigurationModel>> GetConfigurationsBySpecialistAsync(int specialistId)
