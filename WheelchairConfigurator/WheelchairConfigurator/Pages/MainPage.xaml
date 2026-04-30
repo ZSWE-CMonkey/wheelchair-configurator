@@ -10,7 +10,7 @@
         <ScrollView>
             <VerticalStackLayout x:Name="Testing"
                                  Padding="30"
-                                 Spacing="25"
+                                 Spacing="20"
                                  VerticalOptions="Center"
                                  HorizontalOptions="Fill">
 
@@ -19,7 +19,7 @@
                        Aspect="AspectFit"
                        SemanticProperties.Description="mainpage picture" />
 
-                <Label Text="E-Vozík builder"
+                <Label Text="E-Vozík builder SKIBIDI 67 67 67 xdDDDDDDDDDDDDDDDDDDDD BAZILISEK LOOOOL XDDDDDDDDD"
                        Style="{StaticResource Headline}"
                        HorizontalTextAlignment="Center"
                        SemanticProperties.HeadingLevel="Level1" />
@@ -29,40 +29,24 @@
                        HorizontalTextAlignment="Center"
                        SemanticProperties.HeadingLevel="Level2" />
 
-                <Grid ColumnDefinitions="*,*"
-                      ColumnSpacing="15"
-                      RowDefinitions="Auto,Auto"
-                      RowSpacing="15">
+                <Button x:Name="toNewPatientBtn"           
+                        Text="Přidat pacienta"
+                        SemanticProperties.Hint="Redirects to New Patient Page"
+                        Clicked="OnToNewPatientClicked"
+                        HorizontalOptions="Fill" />
 
-                    <Button x:Name="toNewPatientBtn"
-                            Grid.Row="0" Grid.Column="0"
-                            Text="Přidat pacienta"
-                            SemanticProperties.Hint="Redirects to New Patient Page"
-                            Clicked="OnToNewPatientClicked"
-                            HorizontalOptions="Fill" />
+                <Button x:Name="toPatientSelectBtn"
+                        Text="Vybrat pacienta"
+                        SemanticProperties.Hint="Redirects to Patient Select Page"
+                        Clicked="OnToPatientSelectClicked"
+                        HorizontalOptions="Fill" />
 
-                    <Button x:Name="toPatientSelectBtn"
-                            Grid.Row="1" Grid.Column="0"
-                            Text="Vybrat pacienta"
-                            SemanticProperties.Hint="Redirects to Patient Select Page"
-                            Clicked="OnToPatientSelectClicked"
-                            HorizontalOptions="Fill" />
+                <Button x:Name="toComponentManagerBtn"
+                        Text="Spravovat součástky"
+                        SemanticProperties.Hint="Redirects to Component Manager Page"
+                        Clicked="OnToComponentManagerClicked"
+                        HorizontalOptions="Fill" />
 
-                    <Button x:Name="toComponentManagerBtn"
-                            Grid.Row="0" Grid.Column="1"
-                            Text="Spravovat součástky"
-                            SemanticProperties.Hint="Redirects to Component Manager Page"
-                            Clicked="OnToComponentManagerClicked"
-                            HorizontalOptions="Fill" />
-
-                    <Button x:Name="ExitBtn"
-                            Grid.Row="1" Grid.Column="1"
-                            Text="Zavřít aplikaci"
-                            Clicked="OnExitClicked"
-                            BackgroundColor="Red"
-                            TextColor="White"
-                            HorizontalOptions="Fill" />
-                </Grid>
             </VerticalStackLayout>
         </ScrollView>
 

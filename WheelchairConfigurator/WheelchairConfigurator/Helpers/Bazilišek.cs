@@ -1,0 +1,155 @@
+﻿using ConfigurationLogic.Graphics;
+using ConfigurationLogic.Graphics.Types;
+using SkiaSharp;
+using System.Runtime.InteropServices;
+
+namespace WheelchairConfigurator.Helpers
+{
+    /// <summary>
+    /// Vulkan helper for single render of image lol
+    /// </summary>
+    internal class Bazilišek
+    {
+        private struct Camera
+        {
+            public float Zoom;
+            public CameraPosition Position;
+            public CameraRotation Rotation;
+
+            public Camera(float zoom, CameraPosition position, CameraRotation rotation)
+            {
+                Zoom = zoom;
+                Position = position;
+                Rotation = rotation;
+            }
+        }
+
+        private int _width;
+        private int _height;
+
+        private List<string> _objectsId;
+
+        private IGraphicsPlugin _graphicsPlugin;
+
+        private Camera _camera;
+
+        private SKBitmap? _renderedScene = null;
+
+        private object _mutex = new();
+
+        public Bazilišek(string name, int widht, int height)
+        {
+            _width = widht;
+            _height = height;
+            _objectsId = new List<string>();
+            _graphicsPlugin = GraphicsPluginFactory.CreateVulkanGraphicsPlugin(name, widht, height);
+
+
+            _camera = new Camera(
+                -5.5f,
+                new CameraPosition(0.1f, 1.1f, 0.0f),
+                new CameraRotation(-0.5f, -112.75f, 0.0f)
+                );
+        }
+
+        /*~Bazilišek()
+        {
+            _graphicsPlugin.Deinitialize();
+        }*/
+
+        public void ZabijBaziliška()
+        {
+            if (_graphicsPlugin != null)
+            {
+                _graphicsPlugin.Deinitialize();
+            }
+        }
+
+        /// <summary>
+        /// Adds object to the rendered scene. You must add it first before rendering call skibidi
+        /// </summary>
+        /// <param name="name">Object id name in format like (without any extensions): [subfolder]/[name]</param>
+        public Bazilišek BrmBrmPatatim(string name)
+        {
+            _objectsId.Add(name);
+            return this;
+        }
+
+        public void ClearObjects()
+        {
+            _objectsId.Clear();
+        }
+
+        public void ChangeWidthHeight(int width, int height)
+        {
+            _width = width;
+            _height = height;
+        }
+
+        public void PomaluSanjski(float x, float y)
+        {
+            _camera.Rotation.X += x;
+            _camera.Rotation.Y += y;
+
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+        }
+
+        public void ToJáJsemVypustilBaziliška()
+        {
+            lock (_mutex)
+            {
+                _graphicsPlugin.Render(out byte[] pixelBuffer);
+
+                ConvertMangetaToTransparent(ref pixelBuffer);
+
+                GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
+                IntPtr pixels = handle.AddrOfPinnedObject();
+
+                SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+
+                SKBitmap bitmap = new SKBitmap();
+                bitmap.InstallPixels(info, pixels, info.RowBytes);
+
+                _renderedScene?.Dispose();
+                _renderedScene = bitmap;
+            }
+        }
+
+        public void OtevřítKomnatu()
+        {
+            foreach (string id in _objectsId)
+            {
+                _graphicsPlugin.AddResource(id);
+            }
+            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+            _graphicsPlugin.Initialize();
+        }
+
+        /// <summary>
+        /// Initialize and renders once the scene and deinitialize vulkan engine. 
+        /// Outputs final image of that rendering.
+        /// You must add object first before this call :3
+        /// </summary>
+        /// <returns>ImageSource of pixel buffer</returns>        
+        public SKBitmap? JaJsemHagrid()
+        {
+            return _renderedScene;
+        }
+
+        private void ConvertMangetaToTransparent(ref byte[] pixels)
+        {
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                byte b = pixels[i];
+                byte g = pixels[i + 1];
+                byte r = pixels[i + 2];
+
+                if (r == 255 && g == 0 && b == 255)
+                {
+                    pixels[i + 3] = 0;
+                }
+            }
+        }
+
+    }
+}

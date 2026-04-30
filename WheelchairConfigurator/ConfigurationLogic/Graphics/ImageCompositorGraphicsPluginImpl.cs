@@ -1,4 +1,6 @@
-﻿namespace ConfigurationLogic.Graphics
+﻿using ConfigurationLogic.Graphics.Types;
+
+namespace ConfigurationLogic.Graphics
 {
     internal class ImageCompositorGraphicsPluginImpl : IGraphicsPlugin
     {
@@ -46,6 +48,11 @@
             int height = _imageBuffer.Height;
 
             _imageBuffer = new Image(width, height);
+        }
+
+        public void SetCamera(float zoom, CameraPosition position, CameraRotation rotation)
+        {
+            throw new NotImplementedException();
         }
 
         private Image CreateBlankImage(int width, int height)
