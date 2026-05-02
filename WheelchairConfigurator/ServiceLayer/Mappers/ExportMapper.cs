@@ -19,8 +19,8 @@ public static class ExportMapper
         Configuration config,
         List<ConfigurationItem> items,
         Specialist specialist,
-        ComponentRepository componentRepo,
-        CategoryRepository categoryRepo)
+        IComponentRepository componentRepo,
+        ICategoryRepository categoryRepo)
     {
         var componentIds = items.Select(i => i.ComponentId).ToList();
         var components = await componentRepo.GetByIdsAsync(componentIds);

@@ -1,5 +1,5 @@
 # Data Layer — Wheelchair Configurator
-**Version 1.2** | Author: Peta8 | C# / MAUI / SQLite-net-pcl
+**Version 1.3** | Author: Peta8 | C# / MAUI / SQLite-net-pcl
 
 ---
 
@@ -36,8 +36,13 @@ Data/
         LocalFileProvider.cs — returns paths to JSON seed files
 
     Repositories/           — data access layer
-        IRepository.cs          — generic repository contract
-        GenericRepository.cs    — base CRUD implementation
+        IRepository.cs                  — generic repository contract
+        ICategoryRepository.cs          — category-specific contract
+        IComponentRepository.cs         — component-specific contract
+        IConfigurationRepository.cs     — configuration-specific contract
+        IConfigurationItemRepository.cs — configuration item-specific contract
+        ISpecialistRepository.cs        — specialist-specific contract
+        GenericRepository.cs            — base CRUD implementation
         CategoryRepository.cs
         ComponentRepository.cs
         ComponentSpecsRepository.cs
@@ -121,8 +126,21 @@ If empty, it runs the full seeding pipeline automatically.
 
 ## Repository Pattern
 
-All repositories follow the same pattern — generic CRUD is inherited,
-entity-specific queries are added on top.
+All repositories follow the same pattern — generic CRUD is inherited from `GenericRepository<T>`,
+entity-specific queries are added on top. Each repository also implements its own specific interface,
+which enables clean dependency injection and unit testing without a real database.
+
+### Interface Hierarchy
+
+```
+IRepository<T>                  — GetAllAsync, GetByIdAsync, InsertAsync, UpdateAsync, DeleteAsync
+    ↑
+ICategoryRepository             — + GetByNameAsync, GetByIdsAsync
+ICategoryRepository             — + GetByCategoryIdAsync, GetByIdsAsync
+IConfigurationRepository        — + GetBySpecialistIdAsync
+IConfigurationItemRepository    — + GetByConfigurationIdAsync
+ISpecialistRepository           — (no additional methods, inherits CRUD only)
+```
 
 ### Contract — `IRepository<T>`
 
@@ -136,16 +154,19 @@ Task<int> DeleteAsync(T entity);
 
 ### Available Repositories & Specific Methods
 
-| Repository | Specific methods |
-|---|---|
-| `CategoryRepository` | `GetByNameAsync(name)` |
-| `ComponentRepository` | `GetByCategoryIdAsync(categoryId)`, `GetByNameAsync(name)` |
-| `ComponentSpecsRepository` | `GetByComponentIdAsync(componentId)` |
-| `CompatibilityRuleRepository` | `GetRulesForComponentAsync(componentId)`, `GetRuleAsync(compAId, compBId)`, `AreCompatibleAsync(compAId, compBId)` |
-| `SpecialistRepository` | `GetByEmailAsync(email)`, `GetByClinicAsync(clinic)` |
-| `ConfigurationRepository` | `GetBySpecialistIdAsync(specialistId)` |
-| `ConfigurationItemRepository` | `GetByConfigurationIdAsync(configurationId)` |
-| `Model3DRepository` | `GetByComponentIdAsync(componentId)` |
+| Repository | Interface | Specific methods |
+|---|---|---|
+| `CategoryRepository` | `ICategoryRepository` | `GetByNameAsync(name)`, `GetByIdsAsync(ids)` |
+| `ComponentRepository` | `IComponentRepository` | `GetByCategoryIdAsync(categoryId)`, `GetByNameAsync(name)`, `GetByIdsAsync(ids)` |
+| `ComponentSpecsRepository` | — | `GetByComponentIdAsync(componentId)` |
+| `CompatibilityRuleRepository` | — | `GetRulesForComponentAsync(componentId)`, `GetRuleAsync(compAId, compBId)`, `AreCompatibleAsync(compAId, compBId)` |
+| `SpecialistRepository` | `ISpecialistRepository` | — |
+| `ConfigurationRepository` | `IConfigurationRepository` | `GetBySpecialistIdAsync(specialistId)` |
+| `ConfigurationItemRepository` | `IConfigurationItemRepository` | `GetByConfigurationIdAsync(configurationId)` |
+| `Model3DRepository` | — | `GetByComponentIdAsync(componentId)` |
+
+> Note: `ComponentSpecsRepository`, `CompatibilityRuleRepository` and `Model3DRepository` do not have
+> specific interfaces yet as they are not injected into `AppService`. Add interfaces when needed.
 
 ### Usage Example
 
@@ -227,17 +248,25 @@ public class NewEntitySeeder
 _newEntitySeeder.Seed(db, data.NewEntities);
 ```
 
-**7. Repository** — `Data/Repositories/NewEntityRepository.cs`
+**7. Interface** — `Data/Repositories/INewEntityRepository.cs`
 ```csharp
-public class NewEntityRepository : GenericRepository<NewEntity>
+public interface INewEntityRepository : IRepository<NewEntity>
 {
-    public NewEntityRepository(SQLiteAsyncConnection db) : base(db) { }
-
-    // Add entity-specific queries here
+    // add entity-specific method signatures here
 }
 ```
 
-**8. `seed_data.json`** — add data
+**8. Repository** — `Data/Repositories/NewEntityRepository.cs`
+```csharp
+public class NewEntityRepository : GenericRepository<NewEntity>, INewEntityRepository
+{
+    public NewEntityRepository(SQLiteAsyncConnection db) : base(db) { }
+
+    // Add entity-specific query implementations here
+}
+```
+
+**9. `seed_data.json`** — add data
 ```json
 "NewEntities": [
     { "Name": "Example" }
@@ -261,7 +290,8 @@ Even simpler — only 4 files change:
 
 ## DI Registration (for MAUI colleague)
 
-Register all dependencies in `MauiProgram.cs`:
+Register all dependencies in `MauiProgram.cs`.
+Repositories are registered **under their interface** so they can be mocked in unit tests:
 
 ```csharp
 var asyncDb = new DbService(dbPath).GetAsyncConnection();
@@ -270,13 +300,16 @@ builder.Services.AddSingleton<DbService>(sp => new DbService(dbPath));
 builder.Services.AddSingleton<DataService>();
 builder.Services.AddSingleton<DbInitializer>();
 
-builder.Services.AddSingleton<CategoryRepository>(sp => new CategoryRepository(asyncDb));
-builder.Services.AddSingleton<ComponentRepository>(sp => new ComponentRepository(asyncDb));
+// Repositories — registered under interface for testability
+builder.Services.AddSingleton<ICategoryRepository>(sp => new CategoryRepository(asyncDb));
+builder.Services.AddSingleton<IComponentRepository>(sp => new ComponentRepository(asyncDb));
+builder.Services.AddSingleton<IConfigurationRepository>(sp => new ConfigurationRepository(asyncDb));
+builder.Services.AddSingleton<IConfigurationItemRepository>(sp => new ConfigurationItemRepository(asyncDb));
+builder.Services.AddSingleton<ISpecialistRepository>(sp => new SpecialistRepository(asyncDb));
+
+// Repositories without specific interfaces (not injected into AppService)
 builder.Services.AddSingleton<ComponentSpecsRepository>(sp => new ComponentSpecsRepository(asyncDb));
 builder.Services.AddSingleton<CompatibilityRuleRepository>(sp => new CompatibilityRuleRepository(asyncDb));
-builder.Services.AddSingleton<SpecialistRepository>(sp => new SpecialistRepository(asyncDb));
-builder.Services.AddSingleton<ConfigurationRepository>(sp => new ConfigurationRepository(asyncDb));
-builder.Services.AddSingleton<ConfigurationItemRepository>(sp => new ConfigurationItemRepository(asyncDb));
 builder.Services.AddSingleton<Model3DRepository>(sp => new Model3DRepository(asyncDb));
 ```
 
@@ -336,15 +369,23 @@ The seeder resolves names to database IDs automatically.
 
 ---
 
-## Known Limitations (v1.2)
+## Known Limitations (v1.3)
 
-- `SpecialistSeeder` not implemented — specialists are expected to be created by the user in the app, not seeded from JSON. Can be added in v1.3 if needed.
+- `SpecialistSeeder` not implemented — specialists are expected to be created by the user in the app, not seeded from JSON. Can be added in v1.4 if needed.
+- `ComponentSpecsRepository`, `CompatibilityRuleRepository` and `Model3DRepository` do not have specific interfaces yet — add when needed.
 - No JSON validation — malformed entries are skipped with a console warning.
 - No migration history — to reset data during development, use `resetOnStart: true` or delete `konfigurator.db` manually.
 
+---
 
+## Changelog
 
---------
+| Version | Change |
+|---|---|
+| 1.3 | Added specific repository interfaces (`ICategoryRepository`, `IComponentRepository`, `IConfigurationRepository`, `IConfigurationItemRepository`, `ISpecialistRepository`) for clean DI and unit testability |
+| 1.2 | Initial release |
+
+---
 Developed by Claude Sonnet 4.6 <3 |
 Consulted with Gemini 3.1 Pro <3 |
-Managed by Peta 8-) 
+Managed by Peta 8-)

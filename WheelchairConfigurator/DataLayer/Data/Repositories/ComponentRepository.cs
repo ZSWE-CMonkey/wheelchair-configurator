@@ -7,7 +7,7 @@ namespace WheelchairConfigurator.Data.Repositories;
 /// Repository for Component entity.
 /// Provides component-specific queries in addition to generic CRUD.
 /// </summary>
-public class ComponentRepository : GenericRepository<Component>
+public class ComponentRepository : GenericRepository<Component>, IComponentRepository
 {
     public ComponentRepository(SQLiteAsyncConnection db) : base(db) { }
 
