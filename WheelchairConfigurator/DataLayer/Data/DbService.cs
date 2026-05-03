@@ -90,4 +90,12 @@ public class DbService
     /// Returns the async database connection to be used by repositories.
     /// </summary>
     public SQLiteAsyncConnection GetAsyncConnection() => _asyncDb;
+
+    /// <summary> Closes the database connections. Call when the service is no longer needed.
+    /// </summary>
+    public void Close()
+    {
+        _db.Close();
+        _asyncDb.CloseAsync().GetAwaiter().GetResult();
+    }
 }

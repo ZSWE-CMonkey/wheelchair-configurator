@@ -1,5 +1,5 @@
 # Data Layer — Wheelchair Configurator
-**Version 1.3** | Author: Peta8 | C# / MAUI / SQLite-net-pcl
+**Version 1.4** | Author: Peta8 | C# / MAUI / SQLite-net-pcl
 
 ---
 
@@ -33,6 +33,7 @@ Data/
         CompatibilityRuleDto.cs
 
     Providers/
+        ILocalFileProvider.cs — contract for resolving seed file paths
         LocalFileProvider.cs — returns paths to JSON seed files
 
     Repositories/           — data access layer
@@ -126,21 +127,8 @@ If empty, it runs the full seeding pipeline automatically.
 
 ## Repository Pattern
 
-All repositories follow the same pattern — generic CRUD is inherited from `GenericRepository<T>`,
-entity-specific queries are added on top. Each repository also implements its own specific interface,
-which enables clean dependency injection and unit testing without a real database.
-
-### Interface Hierarchy
-
-```
-IRepository<T>                  — GetAllAsync, GetByIdAsync, InsertAsync, UpdateAsync, DeleteAsync
-    ↑
-ICategoryRepository             — + GetByNameAsync, GetByIdsAsync
-ICategoryRepository             — + GetByCategoryIdAsync, GetByIdsAsync
-IConfigurationRepository        — + GetBySpecialistIdAsync
-IConfigurationItemRepository    — + GetByConfigurationIdAsync
-ISpecialistRepository           — (no additional methods, inherits CRUD only)
-```
+All repositories follow the same pattern — generic CRUD is inherited,
+entity-specific queries are added on top.
 
 ### Contract — `IRepository<T>`
 
@@ -160,7 +148,7 @@ Task<int> DeleteAsync(T entity);
 | `ComponentRepository` | `IComponentRepository` | `GetByCategoryIdAsync(categoryId)`, `GetByNameAsync(name)`, `GetByIdsAsync(ids)` |
 | `ComponentSpecsRepository` | — | `GetByComponentIdAsync(componentId)` |
 | `CompatibilityRuleRepository` | — | `GetRulesForComponentAsync(componentId)`, `GetRuleAsync(compAId, compBId)`, `AreCompatibleAsync(compAId, compBId)` |
-| `SpecialistRepository` | `ISpecialistRepository` | — |
+| `SpecialistRepository` | `ISpecialistRepository` | `GetByEmailAsync(email)`, `GetByClinicAsync(clinic)` |
 | `ConfigurationRepository` | `IConfigurationRepository` | `GetBySpecialistIdAsync(specialistId)` |
 | `ConfigurationItemRepository` | `IConfigurationItemRepository` | `GetByConfigurationIdAsync(configurationId)` |
 | `Model3DRepository` | — | `GetByComponentIdAsync(componentId)` |
@@ -248,25 +236,17 @@ public class NewEntitySeeder
 _newEntitySeeder.Seed(db, data.NewEntities);
 ```
 
-**7. Interface** — `Data/Repositories/INewEntityRepository.cs`
+**7. Repository** — `Data/Repositories/NewEntityRepository.cs`
 ```csharp
-public interface INewEntityRepository : IRepository<NewEntity>
-{
-    // add entity-specific method signatures here
-}
-```
-
-**8. Repository** — `Data/Repositories/NewEntityRepository.cs`
-```csharp
-public class NewEntityRepository : GenericRepository<NewEntity>, INewEntityRepository
+public class NewEntityRepository : GenericRepository<NewEntity>
 {
     public NewEntityRepository(SQLiteAsyncConnection db) : base(db) { }
 
-    // Add entity-specific query implementations here
+    // Add entity-specific queries here
 }
 ```
 
-**9. `seed_data.json`** — add data
+**8. `seed_data.json`** — add data
 ```json
 "NewEntities": [
     { "Name": "Example" }
@@ -297,6 +277,7 @@ Repositories are registered **under their interface** so they can be mocked in u
 var asyncDb = new DbService(dbPath).GetAsyncConnection();
 
 builder.Services.AddSingleton<DbService>(sp => new DbService(dbPath));
+builder.Services.AddSingleton<ILocalFileProvider, LocalFileProvider>();
 builder.Services.AddSingleton<DataService>();
 builder.Services.AddSingleton<DbInitializer>();
 
@@ -369,9 +350,9 @@ The seeder resolves names to database IDs automatically.
 
 ---
 
-## Known Limitations (v1.3)
+## Known Limitations (v1.4)
 
-- `SpecialistSeeder` not implemented — specialists are expected to be created by the user in the app, not seeded from JSON. Can be added in v1.4 if needed.
+- `SpecialistSeeder` not implemented — specialists are expected to be created by the user in the app, not seeded from JSON. Can be added in v1.5 if needed.
 - `ComponentSpecsRepository`, `CompatibilityRuleRepository` and `Model3DRepository` do not have specific interfaces yet — add when needed.
 - No JSON validation — malformed entries are skipped with a console warning.
 - No migration history — to reset data during development, use `resetOnStart: true` or delete `konfigurator.db` manually.
@@ -382,10 +363,13 @@ The seeder resolves names to database IDs automatically.
 
 | Version | Change |
 |---|---|
+| 1.4 | Added `ILocalFileProvider` interface; `DbService.Close()` for explicit connection cleanup; `DataService` now depends on `ILocalFileProvider` instead of concrete class |
 | 1.3 | Added specific repository interfaces (`ICategoryRepository`, `IComponentRepository`, `IConfigurationRepository`, `IConfigurationItemRepository`, `ISpecialistRepository`) for clean DI and unit testability |
 | 1.2 | Initial release |
 
----
+
+
+--------
 Developed by Claude Sonnet 4.6 <3 |
 Consulted with Gemini 3.1 Pro <3 |
-Managed by Peta 8-)
+Managed by Peta 8-)  

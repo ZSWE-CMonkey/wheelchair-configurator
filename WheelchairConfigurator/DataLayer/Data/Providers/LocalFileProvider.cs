@@ -5,7 +5,7 @@ namespace WheelchairConfigurator.Data.Providers;
 /// <summary>
 /// Responsible solely for locating and providing paths to data files.
 /// </summary>
-public class LocalFileProvider
+public class LocalFileProvider : ILocalFileProvider
 {
     /// <summary>
     /// Returns an array of file paths to JSON seed files that need to be processed.
