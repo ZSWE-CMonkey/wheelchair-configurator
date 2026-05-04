@@ -6,7 +6,7 @@ namespace WheelchairConfigurator.Export.Pdf;
 /// Centralized color palette used throughout the PDF document generation.
 /// Defines standard brand colors, text shades, and UI element colors to ensure visual consistency.
 /// </summary>
-internal static class PdfDocumentColors
+public static class PdfDocumentColors
 {
     /// <summary>
     /// The primary brand color, typically used for highlights, main titles, and emphasizing the total price.
