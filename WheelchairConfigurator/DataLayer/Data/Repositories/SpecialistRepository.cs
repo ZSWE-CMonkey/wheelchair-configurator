@@ -7,7 +7,7 @@ namespace WheelchairConfigurator.Data.Repositories;
 /// Repository for Specialist entity.
 /// Provides specialist-specific queries in addition to generic CRUD.
 /// </summary>
-public class SpecialistRepository : GenericRepository<Specialist>
+public class SpecialistRepository : GenericRepository<Specialist>, ISpecialistRepository
 {
     public SpecialistRepository(SQLiteAsyncConnection db) : base(db) { }
 

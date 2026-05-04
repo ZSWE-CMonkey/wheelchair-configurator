@@ -7,7 +7,7 @@ namespace WheelchairConfigurator.Data.Repositories;
 /// Repository for ConfigurationItem entity.
 /// Provides configuration item-specific queries in addition to generic CRUD.
 /// </summary>
-public class ConfigurationItemRepository : GenericRepository<ConfigurationItem>
+public class ConfigurationItemRepository : GenericRepository<ConfigurationItem>, IConfigurationItemRepository
 {
     public ConfigurationItemRepository(SQLiteAsyncConnection db) : base(db) { }
 

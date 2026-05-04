@@ -10,10 +10,10 @@ namespace WheelchairConfigurator.Service;
 /// </summary>
 public class DataService
 {
-    private readonly LocalFileProvider _fileProvider;
+    private readonly ILocalFileProvider _fileProvider;
     private readonly JsonDataLoader _loader;
 
-    public DataService(LocalFileProvider fileProvider, JsonDataLoader loader)
+    public DataService(ILocalFileProvider fileProvider, JsonDataLoader loader)
     {
         _fileProvider = fileProvider;
         _loader = loader;

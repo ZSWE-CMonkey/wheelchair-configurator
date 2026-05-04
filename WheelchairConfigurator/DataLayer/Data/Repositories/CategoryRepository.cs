@@ -7,7 +7,7 @@ namespace WheelchairConfigurator.Data.Repositories;
 /// Repository for Category entity.
 /// Provides category-specific queries in addition to generic CRUD.
 /// </summary>
-public class CategoryRepository : GenericRepository<Category>
+public class CategoryRepository : GenericRepository<Category>, ICategoryRepository
 {
     public CategoryRepository(SQLiteAsyncConnection db) : base(db) { }
 

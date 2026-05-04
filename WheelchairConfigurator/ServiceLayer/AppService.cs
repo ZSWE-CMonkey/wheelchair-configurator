@@ -15,23 +15,22 @@ namespace WheelchairConfigurator.ServiceLayer;
 /// </summary>
 public class AppService : IAppService
 {
-    private readonly CategoryRepository _categoryRepo;
-    private readonly ComponentRepository _componentRepo;
-    private readonly ConfigurationRepository _configurationRepo;
-    private readonly ConfigurationItemRepository _configurationItemRepo;
-    private readonly SpecialistRepository _specialistRepo;
+    private readonly ICategoryRepository _categoryRepo;
+    private readonly IComponentRepository _componentRepo;
+    private readonly IConfigurationRepository _configurationRepo;
+    private readonly IConfigurationItemRepository _configurationItemRepo;
+    private readonly ISpecialistRepository _specialistRepo;
     private readonly IConfigurationEngine _engine;
     private readonly IExportFileBuilder _fileBuilder;
 
     public AppService(
-        CategoryRepository categoryRepo,
-        ComponentRepository componentRepo,
-        ConfigurationRepository configurationRepo,
-        ConfigurationItemRepository configurationItemRepo,
-        SpecialistRepository specialistRepo,
+        ICategoryRepository categoryRepo,
+        IComponentRepository componentRepo,
+        IConfigurationRepository configurationRepo,
+        IConfigurationItemRepository configurationItemRepo,
+        ISpecialistRepository specialistRepo,
         IConfigurationEngine engine,
-        IExportFileBuilder fileBuilder
-        )
+        IExportFileBuilder fileBuilder)
     {
         _categoryRepo = categoryRepo;
         _componentRepo = componentRepo;
@@ -41,7 +40,6 @@ public class AppService : IAppService
         _engine = engine;
         _fileBuilder = fileBuilder;
     }
-
     /// <inheritdoc/>
     public async Task<List<CategoryModel>> GetCategoriesAsync()
     {
