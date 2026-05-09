@@ -55,4 +55,19 @@ public interface IAppService
     /// </summary>
     /// <param name="configurationId">ID of the configuration to export.</param>
     Task<byte[]> ExportConfigurationAsync(int configurationId);
+
+    /// <summary>
+    /// Returns the components that belong to a saved configuration (for display in SummaryPage).
+    /// </summary>
+    Task<List<ComponentModel>> GetConfigurationComponentsAsync(int configurationId);
+
+    /// <summary>
+    /// Adds a new component to the catalog.
+    /// </summary>
+    Task<ConfigurationResult> AddComponentAsync(string name, int categoryId);
+
+    /// <summary>
+    /// Removes a component from the catalog.
+    /// </summary>
+    Task<ConfigurationResult> RemoveComponentAsync(int componentId);
 }

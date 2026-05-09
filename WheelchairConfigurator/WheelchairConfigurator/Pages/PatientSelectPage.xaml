@@ -19,6 +19,12 @@
                                 x:Name="PatientList"
                                 SelectionMode="Single"
                                 SelectionChanged="OnPatientSelected">
+                    <CollectionView.EmptyView>
+                        <Label Text="Žádné uložené konfigurace"
+                               TextColor="Gray"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </CollectionView.EmptyView>
                     <CollectionView.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,8"

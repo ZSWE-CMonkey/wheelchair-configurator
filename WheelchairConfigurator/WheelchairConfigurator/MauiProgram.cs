@@ -1,11 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using ConfigurationLogic;
-using ConfigurationLogic.ManualTests;
 using WheelchairConfigurator.Data;
+using WheelchairConfigurator.Data.Providers;
 using WheelchairConfigurator.Data.Repositories;
+using WheelchairConfigurator.Service;
 using WheelchairConfigurator.ServiceLayer;
 using WheelchairConfigurator.ServiceLayer.Interfaces;
+using WheelchairConfigurator.Services;
+using WheelchairConfigurator.Pages;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using WheelchairConfigurator.Export;
+using WheelchairConfigurator.Export.Pdf;
+using PdfSharp.Fonts;
 
 namespace WheelchairConfigurator
 {
@@ -24,72 +30,94 @@ namespace WheelchairConfigurator
                 });
 
 #if DEBUG
-    		builder.Logging.AddDebug();
+            builder.Logging.AddDebug();
 #endif
 
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "wheelchair-configurator.db3");
 
-            /*
-            try
-            {
-                var seedDestPath = Path.Combine(FileSystem.AppDataDirectory, "seed_data.json");
-                if (!File.Exists(seedDestPath))
-                {
-                    using var stream = FileSystem.OpenAppPackageFileAsync("seed_data.json").Result;
-                    using var fileStream = File.Create(seedDestPath);
-                    stream.CopyTo(fileStream);
-                    Console.WriteLine("[MauiProgram] seed_data.json copied to AppDataDirectory");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[MauiProgram] Warning: Could not copy seed_data.json: " + ex.Message);
-            }
-            */
+            // ── DataLayer ─────────────────────────────────────────────────────────────
+            var asyncDb = new DbService(dbPath).GetAsyncConnection();
 
             builder.Services.AddSingleton(_ => new DbService(dbPath));
-            builder.Services.AddSingleton(sp => sp.GetRequiredService<DbService>().GetAsyncConnection());
+            builder.Services.AddSingleton(_ => asyncDb);
 
-            builder.Services.AddSingleton<CategoryRepository>();
-            builder.Services.AddSingleton<ComponentRepository>();
-            builder.Services.AddSingleton<ComponentSpecsRepository>();
-            builder.Services.AddSingleton<CompatibilityRuleRepository>();
-            builder.Services.AddSingleton<ConfigurationRepository>();
-            builder.Services.AddSingleton<ConfigurationItemRepository>();
-            builder.Services.AddSingleton<SpecialistRepository>();
+            builder.Services.AddSingleton<ILocalFileProvider, LocalFileProvider>();
+            builder.Services.AddSingleton<JsonDataLoader>();
+            builder.Services.AddSingleton<DataService>();
+            builder.Services.AddSingleton<DbInitializer>();
 
+            // Repositories registered under their interfaces (required by AppService)
+            builder.Services.AddSingleton<ICategoryRepository>(_ => new CategoryRepository(asyncDb));
+            builder.Services.AddSingleton<IComponentRepository>(_ => new ComponentRepository(asyncDb));
+            builder.Services.AddSingleton<IConfigurationRepository>(_ => new ConfigurationRepository(asyncDb));
+            builder.Services.AddSingleton<IConfigurationItemRepository>(_ => new ConfigurationItemRepository(asyncDb));
+            builder.Services.AddSingleton<ISpecialistRepository>(_ => new SpecialistRepository(asyncDb));
+
+            // Repositories without interfaces (used directly by pages, not by AppService)
+            builder.Services.AddSingleton(_ => new ComponentSpecsRepository(asyncDb));
+            builder.Services.AddSingleton(_ => new CompatibilityRuleRepository(asyncDb));
+
+            // ── ExportLayer ───────────────────────────────────────────────────────────
+            builder.Services.AddSingleton<IExportFileBuilder>(sp =>
+            {
+                byte[] logo = Array.Empty<byte>();
+                try
+                {
+                    using var s = FileSystem.OpenAppPackageFileAsync("logo.jpg").GetAwaiter().GetResult();
+                    using var ms = new MemoryStream();
+                    s.CopyTo(ms);
+                    logo = ms.ToArray();
+                }
+                catch { }
+                return new PdfBuilder(logo);
+            });
+
+            // ── NavigationState ───────────────────────────────────────────────────────
+            builder.Services.AddSingleton<NavigationState>();
+
+            // ── ConfigurationLogic + ServiceLayer ─────────────────────────────────────
             builder.Services.AddSingleton<MainServices>();
             builder.Services.AddSingleton<IConfigurationEngine, ConfigurationEngineAdapter>();
             builder.Services.AddSingleton<IAppService, AppService>();
 
+            // ── Pages (Transient — Shell navigates via DI) ────────────────────────────
+            builder.Services.AddTransient<MainPage>();
+            builder.Services.AddTransient<NewPatientPage>();
+            builder.Services.AddTransient<WheelchairConfiguratorPage>();
+            builder.Services.AddTransient<SummaryPage>();
+            builder.Services.AddTransient<PatientSelectPage>();
+            builder.Services.AddTransient<ComponentManagerPage>();
+
             var app = builder.Build();
 
-/*    
-#if DEBUG
-             // Run full profile evaluation test at startup (non-blocking).
-             try
-             {
-                 Console.WriteLine("!!!--------------------------------------------------------------------------");
-                 _ = TestRunner.RunAsync(resetDatabase: false)
-                     .ContinueWith(task =>
-                     {
-                         Console.WriteLine("-----------------------------------------------------------------------------");
-                         if (task.IsFaulted)
-                         {
-                             Console.WriteLine("[StartupDebug] TestRunner failed: " + task.Exception?.GetBaseException().Message);
-                         }
-                         else
-                         {
-                             Console.WriteLine("[StartupDebug] TestRunner completed successfully.");
-                         }
-                     });
-             }
-             catch (Exception ex)
-             {
-                 Console.WriteLine("[StartupDebug] Scheduling debug task failed: " + ex.Message);
-             }
- #endif
-*/
+            // ── Copy seed_data.json to AppDataDirectory ───────────────────────────────
+            var seedDestPath = Path.Combine(FileSystem.AppDataDirectory, "seed_data.json");
+            if (!File.Exists(seedDestPath))
+            {
+                try
+                {
+                    using var stream = FileSystem.OpenAppPackageFileAsync("seed_data.json").GetAwaiter().GetResult();
+                    using var fileStream = File.Create(seedDestPath);
+                    stream.CopyTo(fileStream);
+                    Console.WriteLine("[MauiProgram] seed_data.json copied to AppDataDirectory");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[MauiProgram] Warning: Could not copy seed_data.json: " + ex.Message);
+                }
+            }
+
+            // ── Initialize database (seed if empty) ───────────────────────────────────
+            try
+            {
+                app.Services.GetRequiredService<DbInitializer>().Initialize();
+                Console.WriteLine("[MauiProgram] Database initialized.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[MauiProgram] DB init failed: " + ex.Message);
+            }
+
             return app;
         }
     }

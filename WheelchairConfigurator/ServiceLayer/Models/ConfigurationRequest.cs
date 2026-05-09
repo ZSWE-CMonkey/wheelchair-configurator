@@ -13,4 +13,7 @@ public class ConfigurationRequest
 
     /// <summary>List of selected component IDs.</summary>
     public List<int> SelectedComponentIds { get; set; } = new();
+
+    /// <summary>Patient identifier string stored with the configuration.</summary>
+    public string PatientIdentificator { get; set; } = string.Empty;
 }

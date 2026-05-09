@@ -1,4 +1,5 @@
-﻿using WheelchairConfigurator.Components;
+using WheelchairConfigurator.Components;
+using WheelchairConfigurator.Services;
 
 namespace WheelchairConfigurator.Pages;
 
@@ -6,14 +7,16 @@ public partial class NewPatientPage : ContentPage
 {
     public UserInput userInput = new();
     private readonly List<ContentView> _panels;
+    private readonly NavigationState _navState;
 
     private readonly Button _continueBtn;
     private readonly Button _backBtn;
 
     private bool _isLandscape;
 
-    public NewPatientPage()
+    public NewPatientPage(NavigationState navState)
     {
+        _navState = navState;
         InitializeComponent();
 
         _panels =
@@ -146,8 +149,8 @@ public partial class NewPatientPage : ContentPage
         },
             RowDefinitions =
         {
-            new RowDefinition(GridLength.Auto),  
-            new RowDefinition(GridLength.Auto), 
+            new RowDefinition(GridLength.Auto),
+            new RowDefinition(GridLength.Auto),
         }
         };
 
@@ -162,7 +165,7 @@ public partial class NewPatientPage : ContentPage
         var btnStack = new VerticalStackLayout
         {
             Spacing = 8,
-            VerticalOptions = LayoutOptions.End 
+            VerticalOptions = LayoutOptions.End
         };
         btnStack.Children.Add(_continueBtn);
         btnStack.Children.Add(_backBtn);
@@ -194,6 +197,10 @@ public partial class NewPatientPage : ContentPage
 
         SaveAllPanels();
         userInput.Date = DateTime.Today;
+
+        _navState.Patient = userInput;
+        _navState.SelectedComponents.Clear();
+
         await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
     }
 

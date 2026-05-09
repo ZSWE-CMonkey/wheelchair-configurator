@@ -138,4 +138,35 @@ public class AppService : IAppService
         var configurations = await _configurationRepo.GetBySpecialistIdAsync(specialistId);
         return configurations.Select(ConfigurationMapper.Map).ToList();
     }
+
+    /// <inheritdoc/>
+    public async Task<List<ComponentModel>> GetConfigurationComponentsAsync(int configurationId)
+    {
+        var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
+        var ids = items.Select(i => i.ComponentId).ToList();
+        var components = await _componentRepo.GetByIdsAsync(ids);
+        return components.Select(ComponentMapper.Map).ToList();
+    }
+
+    /// <inheritdoc/>
+    public async Task<ConfigurationResult> AddComponentAsync(string name, int categoryId)
+    {
+        await _componentRepo.InsertAsync(new WheelchairConfigurator.Domain.Models.Component
+        {
+            Name = name,
+            CategoryId = categoryId,
+            Price = 0
+        });
+        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta přidána." };
+    }
+
+    /// <inheritdoc/>
+    public async Task<ConfigurationResult> RemoveComponentAsync(int componentId)
+    {
+        var component = await _componentRepo.GetByIdAsync(componentId);
+        if (component is null)
+            return new ConfigurationResult { IsSuccess = false, Message = "Komponenta nenalezena." };
+        await _componentRepo.DeleteAsync(component);
+        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta odstraněna." };
+    }
 }

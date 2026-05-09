@@ -1,43 +1,36 @@
-﻿using SkiaSharp;
+using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using WheelchairConfigurator.Helpers;
+using WheelchairConfigurator.ServiceLayer.Interfaces;
+using WheelchairConfigurator.ServiceLayer.Models;
+using WheelchairConfigurator.Services;
 
 namespace WheelchairConfigurator.Pages;
 
+[QueryProperty(nameof(ConfigurationId), "configId")]
 public partial class SummaryPage : ContentPage
 {
-    private readonly PatientData _patient = new()
-    {
-        PatientIdentificator = "PAT-001",
-        BodyHeight = 175,
-        PelvisWidth = 35,
-        ThighLength = 45,
-        Weight = 70,
-        BodyStability = "Dobrá",
-        HeadStability = true,
-        BedsoreRisk = "Nízké",
-        Control = "Ano",
-        Environment = "Kombinace",
-        Legs = true,
-        Pain = "Nízké",
-        Date = new DateTime(2024, 1, 15)
-    };
+    private readonly IAppService _appService;
+    private readonly NavigationState _navState;
 
-    private readonly List<ComponentMock> _selectedComponents =
-    [
-        new ComponentMock { Id = "RAM-001", Name = "Rám Standard",      Category = "Rám",     IsAvailable = true },
-        new ComponentMock { Id = "MOT-001", Name = "Motor 250W",        Category = "Motor",   IsAvailable = true },
-        new ComponentMock { Id = "BAT-002", Name = "Baterie 20Ah",      Category = "Baterie", IsAvailable = true },
-        new ComponentMock { Id = "POH-001", Name = "Pohon Přímý",       Category = "Pohon",   IsAvailable = true },
-        new ComponentMock { Id = "SED-002", Name = "Sedák Ortopedický", Category = "Sedák",   IsAvailable = true },
-        new ComponentMock { Id = "OPE-002", Name = "Opěrka Sklopná",    Category = "Opěrka",  IsAvailable = true },
-    ];
+    private int _configurationId = 0;
+
+    public int ConfigurationId
+    {
+        get => _configurationId;
+        set
+        {
+            _configurationId = value;
+            Dispatcher.Dispatch(async () => await LoadData());
+        }
+    }
 
     private Bazilišek? _tungTungTungSahur = null;
     private CancellationTokenSource _cts = default!;
     private SKBitmap? _skibidiFrame = null;
     private readonly object _mutex = new();
+    private bool _renderUnavailable = false;
 
     private Border _patientPanel = default!;
     private Border _componentsPanel = default!;
@@ -62,30 +55,162 @@ public partial class SummaryPage : ContentPage
     private Label LegsLabel = default!;
     private Label PainLabel = default!;
     private VerticalStackLayout ComponentsLayout = default!;
-    private SKCanvasView Canvas = default!; 
+    private SKCanvasView Canvas = default!;
 
     private bool _isLandscape;
 
-    public SummaryPage()
+    public SummaryPage(IAppService appService, NavigationState navState)
     {
+        _appService = appService;
+        _navState = navState;
+
         InitializeComponent();
-
         BuildSharedViews();
-        LoadPatientData();
-        BuildComponentsList();
 
-        _tungTungTungSahur = new Bazilišek("app", 800, 600);
-        _tungTungTungSahur.BrmBrmPatatim("models/test");
-        _tungTungTungSahur.OtevřítKomnatu();
-        _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-        _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
+        try
+        {
+            _tungTungTungSahur = new Bazilišek("app", 800, 600);
+            _tungTungTungSahur.BrmBrmPatatim("models/test");
+            _tungTungTungSahur.OtevřítKomnatu();
+            _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+            _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
+        }
+        catch
+        {
+            _tungTungTungSahur = null;
+            _renderUnavailable = true;
+        }
 
         StartRenderLoop();
+        Dispatcher.Dispatch(async () => await LoadData());
     }
 
     ~SummaryPage()
     {
         StopRenderLoop();
+    }
+
+    private async Task LoadData()
+    {
+        List<ComponentModel> components;
+
+        if (_configurationId > 0)
+        {
+            // Mode B: load saved configuration from DB
+            try
+            {
+                components = await _appService.GetConfigurationComponentsAsync(_configurationId);
+            }
+            catch
+            {
+                components = new();
+            }
+            PatientIdLabel.Text = $"Konfigurace #{_configurationId}";
+            LoadPatientData(null);
+        }
+        else
+        {
+            // Mode A: fresh selection from NavigationState
+            components = _navState.SelectedComponents;
+            var patient = _navState.Patient;
+            LoadPatientData(patient);
+        }
+
+        BuildComponentsList(components);
+    }
+
+    private void LoadPatientData(UserInput? patient)
+    {
+        if (patient is null)
+        {
+            DateLabel.Text = "";
+            BodyHeightLabel.Text = "";
+            PelvisWidthLabel.Text = "";
+            ThighLengthLabel.Text = "";
+            WeightLabel.Text = "";
+            BodyStabilityLabel.Text = "";
+            HeadStabilityLabel.Text = "";
+            BedsoreRiskLabel.Text = "";
+            ControlLabel.Text = "";
+            EnvironmentLabel.Text = "";
+            LegsLabel.Text = "";
+            PainLabel.Text = "";
+            return;
+        }
+
+        PatientIdLabel.Text = patient.patientIdentificator;
+        DateLabel.Text = $"{patient.Date:dd.MM.yyyy}";
+        BodyHeightLabel.Text = $"Výška trupu: {patient.BodyHeight} cm";
+        PelvisWidthLabel.Text = $"Šířka pánve: {patient.PelvisWidth} cm";
+        ThighLengthLabel.Text = $"Délka stehna: {patient.ThighLength} cm";
+        WeightLabel.Text = $"Hmotnost: {patient.Weight} kg";
+        BodyStabilityLabel.Text = $"Stabilita trupu: {patient.BodyStability}";
+        HeadStabilityLabel.Text = $"Kontrola hlavy: {(patient.HeadStability ? "Ano" : "Ne")}";
+        BedsoreRiskLabel.Text = $"Riziko dekubitů: {patient.BedsoreRisk}";
+        ControlLabel.Text = $"Ovládání rukou: {patient.Control}";
+        EnvironmentLabel.Text = $"Prostředí: {patient.Environment}";
+        LegsLabel.Text = $"Dolní končetiny: {(patient.Legs ? "Ano" : "Ne")}";
+        PainLabel.Text = $"Bolesti a únava: {patient.Pain}";
+    }
+
+    private void BuildComponentsList(List<ComponentModel> components)
+    {
+        ComponentsLayout.Children.Clear();
+
+        ComponentsLayout.Children.Add(new Label
+        {
+            Text = "Vybrané komponenty",
+            FontAttributes = FontAttributes.Bold,
+            FontSize = 16,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+
+        if (!components.Any())
+        {
+            ComponentsLayout.Children.Add(new Label
+            {
+                Text = "Žádné komponenty",
+                TextColor = Colors.Gray,
+                FontSize = 13
+            });
+            return;
+        }
+
+        foreach (var c in components)
+        {
+            ComponentsLayout.Children.Add(new Label
+            {
+                Text = c.Name,
+                FontSize = 13,
+                Margin = new Thickness(0, 4, 0, 0)
+            });
+            ComponentsLayout.Children.Add(new BoxView
+            {
+                HeightRequest = 1,
+                Color = Color.FromArgb("#E0E0E0"),
+                Margin = new Thickness(0, 4)
+            });
+        }
+    }
+
+    private PatientProfileModel? BuildPatientProfile()
+    {
+        var p = _navState.Patient;
+        if (p is null) return null;
+        return new PatientProfileModel
+        {
+            PelvisWidthCm = (int)p.PelvisWidth,
+            ThighLengthCm = (int)p.ThighLength,
+            LowerLegLengthCm = 0,
+            WeightKg = (int)p.Weight,
+            TrunkStability = p.BodyStability switch
+            {
+                "Dobrá" => TrunkStabilityLevel.Good,
+                "Střední" => TrunkStabilityLevel.Fair,
+                _ => TrunkStabilityLevel.Poor
+            },
+            HasPressureSoresRisk = p.BedsoreRisk == "Vysoké"
+        };
     }
 
     private void BuildSharedViews()
@@ -392,99 +517,86 @@ public partial class SummaryPage : ContentPage
     private void StopRenderLoop()
     {
         _cts?.Cancel();
-        _cts = null;
+        _cts = null!;
         _tungTungTungSahur = null;
     }
 
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
-        if (_skibidiFrame == null) return;
         var canvas = e.Surface.Canvas;
-        canvas.Clear();
+        canvas.Clear(SKColors.White);
+
+        if (_renderUnavailable)
+        {
+            using var paint = new SKPaint { Color = SKColors.Gray, TextSize = 14, IsAntialias = true };
+            canvas.DrawText("3D náhled není k dispozici", 20, e.Info.Height / 2f, paint);
+            return;
+        }
+
+        if (_skibidiFrame == null) return;
         lock (_mutex)
             canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
     }
 
-    private void LoadPatientData()
-    {
-        PatientIdLabel.Text = _patient.PatientIdentificator;
-        DateLabel.Text = $"{_patient.Date:dd.MM.yyyy}";
-        BodyHeightLabel.Text = $"Výška trupu: {_patient.BodyHeight} cm";
-        PelvisWidthLabel.Text = $"Šířka pánve: {_patient.PelvisWidth} cm";
-        ThighLengthLabel.Text = $"Délka stehna: {_patient.ThighLength} cm";
-        WeightLabel.Text = $"Hmotnost: {_patient.Weight} kg";
-        BodyStabilityLabel.Text = $"Stabilita trupu: {_patient.BodyStability}";
-        HeadStabilityLabel.Text = $"Kontrola hlavy: {(_patient.HeadStability ? "Ano" : "Ne")}";
-        BedsoreRiskLabel.Text = $"Riziko dekubitů: {_patient.BedsoreRisk}";
-        ControlLabel.Text = $"Ovládání rukou: {_patient.Control}";
-        EnvironmentLabel.Text = $"Prostředí: {_patient.Environment}";
-        LegsLabel.Text = $"Dolní končetiny: {(_patient.Legs ? "Ano" : "Ne")}";
-        PainLabel.Text = $"Bolesti a únava: {_patient.Pain}";
-    }
-
-    private void BuildComponentsList()
-    {
-        ComponentsLayout.Children.Clear();
-
-        ComponentsLayout.Children.Add(new Label
-        {
-            Text = "Vybrané komponenty",
-            FontAttributes = FontAttributes.Bold,
-            FontSize = 16,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
-
-        foreach (var category in ComponentCategories.All)
-        {
-            var component = _selectedComponents.FirstOrDefault(c => c.Category == category);
-
-            ComponentsLayout.Children.Add(new Label
-            {
-                Text = category,
-                FontAttributes = FontAttributes.Bold,
-                FontSize = 13,
-                TextColor = Color.FromArgb("#512BD4"),
-                Margin = new Thickness(0, 8, 0, 2)
-            });
-
-            ComponentsLayout.Children.Add(new Label
-            {
-                Text = component?.Name ?? "—",
-                FontSize = 13,
-                TextColor = component is not null ? Colors.Black : Colors.Gray
-            });
-
-            ComponentsLayout.Children.Add(new BoxView
-            {
-                HeightRequest = 1,
-                Color = Color.FromArgb("#E0E0E0"),
-                Margin = new Thickness(0, 4)
-            });
-        }
-    }
-
     private async void OnMainMenuClicked(object sender, EventArgs e)
     {
-        if (_tungTungTungSahur != null)
-        {
-            _tungTungTungSahur.ZabijBaziliška();
-        }
+        _tungTungTungSahur?.ZabijBaziliška();
         await Shell.Current.GoToAsync("mainPage");
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        if (_tungTungTungSahur != null)
-        {
-            _tungTungTungSahur.ZabijBaziliška();
-        }
+        _tungTungTungSahur?.ZabijBaziliška();
         await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
-
     }
 
     private async void OnExportClicked(object sender, EventArgs e)
     {
-        // Here will be exporting to pdf
+        _exportBtn.IsEnabled = false;
+        _exportBtn.Text = "Generuji...";
+
+        try
+        {
+            int configId = _configurationId;
+
+            if (configId == 0)
+            {
+                var request = new ConfigurationRequest
+                {
+                    SpecialistId = 1,
+                    PatientIdentificator = _navState.Patient?.patientIdentificator ?? "",
+                    SelectedComponentIds = _navState.SelectedComponents.Select(c => c.Id).ToList(),
+                    Patient = BuildPatientProfile()
+                };
+                var result = await _appService.SaveConfigurationAsync(request);
+                if (!result.IsSuccess)
+                {
+                    await DisplayAlert("Chyba", result.Message, "OK");
+                    return;
+                }
+                configId = result.ConfigurationId!.Value;
+            }
+
+            var pdfBytes = await _appService.ExportConfigurationAsync(configId);
+
+            var filePath = Path.Combine(FileSystem.CacheDirectory, $"konfigurace_{configId}.pdf");
+            await File.WriteAllBytesAsync(filePath, pdfBytes);
+
+            await Share.RequestAsync(new ShareFileRequest
+            {
+                Title = "Konfigurace vozíku",
+                File = new ShareFile(filePath)
+            });
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Chyba exportu", ex.Message, "OK");
+        }
+        finally
+        {
+            _exportBtn.IsEnabled = true;
+            _exportBtn.Text = "Exportovat";
+        }
     }
 
     private Point _panStart;
@@ -514,10 +626,7 @@ public partial class SummaryPage : ContentPage
 
     protected override void OnDisappearing()
     {
-        if (_tungTungTungSahur != null)
-        {
-            _tungTungTungSahur.ZabijBaziliška();
-        }
+        _tungTungTungSahur?.ZabijBaziliška();
         base.OnDisappearing();
         StopRenderLoop();
     }
@@ -528,5 +637,4 @@ public partial class SummaryPage : ContentPage
         if (_cts == null || _cts.IsCancellationRequested)
             StartRenderLoop();
     }
-
 }

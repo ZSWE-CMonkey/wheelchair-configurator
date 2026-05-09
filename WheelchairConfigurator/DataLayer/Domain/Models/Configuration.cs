@@ -13,4 +13,6 @@ public class Configuration
     public int SpecialistId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    public string PatientIdentificator { get; set; } = string.Empty;
 }
