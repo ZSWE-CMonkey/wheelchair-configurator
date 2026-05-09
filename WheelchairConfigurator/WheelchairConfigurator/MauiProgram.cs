@@ -76,7 +76,13 @@ namespace WheelchairConfigurator
             builder.Services.AddSingleton<NavigationState>();
 
             // ── ConfigurationLogic + ServiceLayer ─────────────────────────────────────
-            builder.Services.AddSingleton<MainServices>();
+            builder.Services.AddSingleton<MainServices>(_ => new MainServices(
+                new CategoryRepository(asyncDb),
+                new ComponentRepository(asyncDb),
+                new ComponentSpecsRepository(asyncDb),
+                new CompatibilityRuleRepository(asyncDb),
+                new ConfigurationRepository(asyncDb),
+                new ConfigurationItemRepository(asyncDb)));
             builder.Services.AddSingleton<IConfigurationEngine, ConfigurationEngineAdapter>();
             builder.Services.AddSingleton<IAppService, AppService>();
 
