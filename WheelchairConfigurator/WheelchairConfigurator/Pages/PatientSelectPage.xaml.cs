@@ -1,5 +1,6 @@
 using WheelchairConfigurator.ServiceLayer.Interfaces;
 using WheelchairConfigurator.ServiceLayer.Models;
+using WheelchairConfigurator.Services;
 
 namespace WheelchairConfigurator.Pages;
 
@@ -21,12 +22,14 @@ public class ConfigEntry
 public partial class PatientSelectPage : ContentPage
 {
     private readonly IAppService _appService;
+    private readonly NavigationState _navState;
     private List<ConfigurationModel> _allConfigs = new();
     private ConfigEntry? _selectedConfig = null;
 
-    public PatientSelectPage(IAppService appService)
+    public PatientSelectPage(IAppService appService, NavigationState navState)
     {
         _appService = appService;
+        _navState = navState;
         InitializeComponent();
         Dispatcher.Dispatch(async () => await LoadPatients());
     }
@@ -90,7 +93,15 @@ public partial class PatientSelectPage : ContentPage
             return;
 
         if (_selectedConfig.IsNew)
+        {
+            _navState.Patient = new UserInput
+            {
+                patientIdentificator = _selectedConfig.PatientId,
+                Date = DateTime.Today
+            };
+            _navState.SelectedComponents.Clear();
             await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+        }
         else
             await Shell.Current.GoToAsync($"summaryPage?configId={_selectedConfig.DbId}");
     }
