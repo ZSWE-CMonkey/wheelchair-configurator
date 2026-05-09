@@ -56,18 +56,25 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
         InitializeComponent();
 
-        try
+        if (!IsVulkanSafe())
         {
-            _tungTungTungSahur = new Bazilišek("app", 800, 600);
-            _tungTungTungSahur.BrmBrmPatatim("models/test");
-            _tungTungTungSahur.OtevřítKomnatu();
-            _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-            _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
-        }
-        catch
-        {
-            _tungTungTungSahur = null;
             _renderUnavailable = true;
+        }
+        else
+        {
+            try
+            {
+                _tungTungTungSahur = new Bazilišek("app", 800, 600);
+                _tungTungTungSahur.BrmBrmPatatim("models/test");
+                _tungTungTungSahur.OtevřítKomnatu();
+                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+                _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
+            }
+            catch
+            {
+                _tungTungTungSahur = null;
+                _renderUnavailable = true;
+            }
         }
 
         BuildSharedViews();
@@ -497,6 +504,20 @@ public partial class WheelchairConfiguratorPage : ContentPage
         return new ScrollView { Content = outer };
     }
 
+    private static bool IsVulkanSafe()
+    {
+#if ANDROID
+        try
+        {
+            string? firstAbi = Android.OS.Build.SupportedAbis?.FirstOrDefault();
+            return firstAbi?.StartsWith("arm", StringComparison.OrdinalIgnoreCase) == true;
+        }
+        catch { return false; }
+#else
+        return true;
+#endif
+    }
+
     private void StartRenderLoop()
     {
         _cts = new CancellationTokenSource();
@@ -507,13 +528,23 @@ public partial class WheelchairConfiguratorPage : ContentPage
             {
                 if (_tungTungTungSahur == null) { await Task.Yield(); continue; }
 
-                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
-
-                if (frame == null) { await Task.Yield(); continue; }
-
-                _skibidiFrame = frame;
-                MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                try
+                {
+                    _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+                    SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
+                    if (frame != null)
+                    {
+                        _skibidiFrame = frame;
+                        MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                    }
+                }
+                catch
+                {
+                    _tungTungTungSahur = null;
+                    _renderUnavailable = true;
+                    MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                    break;
+                }
                 await Task.Delay(6);
             }
         });
