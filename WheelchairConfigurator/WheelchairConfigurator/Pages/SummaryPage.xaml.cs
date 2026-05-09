@@ -59,6 +59,9 @@ public partial class SummaryPage : ContentPage
 
     private bool _isLandscape;
 
+    private static Color ThemeColor(Color light, Color dark) =>
+        Application.Current?.RequestedTheme == AppTheme.Dark ? dark : light;
+
     public SummaryPage(IAppService appService, NavigationState navState)
     {
         _appService = appService;
@@ -194,7 +197,7 @@ public partial class SummaryPage : ContentPage
             ComponentsLayout.Children.Add(new BoxView
             {
                 HeightRequest = 1,
-                Color = Color.FromArgb("#E0E0E0"),
+                Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
                 Margin = new Thickness(0, 4)
             });
         }
@@ -240,7 +243,7 @@ public partial class SummaryPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView
             {
                 Content = new VerticalStackLayout
@@ -251,12 +254,12 @@ public partial class SummaryPage : ContentPage
                         new Label { Text = "Pacient", FontAttributes = FontAttributes.Bold, FontSize = 16, Margin = new Thickness(0,0,0,8) },
                         PatientIdLabel,
                         DateLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyHeightLabel,
                         PelvisWidthLabel,
                         ThighLengthLabel,
                         WeightLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyStabilityLabel,
                         HeadStabilityLabel,
                         BedsoreRiskLabel,
@@ -275,14 +278,14 @@ public partial class SummaryPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView { Content = ComponentsLayout }
         };
 
         Canvas = new SKCanvasView();
         Canvas.PaintSurface += OnPaintSurface;
 
-        var boxView = new BoxView { Color = Colors.White };
+        var boxView = new BoxView { Color = ThemeColor(Colors.White, Color.FromArgb("#1E1E1E")) };
         var pan = new PanGestureRecognizer();
         pan.PanUpdated += OnPanUpdated;
         boxView.GestureRecognizers.Add(pan);
@@ -295,7 +298,7 @@ public partial class SummaryPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = renderGrid,
             IsVisible = false
         };
@@ -303,8 +306,7 @@ public partial class SummaryPage : ContentPage
         _previewToggleBtn = new Button
         {
             Text = "▶  Zobrazit náhled",
-            BackgroundColor = Color.FromArgb("#F0F0F0"),
-            TextColor = Colors.Black,
+            BackgroundColor = ThemeColor(Color.FromArgb("#F0F0F0"), Color.FromArgb("#2D2D2D")),
             HorizontalOptions = LayoutOptions.Fill,
             FontSize = 13
         };
@@ -446,9 +448,9 @@ public partial class SummaryPage : ContentPage
 
     private View BuildPortraitLayout()
     {
-        _renderPanel.HeightRequest = 330;
-        _renderPanel.WidthRequest = 430;
-        _renderPanel.HorizontalOptions = LayoutOptions.Center;
+        _renderPanel.HeightRequest = 300;
+        _renderPanel.WidthRequest = -1;
+        _renderPanel.HorizontalOptions = LayoutOptions.Fill;
         _patientPanel.HeightRequest = 220;
         _componentsPanel.HeightRequest = 400;
 
@@ -555,7 +557,7 @@ public partial class SummaryPage : ContentPage
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.White);
+        canvas.Clear(Application.Current?.RequestedTheme == AppTheme.Dark ? SKColors.Black : SKColors.White);
 
         if (_renderUnavailable)
         {

@@ -6,7 +6,7 @@
     <Grid RowDefinitions="*, Auto" Padding="20" RowSpacing="20">
 
         <!-- Horní část - seznamy -->
-        <Grid Grid.Row="0" ColumnDefinitions="300, *" ColumnSpacing="20">
+        <Grid Grid.Row="0" ColumnDefinitions="*, *" ColumnSpacing="20">
 
             <!-- Levý sloupec - seznam pacientů -->
             <Grid Grid.Column="0" RowDefinitions="Auto, *">
@@ -30,7 +30,7 @@
                             <Border Margin="0,0,0,8"
                                     Padding="12"
                                     StrokeThickness="1"
-                                    Stroke="#E0E0E0">
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
                                 <VerticalStackLayout>
                                     <Label Text="{Binding Id}"
                                            FontAttributes="Bold"
@@ -68,7 +68,7 @@
                             <Border Margin="0,0,0,8"
                                     Padding="12"
                                     StrokeThickness="1"
-                                    Stroke="#E0E0E0">
+                                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
                                 <VerticalStackLayout>
                                     <Label Text="{Binding Name}"
                                         FontAttributes="Bold"

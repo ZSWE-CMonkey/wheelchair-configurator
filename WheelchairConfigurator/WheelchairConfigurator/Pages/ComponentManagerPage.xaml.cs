@@ -10,6 +10,9 @@ public partial class ComponentManagerPage : ContentPage
     private ComponentModel? _selectedComponent;
     private bool _isLandscape;
 
+    private static Color ThemeColor(Color light, Color dark) =>
+        Application.Current?.RequestedTheme == AppTheme.Dark ? dark : light;
+
     private readonly Picker _categoryPicker;
     private readonly Entry _nameEntry;
     private readonly Editor _descriptionEditor;
@@ -200,7 +203,7 @@ public partial class ComponentManagerPage : ContentPage
     {
         Padding = new Thickness(20),
         StrokeThickness = 1,
-        Stroke = new SolidColorBrush(Color.FromArgb("#E0E0E0")),
+        Stroke = new SolidColorBrush(ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D"))),
         Content = content
     };
 

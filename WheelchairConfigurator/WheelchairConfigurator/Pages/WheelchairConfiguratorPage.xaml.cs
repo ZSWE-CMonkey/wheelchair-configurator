@@ -49,6 +49,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private bool _isLandscape;
 
+    private static Color ThemeColor(Color light, Color dark) =>
+        Application.Current?.RequestedTheme == AppTheme.Dark ? dark : light;
+
     public WheelchairConfiguratorPage(IAppService appService, NavigationState navState)
     {
         _appService = appService;
@@ -162,16 +165,16 @@ public partial class WheelchairConfiguratorPage : ContentPage
             foreach (var component in components)
             {
                 var bgColor = component.IsIncompatible
-                    ? Color.FromArgb("#F5F5F5")
+                    ? ThemeColor(Color.FromArgb("#F5F5F5"), Color.FromArgb("#3A3A3A"))
                     : component.IsRecommended
-                        ? Color.FromArgb("#E8F5E9")
-                        : Colors.White;
+                        ? ThemeColor(Color.FromArgb("#E8F5E9"), Color.FromArgb("#1B3A1F"))
+                        : ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
 
                 var label = new Label
                 {
                     Text = component.Name,
                     FontSize = 13,
-                    TextColor = component.IsIncompatible ? Colors.Gray : Colors.Black
+                    TextColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Colors.Black, Colors.White)
                 };
 
                 var border = new Border
@@ -204,7 +207,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         if (_selectedBorders.TryGetValue(categoryId, out var prev) && prev is not null)
         {
             prev.Stroke = Colors.LightGray;
-            prev.BackgroundColor = Colors.White;
+            prev.BackgroundColor = ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
         }
 
         tappedBorder.Stroke = Color.FromArgb("#512BD4");
@@ -258,7 +261,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView
             {
                 Content = new VerticalStackLayout
@@ -269,12 +272,12 @@ public partial class WheelchairConfiguratorPage : ContentPage
                         new Label { Text = "Pacient", FontAttributes = FontAttributes.Bold, FontSize = 16, Margin = new Thickness(0,0,0,8) },
                         PatientIdLabel,
                         DateLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyHeightLabel,
                         PelvisWidthLabel,
                         ThighLengthLabel,
                         WeightLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyStabilityLabel,
                         HeadStabilityLabel,
                         BedsoreRiskLabel,
@@ -293,14 +296,14 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView { Content = ComponentsLayout }
         };
 
         Canvas = new SKCanvasView();
         Canvas.PaintSurface += OnPaintSurface;
 
-        var boxView = new BoxView { Color = Colors.White };
+        var boxView = new BoxView { Color = ThemeColor(Colors.White, Color.FromArgb("#1E1E1E")) };
         var pan = new PanGestureRecognizer();
         pan.PanUpdated += OnPanUpdated;
         boxView.GestureRecognizers.Add(pan);
@@ -313,7 +316,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = renderGrid,
             IsVisible = false
         };
@@ -321,8 +324,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         _previewToggleBtn = new Button
         {
             Text = "▶  Zobrazit náhled",
-            BackgroundColor = Color.FromArgb("#F0F0F0"),
-            TextColor = Colors.Black,
+            BackgroundColor = ThemeColor(Color.FromArgb("#F0F0F0"), Color.FromArgb("#2D2D2D")),
             HorizontalOptions = LayoutOptions.Fill,
             FontSize = 13
         };
@@ -454,9 +456,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private View BuildPortraitLayout()
     {
-        _renderPanel.HeightRequest = 330;
-        _renderPanel.WidthRequest = 430;
-        _renderPanel.HorizontalOptions = LayoutOptions.Center;
+        _renderPanel.HeightRequest = 300;
+        _renderPanel.WidthRequest = -1;
+        _renderPanel.HorizontalOptions = LayoutOptions.Fill;
         _patientPanel.HeightRequest = 220;
         _componentsPanel.HeightRequest = 400;
 
@@ -559,7 +561,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.White);
+        canvas.Clear(Application.Current?.RequestedTheme == AppTheme.Dark ? SKColors.Black : SKColors.White);
 
         if (_renderUnavailable)
         {
