@@ -16,16 +16,23 @@ namespace WheelchairConfigurator
 
         private static async Task InitAsync(ISpecialistRepository specialistRepo)
         {
-            // Register PDF font if available
-            try
+            // Always activate the custom resolver so PDFsharp never falls back to system fonts.
+            GlobalFontSettings.FontResolver = PdfFontResolver.Instance;
+
+            // On Android, MauiFonts land in assets/fonts/ (not at the assets root).
+            // Try Android path first, then the Windows/iOS root path as fallback.
+            foreach (var fontPath in new[] { "fonts/Roboto-Regular.ttf", "Roboto-Regular.ttf" })
             {
-                using var stream = await FileSystem.OpenAppPackageFileAsync("Roboto-Regular.ttf");
-                using var ms = new MemoryStream();
-                await stream.CopyToAsync(ms);
-                PdfFontResolver.Instance.RegisterFont("Roboto", ms.ToArray());
-                GlobalFontSettings.FontResolver = PdfFontResolver.Instance;
+                try
+                {
+                    using var stream = await FileSystem.OpenAppPackageFileAsync(fontPath);
+                    using var ms = new MemoryStream();
+                    await stream.CopyToAsync(ms);
+                    PdfFontResolver.Instance.RegisterFont("Roboto", ms.ToArray());
+                    break;
+                }
+                catch { }
             }
-            catch { }
 
             // Ensure a default specialist exists (SpecialistId = 1)
             try
