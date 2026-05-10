@@ -77,7 +77,7 @@ public class AppService : IAppService
         return componentModels;
     }
 
-    public async Task<ConfigurationResult> AddComponentAsync(string name, int categoryId, string manufacturer = "", string manufacturerCode = "")
+    public async Task<ConfigurationResult> AddComponentAsync(string name, int categoryId, string manufacturer = "", string manufacturerCode = "", string catalogUrl = "")
     {
         await _componentRepo.InsertAsync(new Component
         {
@@ -86,6 +86,7 @@ public class AppService : IAppService
             Price = 0,
             Manufacturer = manufacturer,
             ManufacturerCode = manufacturerCode,
+            CatalogUrl = string.IsNullOrWhiteSpace(catalogUrl) ? null : catalogUrl,
         });
         return new ConfigurationResult { IsSuccess = true, Message = "Komponenta přidána." };
     }
@@ -225,6 +226,12 @@ public class AppService : IAppService
             Message = "Konfigurace uložena.",
             ConfigurationId = configuration.Id
         };
+    }
+
+    public async Task<ConfigurationModel?> GetConfigurationAsync(int configurationId)
+    {
+        var entity = await _configurationRepo.GetByIdAsync(configurationId);
+        return entity is null ? null : ConfigurationMapper.Map(entity);
     }
 
     public async Task<List<ConfigurationModel>> GetConfigurationsBySpecialistAsync(int specialistId)
@@ -384,6 +391,14 @@ public class AppService : IAppService
         var patient = await _patientRepo.GetByIdAsync(patientId);
         var measurements = await _measurementRepo.GetByPatientIdAsync(patientId);
         return measurements.Select(m => PatientMeasurementMapper.Map(m, patient)).ToList();
+    }
+
+    public async Task<PatientMeasurementModel?> GetMeasurementByIdAsync(int measurementId)
+    {
+        var entity = await _measurementRepo.GetByIdAsync(measurementId);
+        if (entity is null) return null;
+        var patient = await _patientRepo.GetByIdAsync(entity.PatientId);
+        return PatientMeasurementMapper.Map(entity, patient);
     }
 
     public async Task<PatientMeasurementModel> SaveMeasurementAsync(PatientMeasurementModel model)

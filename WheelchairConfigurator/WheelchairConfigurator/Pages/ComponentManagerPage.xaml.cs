@@ -17,11 +17,14 @@ public partial class ComponentManagerPage : ContentPage
     private readonly Entry _nameEntry;
     private readonly Entry _manufacturerEntry;
     private readonly Entry _manufacturerCodeEntry;
-    private readonly Editor _descriptionEditor;
+    private readonly Entry _catalogUrlEntry;
     private readonly CollectionView _categoryList;
     private readonly CollectionView _componentList;
     private readonly Label _componentListTitle;
     private readonly Button _removeBtn;
+    private readonly Button _addBtn;
+    private readonly Button _cancelEditBtn;
+    private int _editingComponentId = 0;
 
     public ComponentManagerPage(IAppService appService)
     {
@@ -32,7 +35,7 @@ public partial class ComponentManagerPage : ContentPage
         _nameEntry = new Entry { Placeholder = "Zadejte název", HorizontalOptions = LayoutOptions.Fill };
         _manufacturerEntry = new Entry { Placeholder = "Výrobce", HorizontalOptions = LayoutOptions.Fill };
         _manufacturerCodeEntry = new Entry { Placeholder = "Kód výrobce (ManufacturerCode)", HorizontalOptions = LayoutOptions.Fill };
-        _descriptionEditor = new Editor { Placeholder = "Zadejte popis", HeightRequest = 60, HorizontalOptions = LayoutOptions.Fill };
+        _catalogUrlEntry = new Entry { Placeholder = "URL katalogu (volitelné)", HorizontalOptions = LayoutOptions.Fill, Keyboard = Keyboard.Url };
 
         _categoryList = new CollectionView { SelectionMode = SelectionMode.Single };
         _categoryList.SelectionChanged += OnCategorySelected;
@@ -63,6 +66,24 @@ public partial class ComponentManagerPage : ContentPage
             HorizontalOptions = LayoutOptions.Fill
         };
         _removeBtn.Clicked += OnRemoveComponentClicked;
+
+        _addBtn = new Button
+        {
+            Text = "Přidat",
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(0, 8, 0, 0)
+        };
+        _addBtn.Clicked += OnSaveFormClicked;
+
+        _cancelEditBtn = new Button
+        {
+            Text = "Zrušit úpravy",
+            HorizontalOptions = LayoutOptions.Fill,
+            BackgroundColor = Colors.Gray,
+            TextColor = Colors.White,
+            IsVisible = false
+        };
+        _cancelEditBtn.Clicked += OnCancelEditClicked;
 
         Dispatcher.Dispatch(async () => await LoadData());
     }
@@ -95,7 +116,7 @@ public partial class ComponentManagerPage : ContentPage
 
     private void DetachSharedViews()
     {
-        View[] shared = [_categoryPicker, _nameEntry, _manufacturerEntry, _manufacturerCodeEntry, _descriptionEditor, _categoryList, _componentListTitle, _componentList, _removeBtn];
+        View[] shared = [_categoryPicker, _nameEntry, _manufacturerEntry, _manufacturerCodeEntry, _catalogUrlEntry, _categoryList, _componentListTitle, _componentList, _removeBtn, _addBtn, _cancelEditBtn];
 
         foreach (var view in shared)
         {
@@ -137,11 +158,10 @@ public partial class ComponentManagerPage : ContentPage
 
     private View AddSection()
     {
-        var addBtn = new Button { Text = "Přidat", HorizontalOptions = LayoutOptions.Fill, Margin = new Thickness(0, 8, 0, 0) };
-        addBtn.Clicked += OnAddComponentClicked;
+        var titleLabel = new Label { Text = "Přidat komponentu", FontAttributes = FontAttributes.Bold, FontSize = 20, Margin = new Thickness(0, 0, 0, 8) };
 
         var content = new VerticalStackLayout { Spacing = 12 };
-        content.Children.Add(new Label { Text = "Přidat komponentu", FontAttributes = FontAttributes.Bold, FontSize = 20, Margin = new Thickness(0, 0, 0, 8) });
+        content.Children.Add(titleLabel);
         content.Children.Add(new Label { Text = "Kategorie", FontSize = 13 });
         content.Children.Add(_categoryPicker);
         content.Children.Add(new Label { Text = "Název", FontSize = 13 });
@@ -150,9 +170,10 @@ public partial class ComponentManagerPage : ContentPage
         content.Children.Add(_manufacturerEntry);
         content.Children.Add(new Label { Text = "Kód výrobce", FontSize = 13 });
         content.Children.Add(_manufacturerCodeEntry);
-        content.Children.Add(new Label { Text = "Popis / URL", FontSize = 13 });
-        content.Children.Add(_descriptionEditor);
-        content.Children.Add(addBtn);
+        content.Children.Add(new Label { Text = "URL katalogu", FontSize = 13 });
+        content.Children.Add(_catalogUrlEntry);
+        content.Children.Add(_addBtn);
+        content.Children.Add(_cancelEditBtn);
 
         return Bordered(content);
     }
@@ -269,34 +290,81 @@ public partial class ComponentManagerPage : ContentPage
     {
         _selectedComponent = e.CurrentSelection.FirstOrDefault() as ComponentModel;
         _removeBtn.IsEnabled = _selectedComponent is not null;
+
+        if (_selectedComponent is not null)
+        {
+            _editingComponentId = _selectedComponent.Id;
+            _nameEntry.Text = _selectedComponent.Name;
+            _manufacturerEntry.Text = _selectedComponent.Manufacturer;
+            _manufacturerCodeEntry.Text = _selectedComponent.ManufacturerCode;
+            _catalogUrlEntry.Text = _selectedComponent.CatalogUrl ?? "";
+            _addBtn.Text = "Uložit změny";
+            _cancelEditBtn.IsVisible = true;
+        }
     }
 
-    private async void OnAddComponentClicked(object? sender, EventArgs e)
+    private async void OnSaveFormClicked(object? sender, EventArgs e)
     {
         var selectedCatIndex = _categoryPicker.SelectedIndex;
-        if (selectedCatIndex < 0 || string.IsNullOrWhiteSpace(_nameEntry.Text))
+        bool isEditing = _editingComponentId > 0;
+
+        if (string.IsNullOrWhiteSpace(_nameEntry.Text) || (!isEditing && selectedCatIndex < 0))
         {
             await DisplayAlert("Chyba", "Vyberte kategorii a zadejte název.", "OK");
             return;
         }
-        var category = _categories[selectedCatIndex];
-        var result = await _appService.AddComponentAsync(
-            _nameEntry.Text,
-            category.Id,
-            _manufacturerEntry.Text?.Trim() ?? "",
-            _manufacturerCodeEntry.Text?.Trim() ?? "");
+
+        ConfigurationResult result;
+
+        if (isEditing)
+        {
+            var model = new ComponentModel
+            {
+                Id = _editingComponentId,
+                Name = _nameEntry.Text.Trim(),
+                Manufacturer = _manufacturerEntry.Text?.Trim() ?? "",
+                ManufacturerCode = _manufacturerCodeEntry.Text?.Trim() ?? "",
+                CatalogUrl = string.IsNullOrWhiteSpace(_catalogUrlEntry.Text) ? null : _catalogUrlEntry.Text.Trim(),
+                Price = _selectedComponent?.Price ?? 0,
+            };
+            result = await _appService.UpdateComponentAsync(model);
+        }
+        else
+        {
+            var category = _categories[selectedCatIndex];
+            result = await _appService.AddComponentAsync(
+                _nameEntry.Text.Trim(),
+                category.Id,
+                _manufacturerEntry.Text?.Trim() ?? "",
+                _manufacturerCodeEntry.Text?.Trim() ?? "",
+                _catalogUrlEntry.Text?.Trim() ?? "");
+        }
+
         if (result.IsSuccess)
         {
-            _nameEntry.Text = "";
-            _manufacturerEntry.Text = "";
-            _manufacturerCodeEntry.Text = "";
-            _descriptionEditor.Text = "";
+            ResetForm();
             await LoadData();
         }
         else
         {
             await DisplayAlert("Chyba", result.Message, "OK");
         }
+    }
+
+    private void OnCancelEditClicked(object? sender, EventArgs e) => ResetForm();
+
+    private void ResetForm()
+    {
+        _editingComponentId = 0;
+        _selectedComponent = null;
+        _nameEntry.Text = "";
+        _manufacturerEntry.Text = "";
+        _manufacturerCodeEntry.Text = "";
+        _catalogUrlEntry.Text = "";
+        _addBtn.Text = "Přidat";
+        _cancelEditBtn.IsVisible = false;
+        _removeBtn.IsEnabled = false;
+        _componentList.SelectedItem = null;
     }
 
     private async void OnRemoveComponentClicked(object? sender, EventArgs e)

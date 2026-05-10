@@ -32,6 +32,7 @@ public partial class MainPage : ContentPage
         ToNewPatientBtn.IsEnabled = hasSpecialist;
         ToPatientSelectBtn.IsEnabled = hasSpecialist;
         ToPatientManagerBtn.IsEnabled = hasSpecialist;
+        SpecialistHintLabel.IsVisible = !hasSpecialist;
     }
 
     private async void OnSelectSpecialistClicked(object sender, EventArgs e)

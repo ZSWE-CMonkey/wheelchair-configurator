@@ -124,7 +124,7 @@ public partial class TherapistManagerPage : ContentPage
         if (model is not null)
         {
             _navState.ActiveSpecialist = model;
-            await DisplayAlert("Přihlášení", $"Přihlášen jako: {model.FullName}", "OK");
+            await DisplayAlert("Aktivní terapeut", $"Nastaven jako aktivní terapeut: {model.FullName}", "OK");
         }
 
         await LoadTherapists();

@@ -28,6 +28,7 @@ public partial class NewMeasurementPage : ContentPage
 
     private readonly List<ContentView> _panels;
     private readonly Button _saveBtn;
+    private readonly Button _configureBtn;
     private readonly Button _backBtn;
     private readonly Label _titleLabel;
     private bool _isLandscape;
@@ -76,6 +77,14 @@ public partial class NewMeasurementPage : ContentPage
         };
         _saveBtn.Clicked += OnSaveClicked;
 
+        _configureBtn = new Button
+        {
+            Text = "Uložit a konfigurovat vozík",
+            HorizontalOptions = LayoutOptions.Fill,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+        _configureBtn.Clicked += OnSaveAndConfigureClicked;
+
         _backBtn = new Button
         {
             Text = "Zpět",
@@ -110,7 +119,7 @@ public partial class NewMeasurementPage : ContentPage
 
     private void DetachSharedViews()
     {
-        View[] shared = [_panels[0], _panels[1], _saveBtn, _backBtn, _titleLabel];
+        View[] shared = [_panels[0], _panels[1], _saveBtn, _configureBtn, _backBtn, _titleLabel];
         foreach (var view in shared)
         {
             if (view.Parent is Layout layout)
@@ -147,15 +156,18 @@ public partial class NewMeasurementPage : ContentPage
                 new RowDefinition(GridLength.Star),
                 new RowDefinition(GridLength.Auto),
                 new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
             }
         };
         Grid.SetRow(_titleLabel, 0);
         Grid.SetRow(_panels[1], 1);
         Grid.SetRow(_saveBtn, 2);
-        Grid.SetRow(_backBtn, 3);
+        Grid.SetRow(_configureBtn, 3);
+        Grid.SetRow(_backBtn, 4);
         rightCol.Children.Add(_titleLabel);
         rightCol.Children.Add(_panels[1]);
         rightCol.Children.Add(_saveBtn);
+        rightCol.Children.Add(_configureBtn);
         rightCol.Children.Add(_backBtn);
 
         Grid.SetColumn(rightCol, 1);
@@ -175,18 +187,35 @@ public partial class NewMeasurementPage : ContentPage
         stack.Children.Add(_panels[0]);
         stack.Children.Add(_panels[1]);
         stack.Children.Add(_saveBtn);
+        stack.Children.Add(_configureBtn);
         stack.Children.Add(_backBtn);
         return new ScrollView { Content = stack };
     }
 
     private async void OnSaveClicked(object? sender, EventArgs e)
     {
+        var saved = await TrySaveMeasurement();
+        if (saved is not null)
+            await Shell.Current.GoToAsync("patientManagerPage");
+    }
+
+    private async void OnSaveAndConfigureClicked(object? sender, EventArgs e)
+    {
+        var saved = await TrySaveMeasurement();
+        if (saved is null) return;
+        _navState.ActiveMeasurement = saved;
+        _navState.SelectedComponents = [];
+        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+    }
+
+    private async Task<PatientMeasurementModel?> TrySaveMeasurement()
+    {
         foreach (var panel in _panels)
         {
             if (panel is ISideBar sidebar && !sidebar.Validate())
             {
                 await DisplayAlert("Chyba", "Vyplňte prosím všechna pole.", "OK");
-                return;
+                return null;
             }
         }
 
@@ -218,13 +247,11 @@ public partial class NewMeasurementPage : ContentPage
             Legs = userInput.Legs,
             Pain = userInput.Pain,
         };
-        await _appService.SaveMeasurementAsync(measurement);
-
-        await Shell.Current.GoToAsync("patientManagerPage");
+        return await _appService.SaveMeasurementAsync(measurement);
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("patientManagerPage");
+        await Shell.Current.GoToAsync("..");
     }
 }

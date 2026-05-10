@@ -36,6 +36,11 @@ public partial class PatientSelectPage : ContentPage
         _appService = appService;
         _navState = navState;
         InitializeComponent();
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
         Dispatcher.Dispatch(async () => await LoadPatients());
     }
 
@@ -111,12 +116,25 @@ public partial class PatientSelectPage : ContentPage
         if (_selectedConfig.IsNew)
         {
             var measurements = await _appService.GetMeasurementsForPatientAsync(_selectedPatient.PatientId);
-            var measurement = measurements.FirstOrDefault();
 
-            if (measurement is null)
+            if (measurements.Count == 0)
             {
                 await DisplayAlert("Chybí měření", "Pro tohoto pacienta nejsou uložena žádná měření. Přidejte měření ve správě pacientů.", "OK");
                 return;
+            }
+
+            PatientMeasurementModel? measurement;
+            if (measurements.Count == 1)
+            {
+                measurement = measurements[0];
+            }
+            else
+            {
+                var options = measurements.Select(m => $"{m.MeasuredAt:dd.MM.yyyy HH:mm}  ({m.CreatedBySpecialistName})").ToArray();
+                var chosen = await DisplayActionSheet("Vyberte měření", "Zrušit", null, options);
+                if (chosen is null || chosen == "Zrušit") return;
+                measurement = measurements.FirstOrDefault(m => $"{m.MeasuredAt:dd.MM.yyyy HH:mm}  ({m.CreatedBySpecialistName})" == chosen);
+                if (measurement is null) return;
             }
 
             _navState.ActiveMeasurement = measurement;

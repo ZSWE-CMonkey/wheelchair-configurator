@@ -61,7 +61,8 @@
                 <!-- Záznamy měření (zobrazeny po výběru pacienta) -->
                 <CollectionView Grid.Row="2"
                                 x:Name="MeasurementList"
-                                SelectionMode="None"
+                                SelectionMode="Single"
+                                SelectionChanged="OnMeasurementSelected"
                                 IsVisible="False">
                     <CollectionView.EmptyView>
                         <Label Text="Žádná měření" TextColor="Gray"

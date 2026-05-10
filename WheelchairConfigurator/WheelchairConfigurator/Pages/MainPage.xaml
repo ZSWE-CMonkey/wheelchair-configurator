@@ -75,6 +75,13 @@
                         HorizontalOptions="Fill"
                         IsEnabled="False" />
 
+                <Label x:Name="SpecialistHintLabel"
+                       Text="Nejprve vyberte terapeuta pro přístup k pacientům."
+                       FontSize="12"
+                       TextColor="Orange"
+                       HorizontalTextAlignment="Center"
+                       IsVisible="False" />
+
                 <!-- Admin sekce -->
                 <Label Text="ADMINISTRACE"
                        FontSize="11"

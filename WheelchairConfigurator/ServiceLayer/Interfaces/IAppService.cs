@@ -11,7 +11,7 @@ public interface IAppService
     // ── Components ────────────────────────────────────────────────────────────
 
     Task<List<ComponentModel>> GetComponentsAsync(int categoryId, PatientProfileModel? patient = null);
-    Task<ConfigurationResult> AddComponentAsync(string name, int categoryId, string manufacturer = "", string manufacturerCode = "");
+    Task<ConfigurationResult> AddComponentAsync(string name, int categoryId, string manufacturer = "", string manufacturerCode = "", string catalogUrl = "");
     Task<ConfigurationResult> UpdateComponentAsync(ComponentModel component);
     Task<ConfigurationResult> RemoveComponentAsync(int componentId);
     Task<byte[]> ExportComponentCatalogAsync();
@@ -21,6 +21,7 @@ public interface IAppService
 
     Task<ConfigurationResult> ValidateConfigurationAsync(ConfigurationRequest request);
     Task<ConfigurationResult> SaveConfigurationAsync(ConfigurationRequest request);
+    Task<ConfigurationModel?> GetConfigurationAsync(int configurationId);
     Task<List<ConfigurationModel>> GetConfigurationsBySpecialistAsync(int specialistId);
     Task<List<ComponentModel>> GetConfigurationComponentsAsync(int configurationId);
     Task<ConfigurationResult> CopyConfigurationAsync(int configurationId, int newSpecialistId, string newSpecialistName);
@@ -43,6 +44,7 @@ public interface IAppService
     // ── Patient Measurements ──────────────────────────────────────────────────
 
     Task<List<PatientMeasurementModel>> GetMeasurementsForPatientAsync(int patientId);
+    Task<PatientMeasurementModel?> GetMeasurementByIdAsync(int measurementId);
     Task<PatientMeasurementModel> SaveMeasurementAsync(PatientMeasurementModel measurement);
 
     // ── Activity Log ──────────────────────────────────────────────────────────

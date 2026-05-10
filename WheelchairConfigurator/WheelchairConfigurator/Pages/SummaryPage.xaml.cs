@@ -15,6 +15,7 @@ public partial class SummaryPage : ContentPage
     private readonly NavigationState _navState;
 
     private int _configurationId = 0;
+    private ConfigurationModel? _loadedConfig = null;
 
     public int ConfigurationId
     {
@@ -118,19 +119,41 @@ public partial class SummaryPage : ContentPage
             // Mode B: load saved configuration from DB
             try
             {
+                _loadedConfig = await _appService.GetConfigurationAsync(_configurationId);
                 components = await _appService.GetConfigurationComponentsAsync(_configurationId);
             }
             catch
             {
+                _loadedConfig = null;
                 components = new();
             }
-            PatientIdLabel.Text = $"Konfigurace #{_configurationId}";
-            LoadPatientData(null);
+            if (_loadedConfig is not null)
+            {
+                PatientIdLabel.Text = _loadedConfig.PatientName;
+                DateLabel.Text = $"Konfigurace #{_loadedConfig.Id}  |  {_loadedConfig.CreatedAt:dd.MM.yyyy}";
+                BodyHeightLabel.Text = $"Terapeut: {_loadedConfig.SpecialistName}";
+                PelvisWidthLabel.Text = $"Rodné číslo: {_loadedConfig.PatientBirthNumber}";
+                ThighLengthLabel.Text = string.Empty;
+                WeightLabel.Text = string.Empty;
+                BodyStabilityLabel.Text = string.Empty;
+                HeadStabilityLabel.Text = string.Empty;
+                BedsoreRiskLabel.Text = string.Empty;
+                ControlLabel.Text = string.Empty;
+                EnvironmentLabel.Text = string.Empty;
+                LegsLabel.Text = string.Empty;
+                PainLabel.Text = string.Empty;
+            }
+            else
+            {
+                PatientIdLabel.Text = $"Konfigurace #{_configurationId}";
+                LoadPatientData(null);
+            }
             _copyBtn.IsVisible = true;
         }
         else
         {
             // Mode A: fresh selection from NavigationState
+            _loadedConfig = null;
             components = _navState.SelectedComponents;
             var patient = _navState.Patient;
             LoadPatientData(patient);
@@ -611,7 +634,7 @@ public partial class SummaryPage : ContentPage
     private async void OnBackClicked(object sender, EventArgs e)
     {
         _tungTungTungSahur?.ZabijBaziliška();
-        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+        await Shell.Current.GoToAsync("..");
     }
 
     private async void OnExportClicked(object sender, EventArgs e)
@@ -693,12 +716,20 @@ public partial class SummaryPage : ContentPage
 
     private async void OnCopyClicked(object? sender, EventArgs e)
     {
-        if (_configurationId <= 0) return;
+        if (_configurationId <= 0 || _loadedConfig is null) return;
 
         try
         {
             var components = await _appService.GetConfigurationComponentsAsync(_configurationId);
             _navState.SelectedComponents = components;
+
+            if (_loadedConfig.PatientMeasurementId > 0)
+            {
+                var measurement = await _appService.GetMeasurementByIdAsync(_loadedConfig.PatientMeasurementId);
+                if (measurement is not null)
+                    _navState.ActiveMeasurement = measurement;
+            }
+
             _tungTungTungSahur?.ZabijBaziliška();
             await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
         }

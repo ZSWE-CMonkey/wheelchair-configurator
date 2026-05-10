@@ -92,7 +92,7 @@ public partial class PatientManagerPage : ContentPage
         }
 
         var specialist = _navState.ActiveSpecialist;
-        await _appService.SavePatientAsync(new PatientModel
+        var saved = await _appService.SavePatientAsync(new PatientModel
         {
             BirthNumber = birthNumber,
             FirstName = firstName,
@@ -106,6 +106,11 @@ public partial class PatientManagerPage : ContentPage
         LastNameEntry.Text = string.Empty;
 
         await LoadPatients();
+
+        var items = PatientList.ItemsSource as List<PatientModel>;
+        var match = items?.FirstOrDefault(p => p.Id == saved.Id);
+        if (match is not null)
+            PatientList.SelectedItem = match;
     }
 
     private async Task AddMeasurementForPatient()
@@ -115,8 +120,26 @@ public partial class PatientManagerPage : ContentPage
         await Shell.Current.GoToAsync($"newMeasurementPage?patientId={_selectedPatient.Id}");
     }
 
+    private async void OnMeasurementSelected(object sender, SelectionChangedEventArgs e)
+    {
+        if (e.CurrentSelection.FirstOrDefault() is not PatientMeasurementModel measurement) return;
+
+        MeasurementList.SelectedItem = null;
+
+        bool configure = await DisplayAlert(
+            "Konfigurovat vozík",
+            $"Konfigurovat vozík z měření ze dne {measurement.MeasuredAt:dd.MM.yyyy HH:mm}?",
+            "Konfigurovat", "Zrušit");
+
+        if (!configure) return;
+
+        _navState.ActiveMeasurement = measurement;
+        _navState.SelectedComponents = [];
+        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+    }
+
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("mainPage");
+        await Shell.Current.GoToAsync("..");
     }
 }
