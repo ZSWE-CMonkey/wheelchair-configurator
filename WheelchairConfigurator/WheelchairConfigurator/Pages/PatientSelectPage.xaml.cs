@@ -147,6 +147,6 @@ public partial class PatientSelectPage : ContentPage
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("mainPage");
+        await Shell.Current.GoToAsync("..");
     }
 }

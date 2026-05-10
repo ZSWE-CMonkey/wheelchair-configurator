@@ -314,6 +314,10 @@ public partial class ComponentManagerPage : ContentPage
             return;
         }
 
+        _addBtn.IsEnabled = false;
+        var prevText = _addBtn.Text;
+        _addBtn.Text = "Ukládám...";
+
         ConfigurationResult result;
 
         if (isEditing)
@@ -339,6 +343,9 @@ public partial class ComponentManagerPage : ContentPage
                 _manufacturerCodeEntry.Text?.Trim() ?? "",
                 _catalogUrlEntry.Text?.Trim() ?? "");
         }
+
+        _addBtn.IsEnabled = true;
+        _addBtn.Text = prevText;
 
         if (result.IsSuccess)
         {
@@ -370,11 +377,17 @@ public partial class ComponentManagerPage : ContentPage
     private async void OnRemoveComponentClicked(object? sender, EventArgs e)
     {
         if (_selectedComponent is null) return;
+
+        _removeBtn.IsEnabled = false;
+        _removeBtn.Text = "Odstraňuji...";
+
         var result = await _appService.RemoveComponentAsync(_selectedComponent.Id);
+
+        _removeBtn.Text = "Odstranit";
+
         if (result.IsSuccess)
         {
-            _selectedComponent = null;
-            _removeBtn.IsEnabled = false;
+            ResetForm();
             if (_categoryList.SelectedItem is CategoryModel cat)
             {
                 var components = await _appService.GetComponentsAsync(cat.Id);
@@ -383,12 +396,13 @@ public partial class ComponentManagerPage : ContentPage
         }
         else
         {
+            _removeBtn.IsEnabled = true;
             await DisplayAlert("Chyba", result.Message, "OK");
         }
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("mainPage");
+        await Shell.Current.GoToAsync("..");
     }
 }

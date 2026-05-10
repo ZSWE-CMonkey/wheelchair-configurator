@@ -194,18 +194,30 @@ public partial class NewMeasurementPage : ContentPage
 
     private async void OnSaveClicked(object? sender, EventArgs e)
     {
+        SetBusy(true);
         var saved = await TrySaveMeasurement();
+        SetBusy(false);
         if (saved is not null)
             await Shell.Current.GoToAsync("patientManagerPage");
     }
 
     private async void OnSaveAndConfigureClicked(object? sender, EventArgs e)
     {
+        SetBusy(true);
         var saved = await TrySaveMeasurement();
+        SetBusy(false);
         if (saved is null) return;
         _navState.ActiveMeasurement = saved;
         _navState.SelectedComponents = [];
         await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+    }
+
+    private void SetBusy(bool busy)
+    {
+        _saveBtn.IsEnabled = !busy;
+        _configureBtn.IsEnabled = !busy;
+        _saveBtn.Text = busy ? "Ukládám..." : "Uložit měření";
+        _configureBtn.Text = busy ? "Ukládám..." : "Uložit a konfigurovat vozík";
     }
 
     private async Task<PatientMeasurementModel?> TrySaveMeasurement()

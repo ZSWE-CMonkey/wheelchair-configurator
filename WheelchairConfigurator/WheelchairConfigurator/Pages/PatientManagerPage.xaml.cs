@@ -69,14 +69,17 @@ public partial class PatientManagerPage : ContentPage
 
     private async void OnActionClicked(object sender, EventArgs e)
     {
+        ActionBtn.IsEnabled = false;
+        var prevText = ActionBtn.Text;
+        ActionBtn.Text = "Pracuji...";
+
         if (_selectedPatient is null)
-        {
             await AddNewPatient();
-        }
         else
-        {
             await AddMeasurementForPatient();
-        }
+
+        ActionBtn.IsEnabled = true;
+        ActionBtn.Text = prevText;
     }
 
     private static bool IsValidBirthNumber(string rc)
