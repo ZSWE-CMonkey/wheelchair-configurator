@@ -93,6 +93,14 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private async Task LoadRealData()
     {
+        var settings = await _appService.GetSettingsAsync();
+        if (!settings.RenderingEnabled && _tungTungTungSahur is not null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+            _tungTungTungSahur = null;
+            _renderUnavailable = true;
+        }
+
         var patient = _navState.Patient;
 
         PatientIdLabel.Text = patient?.patientIdentificator ?? "Nový pacient";
@@ -170,12 +178,27 @@ public partial class WheelchairConfiguratorPage : ContentPage
                         ? ThemeColor(Color.FromArgb("#E8F5E9"), Color.FromArgb("#1B3A1F"))
                         : ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
 
-                var label = new Label
+                var textColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Colors.Black, Colors.White);
+                var subColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Color.FromArgb("#555555"), Color.FromArgb("#AAAAAA"));
+
+                var nameLabel = new Label
                 {
-                    Text = component.Name,
+                    Text = $"[{component.Id}] {component.Name}",
                     FontSize = 13,
-                    TextColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Colors.Black, Colors.White)
+                    TextColor = textColor
                 };
+                var manufacturerLabel = new Label
+                {
+                    Text = string.IsNullOrEmpty(component.Manufacturer)
+                        ? string.Empty
+                        : $"{component.Manufacturer}  {component.ManufacturerCode}",
+                    FontSize = 11,
+                    TextColor = subColor,
+                    IsVisible = !string.IsNullOrEmpty(component.Manufacturer)
+                };
+                var componentContent = new VerticalStackLayout { Spacing = 2 };
+                componentContent.Children.Add(nameLabel);
+                componentContent.Children.Add(manufacturerLabel);
 
                 var border = new Border
                 {
@@ -184,7 +207,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
                     StrokeThickness = 1,
                     Stroke = Colors.LightGray,
                     BackgroundColor = bgColor,
-                    Content = label
+                    Content = componentContent
                 };
 
                 if (!component.IsIncompatible)

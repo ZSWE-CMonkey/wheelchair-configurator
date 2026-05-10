@@ -15,6 +15,8 @@ public partial class ComponentManagerPage : ContentPage
 
     private readonly Picker _categoryPicker;
     private readonly Entry _nameEntry;
+    private readonly Entry _manufacturerEntry;
+    private readonly Entry _manufacturerCodeEntry;
     private readonly Editor _descriptionEditor;
     private readonly CollectionView _categoryList;
     private readonly CollectionView _componentList;
@@ -28,6 +30,8 @@ public partial class ComponentManagerPage : ContentPage
 
         _categoryPicker = new Picker { Title = "Vyberte kategorii", HorizontalOptions = LayoutOptions.Fill };
         _nameEntry = new Entry { Placeholder = "Zadejte název", HorizontalOptions = LayoutOptions.Fill };
+        _manufacturerEntry = new Entry { Placeholder = "Výrobce", HorizontalOptions = LayoutOptions.Fill };
+        _manufacturerCodeEntry = new Entry { Placeholder = "Kód výrobce (ManufacturerCode)", HorizontalOptions = LayoutOptions.Fill };
         _descriptionEditor = new Editor { Placeholder = "Zadejte popis", HeightRequest = 60, HorizontalOptions = LayoutOptions.Fill };
 
         _categoryList = new CollectionView { SelectionMode = SelectionMode.Single };
@@ -91,7 +95,7 @@ public partial class ComponentManagerPage : ContentPage
 
     private void DetachSharedViews()
     {
-        View[] shared = [_categoryPicker, _nameEntry, _descriptionEditor, _categoryList, _componentListTitle, _componentList, _removeBtn];
+        View[] shared = [_categoryPicker, _nameEntry, _manufacturerEntry, _manufacturerCodeEntry, _descriptionEditor, _categoryList, _componentListTitle, _componentList, _removeBtn];
 
         foreach (var view in shared)
         {
@@ -142,7 +146,11 @@ public partial class ComponentManagerPage : ContentPage
         content.Children.Add(_categoryPicker);
         content.Children.Add(new Label { Text = "Název", FontSize = 13 });
         content.Children.Add(_nameEntry);
-        content.Children.Add(new Label { Text = "Popis", FontSize = 13 });
+        content.Children.Add(new Label { Text = "Výrobce", FontSize = 13 });
+        content.Children.Add(_manufacturerEntry);
+        content.Children.Add(new Label { Text = "Kód výrobce", FontSize = 13 });
+        content.Children.Add(_manufacturerCodeEntry);
+        content.Children.Add(new Label { Text = "Popis / URL", FontSize = 13 });
         content.Children.Add(_descriptionEditor);
         content.Children.Add(addBtn);
 
@@ -216,9 +224,32 @@ public partial class ComponentManagerPage : ContentPage
 
     private static DataTemplate ComponentItemTemplate() => new(() =>
     {
+        var idLabel = new Label { FontSize = 11, TextColor = Colors.Gray };
+        idLabel.SetBinding(Label.TextProperty, new Binding("Id", stringFormat: "ID: {0}"));
+
         var name = new Label { FontAttributes = FontAttributes.Bold, FontSize = 14 };
         name.SetBinding(Label.TextProperty, "Name");
-        return new Border { Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(12), StrokeThickness = 1, Stroke = new SolidColorBrush(Color.FromArgb("#E0E0E0")), Content = name };
+
+        var manufacturer = new Label { FontSize = 12 };
+        manufacturer.SetBinding(Label.TextProperty, new Binding("Manufacturer", stringFormat: "Výrobce: {0}"));
+
+        var mfrCode = new Label { FontSize = 12, TextColor = Colors.Gray };
+        mfrCode.SetBinding(Label.TextProperty, new Binding("ManufacturerCode", stringFormat: "Kód: {0}"));
+
+        var stack = new VerticalStackLayout { Spacing = 2 };
+        stack.Children.Add(idLabel);
+        stack.Children.Add(name);
+        stack.Children.Add(manufacturer);
+        stack.Children.Add(mfrCode);
+
+        return new Border
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            Padding = new Thickness(12),
+            StrokeThickness = 1,
+            Stroke = new SolidColorBrush(ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D"))),
+            Content = stack
+        };
     });
 
     private void OnCategorySelected(object? sender, SelectionChangedEventArgs e)
@@ -249,10 +280,16 @@ public partial class ComponentManagerPage : ContentPage
             return;
         }
         var category = _categories[selectedCatIndex];
-        var result = await _appService.AddComponentAsync(_nameEntry.Text, category.Id);
+        var result = await _appService.AddComponentAsync(
+            _nameEntry.Text,
+            category.Id,
+            _manufacturerEntry.Text?.Trim() ?? "",
+            _manufacturerCodeEntry.Text?.Trim() ?? "");
         if (result.IsSuccess)
         {
             _nameEntry.Text = "";
+            _manufacturerEntry.Text = "";
+            _manufacturerCodeEntry.Text = "";
             _descriptionEditor.Text = "";
             await LoadData();
         }
