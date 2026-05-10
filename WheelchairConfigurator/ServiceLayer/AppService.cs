@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.Domain.Models;
 using WheelchairConfigurator.Export;
@@ -7,12 +9,6 @@ using WheelchairConfigurator.ServiceLayer.Models;
 
 namespace WheelchairConfigurator.ServiceLayer;
 
-/// <summary>
-/// Main orchestrator of the application logic.
-/// Connects UI, DataLayer, ConfigurationEngine and ExportLayer.
-/// UI communicates exclusively through IAppService — never directly with repositories.
-/// AppService contains no business logic — it only orchestrates calls between layers.
-/// </summary>
 public class AppService : IAppService
 {
     private readonly ICategoryRepository _categoryRepo;
@@ -21,6 +17,9 @@ public class AppService : IAppService
     private readonly IConfigurationItemRepository _configurationItemRepo;
     private readonly ISpecialistRepository _specialistRepo;
     private readonly IPatientRepository _patientRepo;
+    private readonly IPatientMeasurementRepository _measurementRepo;
+    private readonly IActivityLogRepository _activityLogRepo;
+    private readonly IAppSettingRepository _settingRepo;
     private readonly IConfigurationEngine _engine;
     private readonly IExportFileBuilder _fileBuilder;
 
@@ -31,6 +30,9 @@ public class AppService : IAppService
         IConfigurationItemRepository configurationItemRepo,
         ISpecialistRepository specialistRepo,
         IPatientRepository patientRepo,
+        IPatientMeasurementRepository measurementRepo,
+        IActivityLogRepository activityLogRepo,
+        IAppSettingRepository settingRepo,
         IConfigurationEngine engine,
         IExportFileBuilder fileBuilder)
     {
@@ -40,30 +42,31 @@ public class AppService : IAppService
         _configurationItemRepo = configurationItemRepo;
         _specialistRepo = specialistRepo;
         _patientRepo = patientRepo;
+        _measurementRepo = measurementRepo;
+        _activityLogRepo = activityLogRepo;
+        _settingRepo = settingRepo;
         _engine = engine;
         _fileBuilder = fileBuilder;
     }
-    /// <inheritdoc/>
+
+    // ── Categories ────────────────────────────────────────────────────────────
+
     public async Task<List<CategoryModel>> GetCategoriesAsync()
     {
         var categories = await _categoryRepo.GetAllAsync();
         return categories.Select(CategoryMapper.Map).ToList();
     }
 
-    /// <inheritdoc/>
+    // ── Components ────────────────────────────────────────────────────────────
+
     public async Task<List<ComponentModel>> GetComponentsAsync(int categoryId, PatientProfileModel? patient = null)
     {
-        // 1. Load components from DB
         var components = await _componentRepo.GetByCategoryIdAsync(categoryId);
-
-        // 2. Map to UI models
         var componentModels = components.Select(ComponentMapper.Map).ToList();
 
-        // 3. If patient profile provided, ask engine to flag recommended/incompatible
         if (patient is not null)
         {
             var recommendedIds = await _engine.GetRecommendedComponentIdsAsync(patient, componentModels);
-
             foreach (var component in componentModels)
             {
                 component.IsRecommended = recommendedIds.Contains(component.Id);
@@ -74,28 +77,135 @@ public class AppService : IAppService
         return componentModels;
     }
 
-    /// <inheritdoc/>
+    public async Task<ConfigurationResult> AddComponentAsync(string name, int categoryId, string manufacturer = "", string manufacturerCode = "")
+    {
+        await _componentRepo.InsertAsync(new Component
+        {
+            Name = name,
+            CategoryId = categoryId,
+            Price = 0,
+            Manufacturer = manufacturer,
+            ManufacturerCode = manufacturerCode,
+        });
+        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta přidána." };
+    }
+
+    public async Task<ConfigurationResult> UpdateComponentAsync(ComponentModel model)
+    {
+        var entity = await _componentRepo.GetByIdAsync(model.Id);
+        if (entity is null)
+            return new ConfigurationResult { IsSuccess = false, Message = "Komponenta nenalezena." };
+
+        entity.Name = model.Name;
+        entity.Price = model.Price;
+        entity.CatalogUrl = model.CatalogUrl;
+        entity.Manufacturer = model.Manufacturer;
+        entity.ManufacturerCode = model.ManufacturerCode;
+
+        await _componentRepo.UpdateAsync(entity);
+        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta aktualizována." };
+    }
+
+    public async Task<ConfigurationResult> RemoveComponentAsync(int componentId)
+    {
+        var component = await _componentRepo.GetByIdAsync(componentId);
+        if (component is null)
+            return new ConfigurationResult { IsSuccess = false, Message = "Komponenta nenalezena." };
+        await _componentRepo.DeleteAsync(component);
+        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta odstraněna." };
+    }
+
+    public async Task<byte[]> ExportComponentCatalogAsync()
+    {
+        var categories = await _categoryRepo.GetAllAsync();
+        var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+
+        var allComponents = new List<Component>();
+        foreach (var cat in categories)
+        {
+            var comps = await _componentRepo.GetByCategoryIdAsync(cat.Id);
+            allComponents.AddRange(comps);
+        }
+
+        var export = allComponents.Select(c => new
+        {
+            c.Id,
+            c.Name,
+            CategoryName = categoryMap.TryGetValue(c.CategoryId, out var cn) ? cn : string.Empty,
+            c.Price,
+            c.Manufacturer,
+            c.ManufacturerCode,
+            c.CatalogUrl,
+        });
+
+        var json = JsonSerializer.Serialize(export, new JsonSerializerOptions { WriteIndented = true });
+        return Encoding.UTF8.GetBytes(json);
+    }
+
+    public async Task<ConfigurationResult> ImportComponentCatalogAsync(Stream jsonStream)
+    {
+        try
+        {
+            using var reader = new StreamReader(jsonStream, Encoding.UTF8);
+            var json = await reader.ReadToEndAsync();
+            var items = JsonSerializer.Deserialize<List<JsonElement>>(json);
+            if (items is null)
+                return new ConfigurationResult { IsSuccess = false, Message = "Neplatný formát souboru." };
+
+            var categories = await _categoryRepo.GetAllAsync();
+            var categoryMap = categories.ToDictionary(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase);
+
+            int imported = 0;
+            foreach (var item in items)
+            {
+                var name = item.TryGetProperty("Name", out var n) ? n.GetString() ?? string.Empty : string.Empty;
+                var categoryName = item.TryGetProperty("CategoryName", out var cn) ? cn.GetString() ?? string.Empty : string.Empty;
+                if (string.IsNullOrWhiteSpace(name) || !categoryMap.TryGetValue(categoryName, out var categoryId))
+                    continue;
+
+                var manufacturer = item.TryGetProperty("Manufacturer", out var mf) ? mf.GetString() ?? string.Empty : string.Empty;
+                var manufacturerCode = item.TryGetProperty("ManufacturerCode", out var mc) ? mc.GetString() ?? string.Empty : string.Empty;
+                var catalogUrl = item.TryGetProperty("CatalogUrl", out var cu) ? cu.GetString() : null;
+                var price = item.TryGetProperty("Price", out var p) ? p.GetDecimal() : 0m;
+
+                await _componentRepo.InsertAsync(new Component
+                {
+                    Name = name,
+                    CategoryId = categoryId,
+                    Price = price,
+                    Manufacturer = manufacturer,
+                    ManufacturerCode = manufacturerCode,
+                    CatalogUrl = catalogUrl,
+                });
+                imported++;
+            }
+
+            return new ConfigurationResult { IsSuccess = true, Message = $"Importováno {imported} komponent." };
+        }
+        catch (Exception ex)
+        {
+            return new ConfigurationResult { IsSuccess = false, Message = $"Chyba při importu: {ex.Message}" };
+        }
+    }
+
+    // ── Configurations ────────────────────────────────────────────────────────
+
     public async Task<ConfigurationResult> ValidateConfigurationAsync(ConfigurationRequest request)
     {
         var components = await _componentRepo.GetByIdsAsync(request.SelectedComponentIds);
         var selectedComponents = components.Select(ComponentMapper.Map).ToList();
-
         return await _engine.ValidateAsync(request, selectedComponents);
     }
 
-    /// <inheritdoc/>
     public async Task<ConfigurationResult> SaveConfigurationAsync(ConfigurationRequest request)
     {
-        // 1. Validate first
         var validationResult = await ValidateConfigurationAsync(request);
         if (!validationResult.IsSuccess)
             return validationResult;
 
-        // 2. Map request to entity — via mapper
         var configuration = ConfigurationMapper.Map(request);
         await _configurationRepo.InsertAsync(configuration);
 
-        // 3. Save configuration items
         foreach (var componentId in request.SelectedComponentIds)
         {
             await _configurationItemRepo.InsertAsync(new ConfigurationItem
@@ -106,43 +216,23 @@ public class AppService : IAppService
             });
         }
 
+        await LogActivityAsync("Uložení konfigurace", "Configuration", configuration.Id,
+            $"Pacient: {request.PatientName}, Hash: {configuration.Hash}");
+
         return new ConfigurationResult
         {
             IsSuccess = true,
-            Message = "Configuration saved successfully.",
+            Message = "Konfigurace uložena.",
             ConfigurationId = configuration.Id
         };
     }
 
-    /// <inheritdoc/>
-    public async Task<byte[]> ExportConfigurationAsync(int configurationId)
-    {
-        // 1. Load configuration from DB
-        var config = await _configurationRepo.GetByIdAsync(configurationId);
-        var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
-        var specialist = await _specialistRepo.GetByIdAsync(config!.SpecialistId);
-
-        // 2. Build export model via mapper
-        var exportModel = await ExportMapper.MapAsync(
-            config,
-            items,
-            specialist!,
-            _componentRepo,
-            _categoryRepo
-        );
-
-        // 3. Build PDF directly
-        return _fileBuilder.Build(exportModel);
-    }
-
-    /// <inheritdoc/>
     public async Task<List<ConfigurationModel>> GetConfigurationsBySpecialistAsync(int specialistId)
     {
         var configurations = await _configurationRepo.GetBySpecialistIdAsync(specialistId);
         return configurations.Select(ConfigurationMapper.Map).ToList();
     }
 
-    /// <inheritdoc/>
     public async Task<List<ComponentModel>> GetConfigurationComponentsAsync(int configurationId)
     {
         var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
@@ -151,49 +241,197 @@ public class AppService : IAppService
         return components.Select(ComponentMapper.Map).ToList();
     }
 
-    /// <inheritdoc/>
-    public async Task<ConfigurationResult> AddComponentAsync(string name, int categoryId)
+    public async Task<ConfigurationResult> CopyConfigurationAsync(int configurationId, int newSpecialistId, string newSpecialistName)
     {
-        await _componentRepo.InsertAsync(new WheelchairConfigurator.Domain.Models.Component
+        var original = await _configurationRepo.GetByIdAsync(configurationId);
+        if (original is null)
+            return new ConfigurationResult { IsSuccess = false, Message = "Konfigurace nenalezena." };
+
+        var copy = new Configuration
         {
-            Name = name,
-            CategoryId = categoryId,
-            Price = 0
-        });
-        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta přidána." };
+            SpecialistId = newSpecialistId,
+            SpecialistName = newSpecialistName,
+            CreatedAt = DateTime.Now,
+            PatientMeasurementId = original.PatientMeasurementId,
+            PatientBirthNumber = original.PatientBirthNumber,
+            PatientName = original.PatientName,
+            Hash = Guid.NewGuid().ToString("N"),
+        };
+        await _configurationRepo.InsertAsync(copy);
+
+        var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
+        foreach (var item in items)
+        {
+            await _configurationItemRepo.InsertAsync(new ConfigurationItem
+            {
+                ConfigurationId = copy.Id,
+                ComponentId = item.ComponentId,
+                Quantity = item.Quantity
+            });
+        }
+
+        await LogActivityAsync("Kopírování konfigurace", "Configuration", copy.Id,
+            $"Zkopírováno z #{configurationId}");
+
+        return new ConfigurationResult { IsSuccess = true, Message = "Konfigurace zkopírována.", ConfigurationId = copy.Id };
     }
 
-    /// <inheritdoc/>
-    public async Task<ConfigurationResult> RemoveComponentAsync(int componentId)
+    public async Task<byte[]> ExportConfigurationAsync(int configurationId)
     {
-        var component = await _componentRepo.GetByIdAsync(componentId);
-        if (component is null)
-            return new ConfigurationResult { IsSuccess = false, Message = "Komponenta nenalezena." };
-        await _componentRepo.DeleteAsync(component);
-        return new ConfigurationResult { IsSuccess = true, Message = "Komponenta odstraněna." };
+        var config = await _configurationRepo.GetByIdAsync(configurationId);
+        var items = await _configurationItemRepo.GetByConfigurationIdAsync(configurationId);
+        var specialist = config is not null ? await _specialistRepo.GetByIdAsync(config.SpecialistId) : null;
+
+        var exportModel = await ExportMapper.MapAsync(config!, items, specialist, _componentRepo, _categoryRepo);
+        return _fileBuilder.Build(exportModel);
     }
 
-    /// <inheritdoc/>
-    public async Task SavePatientAsync(PatientModel model)
+    // ── Specialists ───────────────────────────────────────────────────────────
+
+    public async Task<List<SpecialistModel>> GetSpecialistsAsync()
     {
-        var existing = await _patientRepo.GetByIdentificatorAsync(model.PatientIdentificator, model.SpecialistId);
-        if (existing is null)
+        var specialists = await _specialistRepo.GetAllActiveAsync();
+        return specialists.Select(SpecialistMapper.Map).ToList();
+    }
+
+    public async Task<SpecialistModel?> GetSpecialistByIdAsync(int specialistId)
+    {
+        var entity = await _specialistRepo.GetByIdAsync(specialistId);
+        return entity is null ? null : SpecialistMapper.Map(entity);
+    }
+
+    public async Task SaveSpecialistAsync(SpecialistModel model)
+    {
+        if (model.Id == 0)
         {
-            await _patientRepo.InsertAsync(PatientMapper.Map(model));
+            var entity = SpecialistMapper.Map(model);
+            entity.CreatedAt = DateTime.Now;
+            await _specialistRepo.InsertAsync(entity);
+            await LogActivityAsync("Přidání terapeuta", "Specialist", entity.Id, model.FullName);
         }
         else
         {
-            var updated = PatientMapper.Map(model);
-            updated.Id = existing.Id;
-            updated.CreatedAt = existing.CreatedAt;
-            await _patientRepo.UpdateAsync(updated);
+            var existing = await _specialistRepo.GetByIdAsync(model.Id);
+            if (existing is null) return;
+            existing.FirstName = model.FirstName;
+            existing.LastName = model.LastName;
+            existing.Email = model.Email;
+            existing.Clinic = model.Clinic;
+            await _specialistRepo.UpdateAsync(existing);
+            await LogActivityAsync("Úprava terapeuta", "Specialist", model.Id, model.FullName);
         }
     }
 
-    /// <inheritdoc/>
-    public async Task<PatientModel?> GetPatientByIdentificatorAsync(string patientIdentificator, int specialistId = 1)
+    public async Task DeactivateSpecialistAsync(int specialistId)
     {
-        var entity = await _patientRepo.GetByIdentificatorAsync(patientIdentificator, specialistId);
+        var entity = await _specialistRepo.GetByIdAsync(specialistId);
+        if (entity is null) return;
+        entity.IsActive = false;
+        await _specialistRepo.UpdateAsync(entity);
+        await LogActivityAsync("Deaktivace terapeuta", "Specialist", specialistId);
+    }
+
+    // ── Patients ──────────────────────────────────────────────────────────────
+
+    public async Task<List<PatientModel>> GetPatientsAsync()
+    {
+        var patients = await _patientRepo.GetAllActiveAsync();
+        return patients.Select(PatientMapper.Map).ToList();
+    }
+
+    public async Task<PatientModel?> GetPatientByBirthNumberAsync(string birthNumber)
+    {
+        var entity = await _patientRepo.GetByBirthNumberAsync(birthNumber);
         return entity is null ? null : PatientMapper.Map(entity);
+    }
+
+    public async Task<PatientModel> SavePatientAsync(PatientModel model)
+    {
+        var existing = await _patientRepo.GetByBirthNumberAsync(model.BirthNumber);
+        if (existing is null)
+        {
+            var entity = PatientMapper.Map(model);
+            entity.CreatedAt = DateTime.Now;
+            await _patientRepo.InsertAsync(entity);
+            model.Id = entity.Id;
+            await LogActivityAsync("Přidání pacienta", "Patient", entity.Id, model.FullName);
+        }
+        else
+        {
+            existing.FirstName = model.FirstName;
+            existing.LastName = model.LastName;
+            existing.IsActive = model.IsActive;
+            await _patientRepo.UpdateAsync(existing);
+            model.Id = existing.Id;
+            await LogActivityAsync("Úprava pacienta", "Patient", existing.Id, model.FullName);
+        }
+        return model;
+    }
+
+    public async Task DeactivatePatientAsync(int patientId)
+    {
+        var entity = await _patientRepo.GetByIdAsync(patientId);
+        if (entity is null) return;
+        entity.IsActive = false;
+        await _patientRepo.UpdateAsync(entity);
+        await LogActivityAsync("Deaktivace pacienta", "Patient", patientId);
+    }
+
+    // ── Patient Measurements ──────────────────────────────────────────────────
+
+    public async Task<List<PatientMeasurementModel>> GetMeasurementsForPatientAsync(int patientId)
+    {
+        var patient = await _patientRepo.GetByIdAsync(patientId);
+        var measurements = await _measurementRepo.GetByPatientIdAsync(patientId);
+        return measurements.Select(m => PatientMeasurementMapper.Map(m, patient)).ToList();
+    }
+
+    public async Task<PatientMeasurementModel> SaveMeasurementAsync(PatientMeasurementModel model)
+    {
+        var entity = PatientMeasurementMapper.Map(model);
+        entity.MeasuredAt = DateTime.Now;
+        await _measurementRepo.InsertAsync(entity);
+        model.Id = entity.Id;
+
+        var patient = await _patientRepo.GetByIdAsync(model.PatientId);
+        await LogActivityAsync("Přidání měření", "PatientMeasurement", entity.Id,
+            $"Pacient: {patient?.LastName} {patient?.FirstName}");
+        return model;
+    }
+
+    // ── Activity Log ──────────────────────────────────────────────────────────
+
+    public async Task LogActivityAsync(string action, string entityType, int? entityId = null, string? detail = null)
+    {
+        await _activityLogRepo.InsertAsync(new ActivityLog
+        {
+            OccurredAt = DateTime.Now,
+            Action = action,
+            EntityType = entityType,
+            EntityId = entityId,
+            Detail = detail,
+        });
+    }
+
+    public async Task<List<ActivityLogModel>> GetActivityLogAsync(int pageSize = 100)
+    {
+        var logs = await _activityLogRepo.GetRecentAsync(pageSize);
+        return logs.Select(ActivityLogMapper.Map).ToList();
+    }
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+
+    public async Task<AppSettingsModel> GetSettingsAsync()
+    {
+        var renderingVal = await _settingRepo.GetAsync("RenderingEnabled");
+        return new AppSettingsModel
+        {
+            RenderingEnabled = renderingVal is null || renderingVal == "true",
+        };
+    }
+
+    public async Task SaveSettingsAsync(AppSettingsModel settings)
+    {
+        await _settingRepo.SetAsync("RenderingEnabled", settings.RenderingEnabled ? "true" : "false");
     }
 }

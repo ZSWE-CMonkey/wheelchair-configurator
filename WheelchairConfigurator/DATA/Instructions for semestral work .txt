@@ -1,0 +1,97 @@
+﻿Team Project Instructions                                                                                                                                 
+Week of the 1st Seminar – Work Organization (Optional Organizational Issues Only)
+
+
+This week, you will focus on organizing your work for the upcoming project. There are no mandatory tasks at this stage.
+
+
+Week of the 2nd Seminar – Team Formation, Project Selection, and Scheduling
+* Contact your client(s) – inquire about available projects;   
+* Finalize your team (if necessary); use the Discord channel to find additional members
+* Register your team in the list of teams and projects (you do not need to have an assigned project yet). Indicate which project(s) your team is applying for
+* If the client confirms your project choice, mark it in the project list immediately.
+* Agree on meeting dates with the lecturer (by filling in the table or by e-mail in case of trouble) 
+* If you are not yet part of a team, report this on Discord and inform your lecturers.
+Week of the 3rd Seminar – Project Kickoff
+
+
+- before the seminar
+* Finalize project selection and list it in the team registration.
+* Discuss the project with the client – clarify expectations and deliverables.
+* Start working on the requirements specification – create initial models and prototypes.
+* Assign roles to individual team members.
+* Estimate project scope and workload.
+* Set up the project management system:
+   * Use GitLab KIV or GitLab.com, or GitHub.com 
+   * Create a project and add all team members and lecturers:
+* Roman Mouček (username: moucek)
+* Martin Prantl (username: PerrySchool)
+* Jan Rychlík (username: rychlikj)
+* Learn how to use GitLab/GitHub for project management.
+* Create a shared folder on Google Drive, and share (editing access required) it with:
+* moucek@gapps.zcu.cz
+* perry@gapps.zcu.cz
+* rychlikj@gapps.zcu.cz .
+- during the seminar
+* Report any issues (project-related, team-related, etc.).
+* Divide tasks among team members.
+* Present the work plan for the next week as GitLab/GitHub issues.
+Weeks of the 4th to the Final Seminar
+* From the 4th seminar onward, teams will have regular meetings with lecturers.
+* Project artifacts must be submitted periodically – some weekly, others by specific deadlines.
+* The actual submission date for some artifacts may vary depending on the lecturer's agreement.
+Project Deliverables & Deadlines
+Deliverable
+	Where to Submit
+	Deadline
+	Notes
+	Weekly Project Plan
+	GitLab/GitHub
+	Weekly (Weeks 3-12)
+	It must be updated regularly.
+	Requirements Specification
+	Google Drive
+	No later than Week 6
+	Follow a Software Requirements Specification template
+See an example
+	Business Plan
+	GitLab/GitHub
+	No later than Week 6
+	Work breakdown structure recommended. WBS Examples 
+Presentation by Jan Rychlík
+	Statement (Client Confirmation)
+	Google Drive
+	No later than Week 7
+	The document - the team leader & client must confirm it. The client's confirmation should be visible in Google Drive.
+	Testing Methods & Types Proposal
+	Google Drive
+	No later than Week 10
+	It should include test strategies.
+
+
+	Set of Implemented Tests
+	Google Drive
+	No later than Week 13
+	Ensure test execution records are included.
+	Project Release
+	GitLab/GitHub
+	No later than Week 13
+	Code quality will be checked.
+	User/Technical Manual
+	Google Drive / GitLab/GitHub
+	No later than Week 13
+	Format: PDF, video, wiki, or agreed format.
+	Client-Signed Protocol
+	Google Drive
+	No later than Week 13
+	No physical signature is required. https://forms.gle/WqjKyywMtr3tPQKB6
+	
+
+Final Presentation of Project Results
+* Location: US 207
+* Date & Time: Tuesday, May 12th, at 7:30 AM
+* Attendance: Mandatory for all team members.
+* Presentation Format:
+   * Accepted formats: .pdf, .ppt(x), or online presentation tools.
+   * Duration: 5 minutes per team.
+   * Presentation guidelines: provide the task description, design (architecture), used technology (briefly), and results achieved

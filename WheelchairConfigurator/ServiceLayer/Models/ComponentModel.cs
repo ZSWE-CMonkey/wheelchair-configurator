@@ -23,4 +23,10 @@ public class ComponentModel
 
     /// <summary>True if this component cannot be selected with the current configuration.</summary>
     public bool IsIncompatible { get; set; }
+
+    /// <summary>Name of the manufacturer.</summary>
+    public string Manufacturer { get; set; } = string.Empty;
+
+    /// <summary>Manufacturer's own part code (for BOM).</summary>
+    public string ManufacturerCode { get; set; } = string.Empty;
 }

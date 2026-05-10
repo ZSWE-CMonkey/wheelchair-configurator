@@ -596,8 +596,11 @@ public partial class SummaryPage : ContentPage
             {
                 var request = new ConfigurationRequest
                 {
-                    SpecialistId = 1,
-                    PatientIdentificator = _navState.Patient?.patientIdentificator ?? "",
+                    SpecialistId = _navState.ActiveSpecialist?.Id ?? 1,
+                    SpecialistName = _navState.ActiveSpecialist?.FullName ?? "",
+                    PatientMeasurementId = _navState.ActiveMeasurement?.Id ?? 0,
+                    PatientBirthNumber = _navState.ActiveMeasurement?.PatientBirthNumber ?? "",
+                    PatientName = _navState.ActiveMeasurement?.PatientFullName ?? "",
                     SelectedComponentIds = _navState.SelectedComponents.Select(c => c.Id).ToList(),
                     Patient = BuildPatientProfile()
                 };

@@ -32,6 +32,9 @@ public class DbService
         _db.CreateTable<Configuration>();
         _db.CreateTable<ConfigurationItem>();
         _db.CreateTable<Patient>();
+        _db.CreateTable<PatientMeasurement>();
+        _db.CreateTable<ActivityLog>();
+        _db.CreateTable<AppSetting>();
 
         EnsureSchemaUpgrades();
     }
@@ -53,6 +56,18 @@ public class DbService
         TryAddColumn("ComponentSpecs", "EnvironmentType", "TEXT");
         TryAddColumn("ComponentSpecs", "SupportsLegRestAdjustment", "INTEGER");
         TryAddColumn("ComponentSpecs", "ComfortLevel", "INTEGER");
+
+        TryAddColumn("Specialist", "IsActive", "INTEGER NOT NULL DEFAULT 1");
+        TryAddColumn("Specialist", "CreatedAt", "TEXT NOT NULL DEFAULT ''");
+
+        TryAddColumn("Component", "Manufacturer", "TEXT NOT NULL DEFAULT ''");
+        TryAddColumn("Component", "ManufacturerCode", "TEXT NOT NULL DEFAULT ''");
+
+        TryAddColumn("Configuration", "SpecialistName", "TEXT NOT NULL DEFAULT ''");
+        TryAddColumn("Configuration", "PatientMeasurementId", "INTEGER NOT NULL DEFAULT 0");
+        TryAddColumn("Configuration", "PatientBirthNumber", "TEXT NOT NULL DEFAULT ''");
+        TryAddColumn("Configuration", "PatientName", "TEXT NOT NULL DEFAULT ''");
+        TryAddColumn("Configuration", "Hash", "TEXT NOT NULL DEFAULT ''");
     }
 
     private void TryAddColumn(string tableName, string columnName, string columnDefinition)
@@ -81,6 +96,9 @@ public class DbService
         _db.DropTable<Configuration>();
         _db.DropTable<ConfigurationItem>();
         _db.DropTable<Patient>();
+        _db.DropTable<PatientMeasurement>();
+        _db.DropTable<ActivityLog>();
+        _db.DropTable<AppSetting>();
         InitializeDatabase();
     }
 

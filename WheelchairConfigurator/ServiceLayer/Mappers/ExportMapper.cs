@@ -1,24 +1,15 @@
 using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.Domain.Models;
-
 using WheelchairConfigurator.Export.ExportModel;
 
 namespace WheelchairConfigurator.ServiceLayer.Mappers;
 
-/// <summary>
-/// Assembles a ConfigurationExportModel from database entities.
-/// Called by AppService before delegating to IExportFileBuilder.
-/// Optimized — loads all components and categories in bulk to avoid N+1 queries.
-/// </summary>
 public static class ExportMapper
 {
-    /// <summary>
-    // /// Loads all required data from repositories and builds the export model.
-    // /// </summary>
     public static async Task<ConfigurationExportModel> MapAsync(
         Configuration config,
         List<ConfigurationItem> items,
-        Specialist specialist,
+        Specialist? specialist,
         IComponentRepository componentRepo,
         ICategoryRepository categoryRepo)
     {
@@ -30,7 +21,6 @@ public static class ExportMapper
         var categories = await categoryRepo.GetByIdsAsync(categoryIds);
         var categoryMap = categories.ToDictionary(c => c.Id);
 
-        // Build export items
         var exportItems = items.Select(item =>
         {
             var component = componentMap[item.ComponentId];
@@ -42,16 +32,22 @@ public static class ExportMapper
                 ComponentName = component.Name,
                 ItemCode = component.CatalogUrl ?? "-",
                 Price = component.Price,
-                Quantity = item.Quantity
+                Quantity = item.Quantity,
+                Manufacturer = component.Manufacturer,
+                ManufacturerCode = component.ManufacturerCode,
             };
         }).ToList();
 
+        var specialistName = !string.IsNullOrEmpty(config.SpecialistName)
+            ? config.SpecialistName
+            : specialist is not null ? $"{specialist.FirstName} {specialist.LastName}" : "Neznámý terapeut";
+
         return new ConfigurationExportModel
         {
-            ConfigurationName = $"Configuration #{config.Id}",
-            SpecialistName = specialist is not null
-    ? $"{specialist.FirstName} {specialist.LastName}"
-    : "Unknown Specialist",
+            ConfigurationName = $"Konfigurace #{config.Id} ({config.Hash[..8]})",
+            SpecialistName = specialistName,
+            PatientName = config.PatientName,
+            PatientBirthNumber = config.PatientBirthNumber,
             CreatedAt = config.CreatedAt,
             TotalPrice = exportItems.Sum(i => i.Price * i.Quantity),
             Items = exportItems

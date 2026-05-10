@@ -12,6 +12,12 @@ public class ConfigurationExportModel
     /// <summary>Full name of the specialist who created the configuration.</summary>
     public string SpecialistName { get; set; } = string.Empty;
 
+    /// <summary>Patient name embedded at save time.</summary>
+    public string PatientName { get; set; } = string.Empty;
+
+    /// <summary>Patient birth number embedded at save time.</summary>
+    public string PatientBirthNumber { get; set; } = string.Empty;
+
     /// <summary>Date and time when the configuration was created.</summary>
     public DateTime CreatedAt { get; set; }
 
@@ -39,5 +45,8 @@ public class ConfigurationExportItem
     /// <summary>Quantity of the component (default is 1).</summary>
     public int Quantity { get; set; } = 1;
 
-    public string ItemCode { get; set; } = string.Empty; 
+    public string ItemCode { get; set; } = string.Empty;
+
+    public string Manufacturer { get; set; } = string.Empty;
+    public string ManufacturerCode { get; set; } = string.Empty;
 }

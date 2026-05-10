@@ -1,4 +1,3 @@
-using System;
 using SQLite;
 
 namespace WheelchairConfigurator.Domain.Models;
@@ -12,7 +11,13 @@ public class Configuration
     [Indexed]
     public int SpecialistId { get; set; }
 
+    public string SpecialistName { get; set; } = string.Empty;
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public string PatientIdentificator { get; set; } = string.Empty;
+    public int PatientMeasurementId { get; set; }
+    public string PatientBirthNumber { get; set; } = string.Empty;
+    public string PatientName { get; set; } = string.Empty;
+
+    public string Hash { get; set; } = string.Empty;
 }

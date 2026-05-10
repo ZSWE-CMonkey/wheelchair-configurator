@@ -6,8 +6,11 @@ namespace WheelchairConfigurator.Pages;
 
 public class PatientEntry
 {
-    public string Id { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.MinValue;
+    public int PatientId { get; set; }
+    public string BirthNumber { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string DisplayText => $"{BirthNumber}  {FullName}";
+    public DateTime CreatedAt { get; set; }
 }
 
 public class ConfigEntry
@@ -15,7 +18,8 @@ public class ConfigEntry
     public int DbId { get; set; }
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public string PatientId { get; set; } = string.Empty;
+    public string PatientBirthNumber { get; set; } = string.Empty;
+    public int MeasurementId { get; set; }
     public bool IsNew { get; set; }
 }
 
@@ -24,6 +28,7 @@ public partial class PatientSelectPage : ContentPage
     private readonly IAppService _appService;
     private readonly NavigationState _navState;
     private List<ConfigurationModel> _allConfigs = new();
+    private PatientEntry? _selectedPatient = null;
     private ConfigEntry? _selectedConfig = null;
 
     public PatientSelectPage(IAppService appService, NavigationState navState)
@@ -36,35 +41,45 @@ public partial class PatientSelectPage : ContentPage
 
     private async Task LoadPatients()
     {
-        _allConfigs = await _appService.GetConfigurationsBySpecialistAsync(1);
+        var patients = await _appService.GetPatientsAsync();
 
-        var patients = _allConfigs
-            .Select(c => c.PatientIdentificator)
-            .Distinct()
-            .Select(id => new PatientEntry { Id = id })
-            .ToList();
-
-        PatientList.ItemsSource = patients;
+        PatientList.ItemsSource = patients.Select(p => new PatientEntry
+        {
+            PatientId = p.Id,
+            BirthNumber = p.BirthNumber,
+            FullName = p.FullName,
+            CreatedAt = p.CreatedAt,
+        }).ToList();
     }
 
-    private void OnPatientSelected(object sender, SelectionChangedEventArgs e)
+    private async void OnPatientSelected(object sender, SelectionChangedEventArgs e)
     {
         if (e.CurrentSelection.FirstOrDefault() is not PatientEntry selected)
             return;
 
+        _selectedPatient = selected;
         _selectedConfig = null;
         ContinueBtn.IsEnabled = false;
 
-        WheelchairListTitle.Text = $"Konfigurace pacienta {selected.Id}";
+        WheelchairListTitle.Text = $"Konfigurace — {selected.DisplayText}";
+
+        var specialist = _navState.ActiveSpecialist;
+        _allConfigs = specialist is not null
+            ? await _appService.GetConfigurationsBySpecialistAsync(specialist.Id)
+            : new List<ConfigurationModel>();
+
+        var measurements = await _appService.GetMeasurementsForPatientAsync(selected.PatientId);
+        var latestMeasurement = measurements.FirstOrDefault();
 
         var items = _allConfigs
-            .Where(c => c.PatientIdentificator == selected.Id)
+            .Where(c => c.PatientBirthNumber == selected.BirthNumber)
             .Select(c => new ConfigEntry
             {
                 DbId = c.Id,
-                Name = $"Konfigurace {c.Id}",
+                Name = $"Konfigurace #{c.Id} ({c.Hash[..Math.Min(8, c.Hash.Length)]})",
                 CreatedAt = c.CreatedAt,
-                PatientId = c.PatientIdentificator,
+                PatientBirthNumber = selected.BirthNumber,
+                MeasurementId = c.PatientMeasurementId,
                 IsNew = false
             })
             .ToList<ConfigEntry>();
@@ -74,7 +89,8 @@ public partial class PatientSelectPage : ContentPage
             DbId = 0,
             Name = "Vytvořit nový vozík",
             CreatedAt = DateTime.MinValue,
-            PatientId = selected.Id,
+            PatientBirthNumber = selected.BirthNumber,
+            MeasurementId = latestMeasurement?.Id ?? 0,
             IsNew = true
         });
 
@@ -89,28 +105,21 @@ public partial class PatientSelectPage : ContentPage
 
     private async void OnContinueClicked(object sender, EventArgs e)
     {
-        if (_selectedConfig is null)
+        if (_selectedConfig is null || _selectedPatient is null)
             return;
 
         if (_selectedConfig.IsNew)
         {
-            var patientModel = await _appService.GetPatientByIdentificatorAsync(_selectedConfig.PatientId);
-            _navState.Patient = new UserInput
+            var measurements = await _appService.GetMeasurementsForPatientAsync(_selectedPatient.PatientId);
+            var measurement = measurements.FirstOrDefault();
+
+            if (measurement is null)
             {
-                patientIdentificator = _selectedConfig.PatientId,
-                Date = DateTime.Today,
-                BodyHeight = patientModel?.BodyHeight ?? 0,
-                PelvisWidth = patientModel?.PelvisWidth ?? 0,
-                ThighLength = patientModel?.ThighLength ?? 0,
-                Weight = patientModel?.Weight ?? 0,
-                BodyStability = patientModel?.BodyStability ?? string.Empty,
-                HeadStability = patientModel?.HeadStability ?? true,
-                BedsoreRisk = patientModel?.BedsoreRisk ?? string.Empty,
-                Control = patientModel?.Control ?? string.Empty,
-                Environment = patientModel?.Environment ?? string.Empty,
-                Legs = patientModel?.Legs ?? true,
-                Pain = patientModel?.Pain ?? string.Empty,
-            };
+                await DisplayAlert("Chybí měření", "Pro tohoto pacienta nejsou uložena žádná měření. Přidejte měření ve správě pacientů.", "OK");
+                return;
+            }
+
+            _navState.ActiveMeasurement = measurement;
             _navState.SelectedComponents.Clear();
             await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
         }

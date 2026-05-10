@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(git checkout *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(Get-ChildItem \"C:\\\\Users\\\\stepa\\\\Desktop\\\\ZSWE-DODELANI\\\\wheelchair-configurator\\\\StableGraphicsLibrary\" -Recurse)",
+      "Bash(Select-Object FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(xargs grep -l \"DllImport\\\\|LoadLibrary\\\\|SetDllDirectory\")",
+      "PowerShell(dotnet build *)",
+      "Bash(xargs grep -l \"class Configuration\")",
+      "Bash(xargs grep -l \"BodyHeight\\\\|PelvisWidth\\\\|ThighLength\")",
+      "Bash(dotnet test *)"
+    ]
+  }
+}

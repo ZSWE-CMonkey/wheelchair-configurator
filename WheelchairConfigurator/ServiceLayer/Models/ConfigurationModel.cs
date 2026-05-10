@@ -1,19 +1,13 @@
 namespace WheelchairConfigurator.ServiceLayer.Models;
 
-/// <summary>
-/// UI model representing a saved configuration.
-/// </summary>
 public class ConfigurationModel
 {
-    /// <summary>Database ID of the configuration.</summary>
     public int Id { get; set; }
-
-    /// <summary>ID of the specialist who created the configuration.</summary>
     public int SpecialistId { get; set; }
-
-    /// <summary>Date and time when the configuration was created.</summary>
+    public string SpecialistName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-
-    /// <summary>Patient identifier string (e.g. "PAT-001") set at save time.</summary>
-    public string PatientIdentificator { get; set; } = string.Empty;
+    public int PatientMeasurementId { get; set; }
+    public string PatientBirthNumber { get; set; } = string.Empty;
+    public string PatientName { get; set; } = string.Empty;
+    public string Hash { get; set; } = string.Empty;
 }

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.ActivityLogPage"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto, *, Auto" Padding="20" RowSpacing="16">
+
+        <Label Grid.Row="0" Text="Historie aktivity"
+               FontSize="22" FontAttributes="Bold" />
+
+        <CollectionView Grid.Row="1"
+                        x:Name="LogList"
+                        SelectionMode="None">
+            <CollectionView.EmptyView>
+                <Label Text="Žádné záznamy" TextColor="Gray"
+                       HorizontalOptions="Center" VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Margin="0,0,0,8" Padding="12" StrokeThickness="1"
+                            Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="12">
+                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Start" MinimumWidthRequest="48">
+                                <Label Text="{Binding OccurredAt, StringFormat='{0:dd.MM.}'}"
+                                       FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                                <Label Text="{Binding OccurredAt, StringFormat='{0:HH:mm}'}"
+                                       FontSize="11" TextColor="Gray" HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="{Binding Action}" FontAttributes="Bold" FontSize="13" />
+                                <Label Text="{Binding SpecialistName}" FontSize="12" TextColor="Gray" />
+                                <Label Text="{Binding Detail}" FontSize="11" TextColor="Gray" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Button Grid.Row="2" Text="Zpět" BackgroundColor="Red"
+                Clicked="OnBackClicked" HorizontalOptions="Fill" />
+
+    </Grid>
+</ContentPage>
