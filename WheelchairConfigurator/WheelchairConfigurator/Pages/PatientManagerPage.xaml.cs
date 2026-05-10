@@ -79,6 +79,12 @@ public partial class PatientManagerPage : ContentPage
         }
     }
 
+    private static bool IsValidBirthNumber(string rc)
+    {
+        var digits = rc.Replace("/", "").Replace(" ", "");
+        return (digits.Length == 9 || digits.Length == 10) && digits.All(char.IsDigit);
+    }
+
     private async Task AddNewPatient()
     {
         var birthNumber = BirthNumberEntry.Text?.Trim() ?? string.Empty;
@@ -88,6 +94,12 @@ public partial class PatientManagerPage : ContentPage
         if (string.IsNullOrWhiteSpace(birthNumber) || string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
         {
             await DisplayAlert("Chyba", "Vyplňte rodné číslo, jméno a příjmení.", "OK");
+            return;
+        }
+
+        if (!IsValidBirthNumber(birthNumber))
+        {
+            await DisplayAlert("Chyba", "Rodné číslo musí mít 9 nebo 10 číslic (formát YYMMDDXXXX nebo YYMMDD/XXXX).", "OK");
             return;
         }
 

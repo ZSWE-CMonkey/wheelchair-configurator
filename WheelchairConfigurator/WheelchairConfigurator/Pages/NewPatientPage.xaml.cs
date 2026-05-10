@@ -203,6 +203,14 @@ public partial class NewPatientPage : ContentPage
         }
 
         SaveAllPanels();
+
+        var digits = _birthNumber.Replace("/", "").Replace(" ", "");
+        if ((digits.Length != 9 && digits.Length != 10) || !digits.All(char.IsDigit))
+        {
+            await DisplayAlert("Chyba", "Rodné číslo musí mít 9 nebo 10 číslic (formát YYMMDDXXXX nebo YYMMDD/XXXX).", "OK");
+            return;
+        }
+
         userInput.Date = DateTime.Today;
 
         var specialist = _navState.ActiveSpecialist;
