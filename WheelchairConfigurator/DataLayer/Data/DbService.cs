@@ -31,6 +31,7 @@ public class DbService
         _db.CreateTable<Specialist>();
         _db.CreateTable<Configuration>();
         _db.CreateTable<ConfigurationItem>();
+        _db.CreateTable<Patient>();
 
         EnsureSchemaUpgrades();
     }
@@ -79,6 +80,7 @@ public class DbService
         _db.DropTable<Specialist>();
         _db.DropTable<Configuration>();
         _db.DropTable<ConfigurationItem>();
+        _db.DropTable<Patient>();
         InitializeDatabase();
     }
 

@@ -20,6 +20,7 @@ public class AppService : IAppService
     private readonly IConfigurationRepository _configurationRepo;
     private readonly IConfigurationItemRepository _configurationItemRepo;
     private readonly ISpecialistRepository _specialistRepo;
+    private readonly IPatientRepository _patientRepo;
     private readonly IConfigurationEngine _engine;
     private readonly IExportFileBuilder _fileBuilder;
 
@@ -29,6 +30,7 @@ public class AppService : IAppService
         IConfigurationRepository configurationRepo,
         IConfigurationItemRepository configurationItemRepo,
         ISpecialistRepository specialistRepo,
+        IPatientRepository patientRepo,
         IConfigurationEngine engine,
         IExportFileBuilder fileBuilder)
     {
@@ -37,6 +39,7 @@ public class AppService : IAppService
         _configurationRepo = configurationRepo;
         _configurationItemRepo = configurationItemRepo;
         _specialistRepo = specialistRepo;
+        _patientRepo = patientRepo;
         _engine = engine;
         _fileBuilder = fileBuilder;
     }
@@ -168,5 +171,29 @@ public class AppService : IAppService
             return new ConfigurationResult { IsSuccess = false, Message = "Komponenta nenalezena." };
         await _componentRepo.DeleteAsync(component);
         return new ConfigurationResult { IsSuccess = true, Message = "Komponenta odstraněna." };
+    }
+
+    /// <inheritdoc/>
+    public async Task SavePatientAsync(PatientModel model)
+    {
+        var existing = await _patientRepo.GetByIdentificatorAsync(model.PatientIdentificator, model.SpecialistId);
+        if (existing is null)
+        {
+            await _patientRepo.InsertAsync(PatientMapper.Map(model));
+        }
+        else
+        {
+            var updated = PatientMapper.Map(model);
+            updated.Id = existing.Id;
+            updated.CreatedAt = existing.CreatedAt;
+            await _patientRepo.UpdateAsync(updated);
+        }
+    }
+
+    /// <inheritdoc/>
+    public async Task<PatientModel?> GetPatientByIdentificatorAsync(string patientIdentificator, int specialistId = 1)
+    {
+        var entity = await _patientRepo.GetByIdentificatorAsync(patientIdentificator, specialistId);
+        return entity is null ? null : PatientMapper.Map(entity);
     }
 }

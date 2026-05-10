@@ -1,4 +1,6 @@
 using WheelchairConfigurator.Components;
+using WheelchairConfigurator.ServiceLayer.Interfaces;
+using WheelchairConfigurator.ServiceLayer.Models;
 using WheelchairConfigurator.Services;
 
 namespace WheelchairConfigurator.Pages;
@@ -8,15 +10,17 @@ public partial class NewPatientPage : ContentPage
     public UserInput userInput = new();
     private readonly List<ContentView> _panels;
     private readonly NavigationState _navState;
+    private readonly IAppService _appService;
 
     private readonly Button _continueBtn;
     private readonly Button _backBtn;
 
     private bool _isLandscape;
 
-    public NewPatientPage(NavigationState navState)
+    public NewPatientPage(NavigationState navState, IAppService appService)
     {
         _navState = navState;
+        _appService = appService;
         InitializeComponent();
 
         _panels =
@@ -197,6 +201,23 @@ public partial class NewPatientPage : ContentPage
 
         SaveAllPanels();
         userInput.Date = DateTime.Today;
+
+        await _appService.SavePatientAsync(new PatientModel
+        {
+            SpecialistId = 1,
+            PatientIdentificator = userInput.patientIdentificator,
+            BodyHeight = userInput.BodyHeight,
+            PelvisWidth = userInput.PelvisWidth,
+            ThighLength = userInput.ThighLength,
+            Weight = userInput.Weight,
+            BodyStability = userInput.BodyStability,
+            HeadStability = userInput.HeadStability,
+            BedsoreRisk = userInput.BedsoreRisk,
+            Control = userInput.Control,
+            Environment = userInput.Environment,
+            Legs = userInput.Legs,
+            Pain = userInput.Pain,
+        });
 
         _navState.Patient = userInput;
         _navState.SelectedComponents.Clear();

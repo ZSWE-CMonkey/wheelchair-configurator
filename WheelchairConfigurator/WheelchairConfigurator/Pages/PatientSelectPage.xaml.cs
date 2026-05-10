@@ -94,10 +94,22 @@ public partial class PatientSelectPage : ContentPage
 
         if (_selectedConfig.IsNew)
         {
+            var patientModel = await _appService.GetPatientByIdentificatorAsync(_selectedConfig.PatientId);
             _navState.Patient = new UserInput
             {
                 patientIdentificator = _selectedConfig.PatientId,
-                Date = DateTime.Today
+                Date = DateTime.Today,
+                BodyHeight = patientModel?.BodyHeight ?? 0,
+                PelvisWidth = patientModel?.PelvisWidth ?? 0,
+                ThighLength = patientModel?.ThighLength ?? 0,
+                Weight = patientModel?.Weight ?? 0,
+                BodyStability = patientModel?.BodyStability ?? string.Empty,
+                HeadStability = patientModel?.HeadStability ?? true,
+                BedsoreRisk = patientModel?.BedsoreRisk ?? string.Empty,
+                Control = patientModel?.Control ?? string.Empty,
+                Environment = patientModel?.Environment ?? string.Empty,
+                Legs = patientModel?.Legs ?? true,
+                Pain = patientModel?.Pain ?? string.Empty,
             };
             _navState.SelectedComponents.Clear();
             await Shell.Current.GoToAsync("wheelchairConfiguratorPage");

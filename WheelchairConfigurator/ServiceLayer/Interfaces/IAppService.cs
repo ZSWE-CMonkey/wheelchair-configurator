@@ -70,4 +70,14 @@ public interface IAppService
     /// Removes a component from the catalog.
     /// </summary>
     Task<ConfigurationResult> RemoveComponentAsync(int componentId);
+
+    /// <summary>
+    /// Saves or updates patient measurements in the database.
+    /// </summary>
+    Task SavePatientAsync(PatientModel patient);
+
+    /// <summary>
+    /// Returns stored patient measurements by identifier, or null if not found.
+    /// </summary>
+    Task<PatientModel?> GetPatientByIdentificatorAsync(string patientIdentificator, int specialistId = 1);
 }

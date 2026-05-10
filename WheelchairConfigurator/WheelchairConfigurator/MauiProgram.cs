@@ -52,6 +52,7 @@ namespace WheelchairConfigurator
             builder.Services.AddSingleton<IConfigurationRepository>(_ => new ConfigurationRepository(asyncDb));
             builder.Services.AddSingleton<IConfigurationItemRepository>(_ => new ConfigurationItemRepository(asyncDb));
             builder.Services.AddSingleton<ISpecialistRepository>(_ => new SpecialistRepository(asyncDb));
+            builder.Services.AddSingleton<IPatientRepository>(_ => new PatientRepository(asyncDb));
 
             // Repositories without interfaces (used directly by pages, not by AppService)
             builder.Services.AddSingleton(_ => new ComponentSpecsRepository(asyncDb));
