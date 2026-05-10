@@ -50,12 +50,11 @@ public sealed class PdfFontResolver : IFontResolver
     /// </summary>
     public byte[]? GetFont(string faceName)
     {
-        // Tady už dynamicky hledáme podle toho, co nám přišlo z ResolveTypeface
         if (_fonts.TryGetValue(faceName, out var bytes))
             return bytes;
 
-        throw new InvalidOperationException(
-            $"Font '{faceName}' is not registered. " +
-            "Call PdfFontResolver.Instance.RegisterFont() before generating the PDF.");
+        // Return any registered font to prevent the Courier New predefined-error-font cascade.
+        // If nothing is registered, return null and let PDFsharp handle the absence.
+        return _fonts.Values.FirstOrDefault();
     }
 }

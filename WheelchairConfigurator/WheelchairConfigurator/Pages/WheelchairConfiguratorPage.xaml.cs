@@ -1,81 +1,35 @@
-﻿using SkiaSharp;
+using SkiaSharp;
 using SkiaSharp.Views.Maui;
 using SkiaSharp.Views.Maui.Controls;
 using WheelchairConfigurator.Helpers;
+using WheelchairConfigurator.ServiceLayer.Interfaces;
+using WheelchairConfigurator.ServiceLayer.Models;
+using WheelchairConfigurator.Services;
 
 namespace WheelchairConfigurator.Pages;
 
-[QueryProperty(nameof(WheelchairId), "wheelchairId")]
 public partial class WheelchairConfiguratorPage : ContentPage
 {
-    private string _wheelchairId = "1";
+    private readonly IAppService _appService;
+    private readonly NavigationState _navState;
 
-    public string WheelchairId
-    {
-        get => _wheelchairId;
-        set
-        {
-            _wheelchairId = value;
-            if (PatientIdLabel != null)
-                LoadMockData();
-        }
-    }
-
-    // ── Mock data ────────────────────────────────────────────────────────────
-
-    private readonly PatientData _patient = new()
-    {
-        PatientIdentificator = "PAT-001",
-        BodyHeight = 175,
-        PelvisWidth = 35,
-        ThighLength = 45,
-        Weight = 70,
-        BodyStability = "Dobrá",
-        HeadStability = true,
-        BedsoreRisk = "Nízké",
-        Control = "Ano",
-        Environment = "Kombinace",
-        Legs = true,
-        Pain = "Nízké",
-        Date = new DateTime(2024, 1, 15)
-    };
-
-    private readonly List<ComponentMock> _components =
-    [
-        new ComponentMock { Id = "RAM-001", Name = "Rám Standard",      Category = "Rám",     IsAvailable = true  },
-        new ComponentMock { Id = "RAM-002", Name = "Rám Sport",         Category = "Rám",     IsAvailable = true  },
-        new ComponentMock { Id = "RAM-003", Name = "Rám Lehký",         Category = "Rám",     IsAvailable = false },
-        new ComponentMock { Id = "MOT-001", Name = "Motor 250W",        Category = "Motor",   IsAvailable = true  },
-        new ComponentMock { Id = "MOT-002", Name = "Motor 500W",        Category = "Motor",   IsAvailable = true  },
-        new ComponentMock { Id = "MOT-003", Name = "Motor 750W",        Category = "Motor",   IsAvailable = false },
-        new ComponentMock { Id = "BAT-001", Name = "Baterie 10Ah",      Category = "Baterie", IsAvailable = true  },
-        new ComponentMock { Id = "BAT-002", Name = "Baterie 20Ah",      Category = "Baterie", IsAvailable = true  },
-        new ComponentMock { Id = "BAT-003", Name = "Baterie 30Ah",      Category = "Baterie", IsAvailable = false },
-        new ComponentMock { Id = "POH-001", Name = "Pohon Přímý",       Category = "Pohon",   IsAvailable = true  },
-        new ComponentMock { Id = "POH-002", Name = "Pohon Převodový",   Category = "Pohon",   IsAvailable = false },
-        new ComponentMock { Id = "SED-001", Name = "Sedák Základní",    Category = "Sedák",   IsAvailable = true  },
-        new ComponentMock { Id = "SED-002", Name = "Sedák Ortopedický", Category = "Sedák",   IsAvailable = true  },
-        new ComponentMock { Id = "OPE-001", Name = "Opěrka Pevná",      Category = "Opěrka",  IsAvailable = true  },
-        new ComponentMock { Id = "OPE-002", Name = "Opěrka Sklopná",    Category = "Opěrka",  IsAvailable = true  },
-    ];
-
-    private readonly Dictionary<string, ComponentMock?> _selectedComponents = [];
-    private readonly Dictionary<string, Border?> _selectedBorders = [];
-
+    private List<CategoryModel> _categories = new();
+    private readonly Dictionary<int, ComponentModel?> _selectedComponents = [];
+    private readonly Dictionary<int, Border?> _selectedBorders = [];
 
     private Bazilišek? _tungTungTungSahur = null;
     private CancellationTokenSource _cts = default!;
     private SKBitmap? _skibidiFrame = null;
     private readonly object _mutex = new();
-
+    private bool _renderUnavailable = false;
 
     private Border _patientPanel = default!;
     private Border _componentsPanel = default!;
     private Border _renderPanel = default!;
     private Button _backBtn = default!;
     private Button _continueBtn = default!;
-    private Button _previewToggleBtn = default!;   
-    private bool _previewVisible = false;           
+    private Button _previewToggleBtn = default!;
+    private bool _previewVisible = false;
 
     private Label PatientIdLabel = default!;
     private Label DateLabel = default!;
@@ -95,23 +49,41 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private bool _isLandscape;
 
+    private static Color ThemeColor(Color light, Color dark) =>
+        Application.Current?.RequestedTheme == AppTheme.Dark ? dark : light;
 
-    public WheelchairConfiguratorPage()
+    public WheelchairConfiguratorPage(IAppService appService, NavigationState navState)
     {
+        _appService = appService;
+        _navState = navState;
+
         InitializeComponent();
 
-        foreach (var category in ComponentCategories.All)
-            _selectedComponents[category] = null;
-
-        _tungTungTungSahur = new Bazilišek("app", 800, 600);
-        _tungTungTungSahur.BrmBrmPatatim("models/test");
-        _tungTungTungSahur.OtevřítKomnatu();
-        _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-        _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
+        if (!IsVulkanSafe())
+        {
+            _renderUnavailable = true;
+        }
+        else
+        {
+            try
+            {
+                _tungTungTungSahur = new Bazilišek("app", 800, 600);
+                _tungTungTungSahur.BrmBrmPatatim("models/test");
+                _tungTungTungSahur.OtevřítKomnatu();
+                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+                _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
+            }
+            catch
+            {
+                _tungTungTungSahur = null;
+                _renderUnavailable = true;
+            }
+        }
 
         BuildSharedViews();
-        LoadMockData();
         StartRenderLoop();
+
+        Dispatcher.Dispatch(async () => await LoadRealData());
     }
 
     ~WheelchairConfiguratorPage()
@@ -119,6 +91,155 @@ public partial class WheelchairConfiguratorPage : ContentPage
         StopRenderLoop();
     }
 
+    private async Task LoadRealData()
+    {
+        var patient = _navState.Patient;
+
+        PatientIdLabel.Text = patient?.patientIdentificator ?? "Nový pacient";
+        DateLabel.Text = patient is not null ? $"Datum: {patient.Date:dd.MM.yyyy}" : "";
+        BodyHeightLabel.Text = patient is not null ? $"Výška trupu: {patient.BodyHeight} cm" : "";
+        PelvisWidthLabel.Text = patient is not null ? $"Šířka pánve: {patient.PelvisWidth} cm" : "";
+        ThighLengthLabel.Text = patient is not null ? $"Délka stehna: {patient.ThighLength} cm" : "";
+        WeightLabel.Text = patient is not null ? $"Hmotnost: {patient.Weight} kg" : "";
+        BodyStabilityLabel.Text = patient is not null ? $"Stabilita trupu: {patient.BodyStability}" : "";
+        HeadStabilityLabel.Text = patient is not null ? $"Kontrola hlavy: {(patient.HeadStability ? "Ano" : "Ne")}" : "";
+        BedsoreRiskLabel.Text = patient is not null ? $"Riziko dekubitů: {patient.BedsoreRisk}" : "";
+        ControlLabel.Text = patient is not null ? $"Ovládání rukou: {patient.Control}" : "";
+        EnvironmentLabel.Text = patient is not null ? $"Prostředí: {patient.Environment}" : "";
+        LegsLabel.Text = patient is not null ? $"Dolní končetiny: {(patient.Legs ? "Ano" : "Ne")}" : "";
+        PainLabel.Text = patient is not null ? $"Bolesti a únava: {patient.Pain}" : "";
+
+        try
+        {
+            _categories = await _appService.GetCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[WheelchairConfiguratorPage] Failed to load categories: " + ex.Message);
+            _categories = new();
+        }
+
+        _selectedComponents.Clear();
+        foreach (var cat in _categories)
+            _selectedComponents[cat.Id] = null;
+
+        await BuildComponentPanels();
+    }
+
+    private async Task BuildComponentPanels()
+    {
+        ComponentsLayout.Children.Clear();
+        var patientProfile = BuildPatientProfile();
+
+        foreach (var category in _categories)
+        {
+            ComponentsLayout.Children.Add(new Label
+            {
+                Text = category.Name,
+                FontAttributes = FontAttributes.Bold,
+                FontSize = 15,
+                Margin = new Thickness(0, 10, 0, 4)
+            });
+
+            List<ComponentModel> components;
+            try
+            {
+                components = await _appService.GetComponentsAsync(category.Id, patientProfile);
+            }
+            catch
+            {
+                components = new();
+            }
+
+            if (!components.Any())
+            {
+                ComponentsLayout.Children.Add(new Label
+                {
+                    Text = "Žádné komponenty",
+                    FontSize = 12,
+                    TextColor = Colors.Gray
+                });
+                continue;
+            }
+
+            foreach (var component in components)
+            {
+                var bgColor = component.IsIncompatible
+                    ? ThemeColor(Color.FromArgb("#F5F5F5"), Color.FromArgb("#3A3A3A"))
+                    : component.IsRecommended
+                        ? ThemeColor(Color.FromArgb("#E8F5E9"), Color.FromArgb("#1B3A1F"))
+                        : ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
+
+                var label = new Label
+                {
+                    Text = component.Name,
+                    FontSize = 13,
+                    TextColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Colors.Black, Colors.White)
+                };
+
+                var border = new Border
+                {
+                    Padding = new Thickness(10, 8),
+                    Margin = new Thickness(0, 2),
+                    StrokeThickness = 1,
+                    Stroke = Colors.LightGray,
+                    BackgroundColor = bgColor,
+                    Content = label
+                };
+
+                if (!component.IsIncompatible)
+                {
+                    var capturedComponent = component;
+                    var capturedBorder = border;
+                    var capturedCategoryId = category.Id;
+                    var tap = new TapGestureRecognizer();
+                    tap.Tapped += (s, e) => OnComponentTapped(capturedComponent, capturedBorder, capturedCategoryId);
+                    border.GestureRecognizers.Add(tap);
+                }
+
+                ComponentsLayout.Children.Add(border);
+            }
+        }
+    }
+
+    private void OnComponentTapped(ComponentModel component, Border tappedBorder, int categoryId)
+    {
+        if (_selectedBorders.TryGetValue(categoryId, out var prev) && prev is not null)
+        {
+            prev.Stroke = Colors.LightGray;
+            prev.BackgroundColor = ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
+        }
+
+        tappedBorder.Stroke = Color.FromArgb("#512BD4");
+        tappedBorder.BackgroundColor = Color.FromArgb("#EDE8FC");
+
+        _selectedBorders[categoryId] = tappedBorder;
+        _selectedComponents[categoryId] = component;
+
+        _continueBtn.IsEnabled = _categories.Count > 0
+            && _selectedComponents.Count == _categories.Count
+            && _selectedComponents.Values.All(c => c is not null);
+    }
+
+    private PatientProfileModel? BuildPatientProfile()
+    {
+        var p = _navState.Patient;
+        if (p is null) return null;
+        return new PatientProfileModel
+        {
+            PelvisWidthCm = (int)p.PelvisWidth,
+            ThighLengthCm = (int)p.ThighLength,
+            LowerLegLengthCm = 0,
+            WeightKg = (int)p.Weight,
+            TrunkStability = p.BodyStability switch
+            {
+                "Dobrá" => TrunkStabilityLevel.Good,
+                "Střední" => TrunkStabilityLevel.Fair,
+                _ => TrunkStabilityLevel.Poor
+            },
+            HasPressureSoresRisk = p.BedsoreRisk == "Vysoké"
+        };
+    }
 
     private void BuildSharedViews()
     {
@@ -140,7 +261,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView
             {
                 Content = new VerticalStackLayout
@@ -151,12 +272,12 @@ public partial class WheelchairConfiguratorPage : ContentPage
                         new Label { Text = "Pacient", FontAttributes = FontAttributes.Bold, FontSize = 16, Margin = new Thickness(0,0,0,8) },
                         PatientIdLabel,
                         DateLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyHeightLabel,
                         PelvisWidthLabel,
                         ThighLengthLabel,
                         WeightLabel,
-                        new BoxView { HeightRequest = 1, Color = Color.FromArgb("#E0E0E0"), Margin = new Thickness(0,6) },
+                        new BoxView { HeightRequest = 1, Color = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")), Margin = new Thickness(0,6) },
                         BodyStabilityLabel,
                         HeadStabilityLabel,
                         BedsoreRiskLabel,
@@ -175,14 +296,14 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = new ScrollView { Content = ComponentsLayout }
         };
 
         Canvas = new SKCanvasView();
         Canvas.PaintSurface += OnPaintSurface;
 
-        var boxView = new BoxView { Color = Colors.White };
+        var boxView = new BoxView { Color = ThemeColor(Colors.White, Color.FromArgb("#1E1E1E")) };
         var pan = new PanGestureRecognizer();
         pan.PanUpdated += OnPanUpdated;
         boxView.GestureRecognizers.Add(pan);
@@ -195,16 +316,15 @@ public partial class WheelchairConfiguratorPage : ContentPage
         {
             Padding = new Thickness(15),
             StrokeThickness = 1,
-            Stroke = Color.FromArgb("#E0E0E0"),
+            Stroke = ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D")),
             Content = renderGrid,
-            IsVisible = false 
+            IsVisible = false
         };
 
         _previewToggleBtn = new Button
         {
             Text = "▶  Zobrazit náhled",
-            BackgroundColor = Color.FromArgb("#F0F0F0"),
-            TextColor = Colors.Black,
+            BackgroundColor = ThemeColor(Color.FromArgb("#F0F0F0"), Color.FromArgb("#2D2D2D")),
             HorizontalOptions = LayoutOptions.Fill,
             FontSize = 13
         };
@@ -227,7 +347,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
         _continueBtn.Clicked += OnContinueClicked;
     }
 
-
     private void OnPreviewToggleClicked(object? sender, EventArgs e)
     {
         _previewVisible = !_previewVisible;
@@ -243,7 +362,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
             ? "◀  Zpět na výběr"
             : "▶  Zobrazit náhled";
     }
-
 
     protected override void OnSizeAllocated(double width, double height)
     {
@@ -277,8 +395,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
                 cv.Content = null;
         }
     }
-
-
 
     private View BuildLandscapeLayout()
     {
@@ -338,13 +454,11 @@ public partial class WheelchairConfiguratorPage : ContentPage
         return outer;
     }
 
-
-
     private View BuildPortraitLayout()
     {
-        _renderPanel.HeightRequest = 330;
-        _renderPanel.WidthRequest = 430;
-        _renderPanel.HorizontalOptions = LayoutOptions.Center;
+        _renderPanel.HeightRequest = 300;
+        _renderPanel.WidthRequest = -1;
+        _renderPanel.HorizontalOptions = LayoutOptions.Fill;
         _patientPanel.HeightRequest = 220;
         _componentsPanel.HeightRequest = 400;
 
@@ -356,16 +470,16 @@ public partial class WheelchairConfiguratorPage : ContentPage
             RowSpacing = 15,
             RowDefinitions =
         {
-            new RowDefinition(GridLength.Auto),  
-            new RowDefinition(GridLength.Auto),  
-            new RowDefinition(GridLength.Auto), 
+            new RowDefinition(GridLength.Auto),
+            new RowDefinition(GridLength.Auto),
+            new RowDefinition(GridLength.Auto),
             new RowDefinition(GridLength.Auto),
         }
         };
 
         Grid.SetRow(_patientPanel, 0);
         Grid.SetRow(_componentsPanel, 1);
-        Grid.SetRow(_renderPanel, 0);  
+        Grid.SetRow(_renderPanel, 0);
         Grid.SetRow(_previewToggleBtn, 2);
         outer.Children.Add(_patientPanel);
         outer.Children.Add(_componentsPanel);
@@ -392,6 +506,19 @@ public partial class WheelchairConfiguratorPage : ContentPage
         return new ScrollView { Content = outer };
     }
 
+    private static bool IsVulkanSafe()
+    {
+#if ANDROID
+        try
+        {
+            string? firstAbi = Android.OS.Build.SupportedAbis?.FirstOrDefault();
+            return firstAbi?.StartsWith("arm", StringComparison.OrdinalIgnoreCase) == true;
+        }
+        catch { return false; }
+#else
+        return true;
+#endif
+    }
 
     private void StartRenderLoop()
     {
@@ -403,13 +530,23 @@ public partial class WheelchairConfiguratorPage : ContentPage
             {
                 if (_tungTungTungSahur == null) { await Task.Yield(); continue; }
 
-                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
-
-                if (frame == null) { await Task.Yield(); continue; }
-
-                _skibidiFrame = frame;
-                MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                try
+                {
+                    _tungTungTungSahur.ToJáJsemVypustilBaziliška();
+                    SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
+                    if (frame != null)
+                    {
+                        _skibidiFrame = frame;
+                        MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                    }
+                }
+                catch
+                {
+                    _tungTungTungSahur = null;
+                    _renderUnavailable = true;
+                    MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
+                    break;
+                }
                 await Task.Delay(6);
             }
         });
@@ -423,113 +560,37 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
-        if (_skibidiFrame == null) return;
         var canvas = e.Surface.Canvas;
-        canvas.Clear();
+        canvas.Clear(Application.Current?.RequestedTheme == AppTheme.Dark ? SKColors.Black : SKColors.White);
+
+        if (_renderUnavailable)
+        {
+            using var paint = new SKPaint { Color = SKColors.Gray, TextSize = 14, IsAntialias = true };
+            canvas.DrawText("3D náhled není k dispozici", 20, e.Info.Height / 2f, paint);
+            return;
+        }
+
+        if (_skibidiFrame == null) return;
         lock (_mutex)
             canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
     }
 
-
-    private void LoadMockData()
-    {
-        PatientIdLabel.Text = _patient.PatientIdentificator;
-        BodyHeightLabel.Text = $"Výška trupu: {_patient.BodyHeight} cm";
-        PelvisWidthLabel.Text = $"Šířka pánve: {_patient.PelvisWidth} cm";
-        ThighLengthLabel.Text = $"Délka stehna: {_patient.ThighLength} cm";
-        WeightLabel.Text = $"Hmotnost: {_patient.Weight} kg";
-        BodyStabilityLabel.Text = $"Stabilita trupu: {_patient.BodyStability}";
-        HeadStabilityLabel.Text = $"Kontrola hlavy: {(_patient.HeadStability ? "Ano" : "Ne")}";
-        BedsoreRiskLabel.Text = $"Riziko dekubitů: {_patient.BedsoreRisk}";
-        ControlLabel.Text = $"Ovládání rukou: {_patient.Control}";
-        EnvironmentLabel.Text = $"Prostředí: {_patient.Environment}";
-        LegsLabel.Text = $"Dolní končetiny: {(_patient.Legs ? "Ano" : "Ne")}";
-        PainLabel.Text = $"Bolesti a únava: {_patient.Pain}";
-        DateLabel.Text = $"Datum: {_patient.Date:dd.MM.yyyy}";
-
-        BuildComponentPanels();
-    }
-
-    private void BuildComponentPanels()
-    {
-        ComponentsLayout.Children.Clear();
-
-        foreach (var category in ComponentCategories.All)
-        {
-            ComponentsLayout.Children.Add(new Label
-            {
-                Text = category,
-                FontAttributes = FontAttributes.Bold,
-                FontSize = 15,
-                Margin = new Thickness(0, 10, 0, 4)
-            });
-
-            foreach (var component in _components.Where(c => c.Category == category))
-            {
-                var border = new Border
-                {
-                    Padding = new Thickness(10, 8),
-                    Margin = new Thickness(0, 2),
-                    StrokeThickness = 1,
-                    Stroke = Colors.LightGray,
-                    BackgroundColor = component.IsAvailable ? Colors.White : Color.FromArgb("#E0E0E0"),
-                    Content = new Label
-                    {
-                        Text = component.Name,
-                        FontSize = 13,
-                        TextColor = component.IsAvailable ? Colors.Black : Colors.Gray
-                    }
-                };
-
-                if (component.IsAvailable)
-                {
-                    var tap = new TapGestureRecognizer();
-                    tap.Tapped += (s, e) => OnComponentTapped(component, border);
-                    border.GestureRecognizers.Add(tap);
-                }
-
-                ComponentsLayout.Children.Add(border);
-            }
-        }
-    }
-
-    private void OnComponentTapped(ComponentMock component, Border tappedBorder)
-    {
-        if (_selectedBorders.TryGetValue(component.Category, out var prev) && prev is not null)
-        {
-            prev.Stroke = Colors.LightGray;
-            prev.BackgroundColor = Colors.White;
-        }
-
-        tappedBorder.Stroke = Color.FromArgb("#512BD4");
-        tappedBorder.BackgroundColor = Color.FromArgb("#EDE8FC");
-
-        _selectedBorders[component.Category] = tappedBorder;
-        _selectedComponents[component.Category] = component;
-
-        _continueBtn.IsEnabled = _selectedComponents.Values.All(c => c is not null);
-    }
-
-
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        if (_tungTungTungSahur != null)
-        {
-            _tungTungTungSahur.ZabijBaziliška();
-        }
+        _tungTungTungSahur?.ZabijBaziliška();
         await Shell.Current.GoToAsync("patientSelectPage");
     }
 
     private async void OnContinueClicked(object sender, EventArgs e)
     {
-        if (_tungTungTungSahur != null)
-        {
-            _tungTungTungSahur.ZabijBaziliška();
-        }
+        _navState.SelectedComponents = _selectedComponents.Values
+            .Where(c => c is not null)
+            .Cast<ComponentModel>()
+            .ToList();
+
+        _tungTungTungSahur?.ZabijBaziliška();
         await Shell.Current.GoToAsync("summaryPage");
     }
-
-
 
     private Point _panStart;
     private bool _panStartSet = false;

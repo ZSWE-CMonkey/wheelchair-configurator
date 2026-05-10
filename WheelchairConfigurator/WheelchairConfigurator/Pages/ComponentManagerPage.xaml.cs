@@ -1,47 +1,17 @@
-﻿namespace WheelchairConfigurator.Pages;
+using WheelchairConfigurator.ServiceLayer.Interfaces;
+using WheelchairConfigurator.ServiceLayer.Models;
 
-public class CategoryMock
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-}
-
-public class ComponentItemMock
-{
-    public string Id { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string CategoryId { get; set; } = string.Empty;
-}
+namespace WheelchairConfigurator.Pages;
 
 public partial class ComponentManagerPage : ContentPage
 {
-    private readonly List<CategoryMock> _categories =
-    [
-        new() { Id = "CAT-001", Name = "Rám"     },
-        new() { Id = "CAT-002", Name = "Motor"   },
-        new() { Id = "CAT-003", Name = "Baterie" },
-        new() { Id = "CAT-004", Name = "Pohon"   },
-        new() { Id = "CAT-005", Name = "Sedák"   },
-        new() { Id = "CAT-006", Name = "Opěrka"  },
-    ];
-
-    private readonly List<ComponentItemMock> _components =
-    [
-        new() { Id = "RAM-001", Name = "Rám Standard",      Description = "Základní ocelový rám",        CategoryId = "CAT-001" },
-        new() { Id = "RAM-002", Name = "Rám Sport",          Description = "Lehký hliníkový rám",         CategoryId = "CAT-001" },
-        new() { Id = "MOT-001", Name = "Motor 250W",         Description = "Úsporný motor do interiéru",  CategoryId = "CAT-002" },
-        new() { Id = "MOT-002", Name = "Motor 500W",         Description = "Výkonný motor do terénu",     CategoryId = "CAT-002" },
-        new() { Id = "BAT-001", Name = "Baterie 10Ah",       Description = "Kompaktní baterie",           CategoryId = "CAT-003" },
-        new() { Id = "BAT-002", Name = "Baterie 20Ah",       Description = "Standardní baterie",          CategoryId = "CAT-003" },
-        new() { Id = "POH-001", Name = "Pohon Přímý",        Description = "Jednoduchý přímý pohon",      CategoryId = "CAT-004" },
-        new() { Id = "SED-001", Name = "Sedák Základní",     Description = "Standardní sedák",            CategoryId = "CAT-005" },
-        new() { Id = "SED-002", Name = "Sedák Ortopedický",  Description = "Tvarovaný ortopedický sedák", CategoryId = "CAT-005" },
-        new() { Id = "OPE-001", Name = "Opěrka Pevná",       Description = "Pevná opěrka zad",            CategoryId = "CAT-006" },
-    ];
-
-    private ComponentItemMock? _selectedComponent;
+    private readonly IAppService _appService;
+    private List<CategoryModel> _categories = new();
+    private ComponentModel? _selectedComponent;
     private bool _isLandscape;
+
+    private static Color ThemeColor(Color light, Color dark) =>
+        Application.Current?.RequestedTheme == AppTheme.Dark ? dark : light;
 
     private readonly Picker _categoryPicker;
     private readonly Entry _nameEntry;
@@ -51,9 +21,11 @@ public partial class ComponentManagerPage : ContentPage
     private readonly Label _componentListTitle;
     private readonly Button _removeBtn;
 
-    public ComponentManagerPage()
+    public ComponentManagerPage(IAppService appService)
     {
+        _appService = appService;
         InitializeComponent();
+
         _categoryPicker = new Picker { Title = "Vyberte kategorii", HorizontalOptions = LayoutOptions.Fill };
         _nameEntry = new Entry { Placeholder = "Zadejte název", HorizontalOptions = LayoutOptions.Fill };
         _descriptionEditor = new Editor { Placeholder = "Zadejte popis", HeightRequest = 60, HorizontalOptions = LayoutOptions.Fill };
@@ -88,7 +60,15 @@ public partial class ComponentManagerPage : ContentPage
         };
         _removeBtn.Clicked += OnRemoveComponentClicked;
 
+        Dispatcher.Dispatch(async () => await LoadData());
+    }
+
+    private async Task LoadData()
+    {
+        _categories = await _appService.GetCategoriesAsync();
         _categoryList.ItemsSource = _categories;
+
+        _categoryPicker.Items.Clear();
         foreach (var cat in _categories)
             _categoryPicker.Items.Add(cat.Name);
     }
@@ -124,7 +104,6 @@ public partial class ComponentManagerPage : ContentPage
         }
     }
 
-
     private View BuildLandscapeLayout()
     {
         var grid = new Grid
@@ -133,9 +112,8 @@ public partial class ComponentManagerPage : ContentPage
             ColumnSpacing = 20
         };
 
-        Grid.SetColumn(AddSection(), 0);
         var add = AddSection();
-        var remove = RemoveSection(collectionHeight: 0); 
+        var remove = RemoveSection(collectionHeight: 0);
 
         Grid.SetColumn(add, 0);
         Grid.SetColumn(remove, 1);
@@ -144,7 +122,6 @@ public partial class ComponentManagerPage : ContentPage
 
         return grid;
     }
-
 
     private View BuildPortraitLayout()
     {
@@ -226,7 +203,7 @@ public partial class ComponentManagerPage : ContentPage
     {
         Padding = new Thickness(20),
         StrokeThickness = 1,
-        Stroke = new SolidColorBrush(Color.FromArgb("#E0E0E0")),
+        Stroke = new SolidColorBrush(ThemeColor(Color.FromArgb("#E0E0E0"), Color.FromArgb("#3D3D3D"))),
         Content = content
     };
 
@@ -241,37 +218,68 @@ public partial class ComponentManagerPage : ContentPage
     {
         var name = new Label { FontAttributes = FontAttributes.Bold, FontSize = 14 };
         name.SetBinding(Label.TextProperty, "Name");
-        var desc = new Label { FontSize = 12, TextColor = Colors.Gray };
-        desc.SetBinding(Label.TextProperty, "Description");
-        var stack = new VerticalStackLayout();
-        stack.Children.Add(name);
-        stack.Children.Add(desc);
-        return new Border { Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(12), StrokeThickness = 1, Stroke = new SolidColorBrush(Color.FromArgb("#E0E0E0")), Content = stack };
+        return new Border { Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(12), StrokeThickness = 1, Stroke = new SolidColorBrush(Color.FromArgb("#E0E0E0")), Content = name };
     });
 
     private void OnCategorySelected(object? sender, SelectionChangedEventArgs e)
     {
-        if (e.CurrentSelection.FirstOrDefault() is not CategoryMock selected) return;
+        if (e.CurrentSelection.FirstOrDefault() is not CategoryModel selected) return;
         _selectedComponent = null;
         _removeBtn.IsEnabled = false;
         _componentListTitle.Text = selected.Name;
-        _componentList.ItemsSource = _components.Where(c => c.CategoryId == selected.Id).ToList();
+        Dispatcher.Dispatch(async () =>
+        {
+            var components = await _appService.GetComponentsAsync(selected.Id);
+            _componentList.ItemsSource = components;
+        });
     }
 
     private void OnComponentSelected(object? sender, SelectionChangedEventArgs e)
     {
-        _selectedComponent = e.CurrentSelection.FirstOrDefault() as ComponentItemMock;
+        _selectedComponent = e.CurrentSelection.FirstOrDefault() as ComponentModel;
         _removeBtn.IsEnabled = _selectedComponent is not null;
     }
 
-    private void OnAddComponentClicked(object? sender, EventArgs e)
+    private async void OnAddComponentClicked(object? sender, EventArgs e)
     {
-        // TODO: Saving function
+        var selectedCatIndex = _categoryPicker.SelectedIndex;
+        if (selectedCatIndex < 0 || string.IsNullOrWhiteSpace(_nameEntry.Text))
+        {
+            await DisplayAlert("Chyba", "Vyberte kategorii a zadejte název.", "OK");
+            return;
+        }
+        var category = _categories[selectedCatIndex];
+        var result = await _appService.AddComponentAsync(_nameEntry.Text, category.Id);
+        if (result.IsSuccess)
+        {
+            _nameEntry.Text = "";
+            _descriptionEditor.Text = "";
+            await LoadData();
+        }
+        else
+        {
+            await DisplayAlert("Chyba", result.Message, "OK");
+        }
     }
 
-    private void OnRemoveComponentClicked(object? sender, EventArgs e)
+    private async void OnRemoveComponentClicked(object? sender, EventArgs e)
     {
-        // TODO: remove function
+        if (_selectedComponent is null) return;
+        var result = await _appService.RemoveComponentAsync(_selectedComponent.Id);
+        if (result.IsSuccess)
+        {
+            _selectedComponent = null;
+            _removeBtn.IsEnabled = false;
+            if (_categoryList.SelectedItem is CategoryModel cat)
+            {
+                var components = await _appService.GetComponentsAsync(cat.Id);
+                _componentList.ItemsSource = components;
+            }
+        }
+        else
+        {
+            await DisplayAlert("Chyba", result.Message, "OK");
+        }
     }
 
     private async void OnBackClicked(object? sender, EventArgs e)

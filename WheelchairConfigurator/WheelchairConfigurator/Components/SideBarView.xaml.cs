@@ -33,7 +33,6 @@ public partial class SideBarView : ContentView, ISideBar
                     Placeholder = "Zadejte",
                     PlaceholderColor = Colors.Gray,
                     Keyboard = field.Keyboard,
-                    BackgroundColor = Color.FromArgb("FFFFFF"),
                     MaxLength = field.MaxLength,
                 };
                 entry.TextChanged += (_, _) => field.OnSave(entry.Text ?? String.Empty);
@@ -57,19 +56,8 @@ public partial class SideBarView : ContentView, ISideBar
         }
         Content = new Border
         {
-            BackgroundColor = Color.FromArgb("FFFFFF"),
             StrokeThickness = 0,
             HorizontalOptions = LayoutOptions.Fill,
-            Content = layout
-        };
-    
-
-
-    Content = new Border
-        {
-            BackgroundColor = Color.FromArgb("FFFFFF"),
-            StrokeThickness = 0,
-            WidthRequest = 250,
             Content = layout
         };
     }

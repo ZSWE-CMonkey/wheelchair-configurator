@@ -13,4 +13,7 @@ public class ConfigurationModel
 
     /// <summary>Date and time when the configuration was created.</summary>
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Patient identifier string (e.g. "PAT-001") set at save time.</summary>
+    public string PatientIdentificator { get; set; } = string.Empty;
 }

@@ -14,13 +14,15 @@ public static class ConfigurationMapper
     {
         Id = entity.Id,
         SpecialistId = entity.SpecialistId,
-        CreatedAt = entity.CreatedAt
+        CreatedAt = entity.CreatedAt,
+        PatientIdentificator = entity.PatientIdentificator
     };
 
     /// <summary>Converts a ConfigurationRequest from UI to a Configuration entity for DB.</summary>
     public static Configuration Map(ConfigurationRequest request) => new()
     {
         SpecialistId = request.SpecialistId,
-        CreatedAt = DateTime.Now
+        CreatedAt = DateTime.Now,
+        PatientIdentificator = request.PatientIdentificator
     };
 }

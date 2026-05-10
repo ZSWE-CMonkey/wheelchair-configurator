@@ -117,7 +117,7 @@ public class ConfigurationTableComponent : IPdfComponent
         AddCell(row, 1, Truncate(item.ComponentName, MaxNameLength));
         AddCell(row, 2, item.ItemCode, ParagraphAlignment.Right);
         AddCell(row, 3, item.Quantity.ToString(), ParagraphAlignment.Right);
-        AddCell(row, 4, $"${item.Price:N2}", ParagraphAlignment.Right);
+        AddCell(row, 4, $"{item.Price:N2} Kč", ParagraphAlignment.Right);
     }
 
     /// <summary>
@@ -133,7 +133,7 @@ public class ConfigurationTableComponent : IPdfComponent
         var label = paragraph.AddFormattedText("Celková cena: ");
         label.Font.Size = 16;
 
-        var price = paragraph.AddFormattedText($"${_model.TotalPrice:N2}");
+        var price = paragraph.AddFormattedText($"{_model.TotalPrice:N2} Kč");
         price.Font.Size = 16;
         price.Font.Color = PdfDocumentColors.PrimaryBlue;
     }
