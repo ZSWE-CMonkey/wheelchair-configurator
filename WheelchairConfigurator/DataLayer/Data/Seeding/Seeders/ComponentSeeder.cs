@@ -30,7 +30,9 @@ public class ComponentSeeder
                 Name = dto.Name,
                 CategoryId = categoryId,
                 CatalogUrl = dto.CatalogUrl,
-                Price = dto.Price
+                Price = dto.Price,
+                Manufacturer = dto.Manufacturer,
+                ManufacturerCode = dto.ManufacturerCode
             };
             db.Insert(entity);
             map[dto.Name] = entity.Id;

@@ -102,6 +102,7 @@ namespace WheelchairConfigurator
             builder.Services.AddTransient<PatientManagerPage>();
             builder.Services.AddTransient<SettingsPage>();
             builder.Services.AddTransient<ActivityLogPage>();
+            builder.Services.AddTransient<NewMeasurementPage>();
 
             var app = builder.Build();
 

@@ -33,157 +33,219 @@
         {
             "Name": "Battery, 73Ah, 12V, group 24",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-73-G24"
         },
         {
             "Name": "Battery, Permobil, 85Ah, 12V, group 24",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-85-G24"
         },
         {
             "Name": "Battery, 97Ah, 12V, group 27",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-97-G27"
         },
         {
             "Name": "Battery, 60Ah, 12V, group 34",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-60-G34"
         },
         {
             "Name": "Battery, Permobil, 65Ah, 12V, group 34",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-65-G34"
         },
         {
             "Name": "Battery, 40Ah, 12V, group 40",
             "CategoryName": "Battery",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BAT-40-G40"
         },
         {
             "Name": "Motor, AP-Unit, front, Corpus/CorpusVS",
             "CategoryName": "Motor",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "MOT-AP-FRONT"
         },
         {
             "Name": "Joystick, CJSM2, R-net",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-CJSM2-RN"
         },
         {
             "Name": "CTRL PANEL INCL CABL X850*",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-PANEL-X850"
         },
         {
             "Name": "JOYSTICK COMPACT OMNI LIGHT",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-OMNI-LT"
         },
         {
             "Name": "JOYSTICK, CJSM2, HIGH SPEED BUS",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-CJSM2-HS"
         },
         {
             "Name": "JOYSTICK R-NET CJSM HEAVY DUTY",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-CJSM-HD"
         },
         {
             "Name": "SIP & PUFF",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-SIP-PUFF"
         },
         {
             "Name": "JOYSTICK FOR PROPORTIONAL HEAD CONTROL",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-HEAD-PROP"
         },
         {
             "Name": "PROPORTIONAL CHIN CONTROL MANUAL WITHOUT JOYSTICK",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-CHIN-MAN"
         },
         {
             "Name": "JOYSTICK, MULTI JOYSTICK FOR OMNI2",
             "CategoryName": "Control system",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "CTL-OMNI2-MJ"
         },
         {
             "Name": "Wheel, caster, 210x65, solid",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-210-SOL"
         },
         {
             "Name": "Wheel, caster, 210x65, solid, black",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-210-SOLBLK"
         },
         {
             "Name": "WHEEL 3.00 - 8\" FRONT X850*",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-300-8F-X850"
         },
         {
             "Name": "Wheel, drive, 3.00x8\", solid,black",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-300-8-SOLBLK"
         },
         {
             "Name": "WHEEL AIR 210 x 65 BLACK",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-210-AIRBLK"
         },
         {
             "Name": "Wheel, rear, 3.5x10\" studded, w/hubcap, X850",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-350-10R-X850"
         },
         {
             "Name": "WHEEL 13x5,00-6\" AIR",
             "CategoryName": "Wheel",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "WHL-1300-6-AIR"
         },
         {
             "Name": "SEAT FRAME ADJ 520-570 mm",
             "CategoryName": "Frame",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "FRM-SEAT-520"
         },
         {
             "Name": "SEAT FRAME ADJ 445-495 mm",
             "CategoryName": "Frame",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "FRM-SEAT-445"
         },
         {
             "Name": "TUBULAR BACKREST FRAME C3G",
             "CategoryName": "Backrest",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BKR-TUB-C3G"
         },
         {
             "Name": "Seat frame, 355 mm, M1",
             "CategoryName": "Frame",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "FRM-SEAT-355-M1"
         },
         {
             "Name": "Headrest, ergo, black KN T, w/short backrest mount",
             "CategoryName": "Headrest",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "HRS-ERGO-KNT"
         },
         {
             "Name": "Direct Backrest Adapter C 3G",
             "CategoryName": "Backrest",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BKR-ADP-C3G"
         },
         {
             "Name": "Backrest Kit Adj. 460 mm",
             "CategoryName": "Backrest",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "BKR-KIT-460"
         },
         {
             "Name": "Headrest M Long Arm Short Backrest",
             "CategoryName": "Backrest",
-            "Price": 0.00
+            "Price": 0.00,
+            "Manufacturer": "Permobil",
+            "ManufacturerCode": "HRS-M-LONG-SHORT"
         }
     ],
     "Rules": [],
