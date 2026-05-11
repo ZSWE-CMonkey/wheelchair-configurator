@@ -34,6 +34,32 @@ VkResult VkLoader::MeshHandle::LoadMesh(std::string const& filename)
 	return VK_SUCCESS;
 }
 
+VkResult VkLoader::MeshHandle::LoadMeshFromFile(std::string const& filepath)
+{
+	const int flags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
+
+	m_scene = m_importer.ReadFile(filepath, flags);
+
+	if (!m_scene)
+		return VK_ERROR_UNKNOWN;
+
+	m_entries.resize(m_scene->mNumMeshes);
+
+	for (unsigned int i = 0; i < m_entries.size(); i++)
+	{
+		m_entries[i].vertexBase = m_numVertices;
+		m_numVertices += m_scene->mMeshes[i]->mNumVertices;
+	}
+
+	for (unsigned int i = 0; i < m_entries.size(); i++)
+	{
+		const aiMesh* paiMesh = m_scene->mMeshes[i];
+		InitMesh(i, paiMesh);
+	}
+
+	return VK_SUCCESS;
+}
+
 uint32_t VkLoader::MeshHandle::GetEntriesSize() const
 {
 	return m_entries.size();

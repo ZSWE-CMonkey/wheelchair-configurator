@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 #include "VulkanCommon.h"
 #include "VulkanSwapchain.h"
@@ -60,6 +61,7 @@ namespace VkEngine {
 		VkResult SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation);
 
 		VkResult AddObject(std::string objectId);
+		VkResult AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath);
 
 		VkResult InitVulkan(std::string appName, uint32_t width, uint32_t height);
 
@@ -117,7 +119,9 @@ namespace VkEngine {
 		VkResult CreateOffscreenFrameBuffer();
 
 		VkResult LoadMesh(std::string id);
+		VkResult LoadMeshFromFile(const std::string& path);
 		VkResult LoadTexture(std::string id);
+		VkResult LoadTextureFromFile(const std::string& path);
 		VkResult LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out);
 
 		std::unique_ptr<VulkanSwapchain> m_vulkanSwapchain = nullptr;
@@ -177,6 +181,9 @@ namespace VkEngine {
 		std::vector<Mesh> m_meshes{};
 
 		std::vector<std::string> m_objectId{};
+
+		struct ObjectFilePaths { std::string daePath; std::string ktxPath; };
+		std::unordered_map<std::string, ObjectFilePaths> m_objectFilePaths{};
 
 		struct {
 			VkSemaphore presentComplete;

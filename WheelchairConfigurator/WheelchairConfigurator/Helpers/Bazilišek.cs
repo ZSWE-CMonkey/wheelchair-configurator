@@ -75,6 +75,16 @@ namespace WheelchairConfigurator.Helpers
             return this;
         }
 
+        /// <summary>
+        /// Adds object from absolute filesystem paths (no recompile needed for new models).
+        /// Must be called before OtevřítKomnatu.
+        /// </summary>
+        public Bazilišek BrmBrmPatatimZesouboru(string objectId, string daeAbsolutePath, string ktxAbsolutePath)
+        {
+            _graphicsPlugin.AddResourceFromFiles(objectId, daeAbsolutePath, ktxAbsolutePath);
+            return this;
+        }
+
         public void ClearObjects()
         {
             _objectsId.Clear();

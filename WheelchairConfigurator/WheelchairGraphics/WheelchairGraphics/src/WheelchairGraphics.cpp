@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <unordered_map>
 
 using namespace GraphicsPlugin;
 
@@ -13,6 +14,8 @@ namespace {
 	GraphicsPluginPtr g_graphicsPlugin = nullptr;
 
 	std::vector<std::string> g_objects{};
+
+	std::unordered_map<std::string, std::pair<std::string, std::string>> g_objectFilePaths{};
 
 	std::unique_ptr<CameraSettings> g_cameraSettings = nullptr;
 
@@ -27,7 +30,11 @@ WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, int width, int 
 		throw std::runtime_error("Graphics plugin was not created");
 
 	for (auto& id : g_objects) {
-		g_graphicsPlugin->AddObject(id);
+		auto it = g_objectFilePaths.find(id);
+		if (it != g_objectFilePaths.end())
+			g_graphicsPlugin->AddObjectFromFiles(id, it->second.first, it->second.second);
+		else
+			g_graphicsPlugin->AddObject(id);
 	}
 
 	if (g_cameraSettings)
@@ -49,8 +56,13 @@ WG_API void wgInitializeVulkanGraphicsANDROID(const char* appName, int width, in
 	if (!g_graphicsPlugin)
 		throw std::runtime_error("Graphics plugin was not created");
 
-	for (auto& id : g_objects)
-		g_graphicsPlugin->AddObject(id);
+	for (auto& id : g_objects) {
+		auto it = g_objectFilePaths.find(id);
+		if (it != g_objectFilePaths.end())
+			g_graphicsPlugin->AddObjectFromFiles(id, it->second.first, it->second.second);
+		else
+			g_graphicsPlugin->AddObject(id);
+	}
 
 	if (g_cameraSettings)
 		g_graphicsPlugin->SetCamera(*g_cameraSettings);
@@ -88,6 +100,11 @@ WG_API void wgAddObject(const char* objectId) {
 	g_objects.push_back(std::string(objectId));
 }
 
+WG_API void wgAddObjectFromFiles(const char* objectId, const char* daeAbsolutePath, const char* ktxAbsolutePath) {
+	g_objects.push_back(std::string(objectId));
+	g_objectFilePaths[std::string(objectId)] = { std::string(daeAbsolutePath), std::string(ktxAbsolutePath) };
+}
+
 WG_API void wgRender(const char** out)
 {
 	if (!g_graphicsPlugin)
@@ -98,6 +115,7 @@ WG_API void wgRender(const char** out)
 
 WG_API void wgDeinitializeGraphics() {
 	g_objects.clear();
+	g_objectFilePaths.clear();
 	g_cameraSettings = nullptr;
 
 	if (!g_graphicsPlugin)

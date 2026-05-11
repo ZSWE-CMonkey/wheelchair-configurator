@@ -10,6 +10,7 @@ namespace VkLoader {
 		VkResult Initialize();
 
 		VkResult LoadTexture(std::string filename, VkFormat format, VkEngine::VulkanTexture* texture);
+		VkResult LoadTextureFromFile(std::string filepath, VkFormat format, VkEngine::VulkanTexture* texture);
 
 		void SetImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkImageSubresourceRange subresourceRange);
 

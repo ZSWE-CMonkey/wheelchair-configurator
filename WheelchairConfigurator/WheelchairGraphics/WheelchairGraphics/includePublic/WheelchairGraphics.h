@@ -26,6 +26,8 @@ extern "C" WG_API void wgSetCamera(float zoom, float x, float y, float z, float 
 
 extern "C" WG_API void wgAddObject(const char* objectId);
 
+extern "C" WG_API void wgAddObjectFromFiles(const char* objectId, const char* daeAbsolutePath, const char* ktxAbsolutePath);
+
 extern "C" WG_API void wgRender(const char** out);
 
 extern "C" WG_API void wgDeinitializeGraphics();

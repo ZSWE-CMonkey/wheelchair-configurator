@@ -45,6 +45,14 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObject(std::string object
     return GP_SUCCESS;
 }
 
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath)
+{
+    if (m_vulkanEngine->AddObjectFromFiles(objectId, daePath, ktxPath) != VK_SUCCESS)
+        return GP_ADD_OBJECT_ERROR;
+
+    return GP_SUCCESS;
+}
+
 GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::Render(const char** out)
 {
     if (out == nullptr)

@@ -18,6 +18,9 @@ namespace ConfigurationLogic.Graphics
         private static extern void wgAddObject(string objectId);
 
         [DllImport("WheelchairGraphics")]
+        private static extern void wgAddObjectFromFiles(string objectId, string daeAbsolutePath, string ktxAbsolutePath);
+
+        [DllImport("WheelchairGraphics")]
         private static extern void wgRender(out IntPtr outBuffer);
 
         [DllImport("WheelchairGraphics")]
@@ -61,6 +64,11 @@ namespace ConfigurationLogic.Graphics
         public void AddResource(string resourceId)
         {
             wgAddObject(resourceId);
+        }
+
+        public void AddResourceFromFiles(string objectId, string daePath, string ktxPath)
+        {
+            wgAddObjectFromFiles(objectId, daePath, ktxPath);
         }
 
         public void ClearResources()

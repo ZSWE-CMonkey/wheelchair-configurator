@@ -12,6 +12,11 @@ namespace ConfigurationLogic.Graphics
             _imageBuffer = CreateBlankImage(width, height);
         }
 
+        public void AddResourceFromFiles(string objectId, string daePath, string ktxPath)
+        {
+            AddResource(objectId);
+        }
+
         public void AddResource(string resourceId)
         {
             using Stream stream = Task.Run(() => FileSystem.OpenAppPackageFileAsync(resourceId)).Result;

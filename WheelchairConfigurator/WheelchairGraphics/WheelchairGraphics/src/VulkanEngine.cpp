@@ -215,6 +215,13 @@ VkResult VkEngine::VulkanEngine::AddObject(std::string objectId)
 	return VK_SUCCESS;
 }
 
+VkResult VkEngine::VulkanEngine::AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath)
+{
+	m_objectId.push_back(objectId);
+	m_objectFilePaths[objectId] = { daePath, ktxPath };
+	return VK_SUCCESS;
+}
+
 VkResult VulkanEngine::InitVulkan(std::string appName, uint32_t width, uint32_t height)
 {
 	m_width = width;
@@ -1159,7 +1166,11 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 		return VK_ERROR_INITIALIZATION_FAILED;
 
 	for (auto& id : m_objectId) {
-		{
+		auto it = m_objectFilePaths.find(id);
+		if (it != m_objectFilePaths.end()) {
+			VKE_CHECK_RESULT(LoadTextureFromFile(it->second.ktxPath));
+			VKE_CHECK_RESULT(LoadMeshFromFile(it->second.daePath));
+		} else {
 			VKE_CHECK_RESULT(LoadTexture(id + ".ktx"));
 			VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
 		}
@@ -1428,6 +1439,138 @@ VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 	return VK_SUCCESS;
 }
 
+VkResult VkEngine::VulkanEngine::LoadMeshFromFile(const std::string& path)
+{
+	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
+	meshHandle->LoadMeshFromFile(path);
+
+	m_meshes.push_back({});
+
+	Mesh& newMesh = m_meshes[m_meshes.size() - 1];
+
+	float scale = 1.0f;
+	std::vector<Vertex> vertexBuffer;
+	for (uint32_t m = 0; m < meshHandle->GetEntriesSize(); m++)
+	{
+		for (uint32_t i = 0; i < meshHandle->GetEntry(m).Vertices.size(); i++)
+		{
+			Vertex vertex;
+
+			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos * scale;
+			vertex.normal = meshHandle->GetEntry(m).Vertices[i].m_normal;
+			vertex.uv = meshHandle->GetEntry(m).Vertices[i].m_tex;
+			vertex.color = meshHandle->GetEntry(m).Vertices[i].m_color;
+
+			vertexBuffer.push_back(vertex);
+		}
+	}
+	uint32_t vertexBufferSize = vertexBuffer.size() * sizeof(Vertex);
+
+	std::vector<uint32_t> indexBuffer;
+	for (uint32_t m = 0; m < meshHandle->GetEntriesSize(); m++)
+	{
+		uint32_t indexBase = indexBuffer.size();
+		for (uint32_t i = 0; i < meshHandle->GetEntry(m).Indices.size(); i++)
+		{
+			indexBuffer.push_back(meshHandle->GetEntry(m).Indices[i] + indexBase);
+		}
+	}
+	uint32_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
+	newMesh.indices.count = indexBuffer.size();
+
+	bool useStaging = true;
+
+	if (useStaging)
+	{
+		struct {
+			VkBuffer buffer;
+			VkDeviceMemory memory;
+		} vertexStaging, indexStaging;
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			vertexBufferSize,
+			vertexBuffer.data(),
+			&vertexStaging.buffer,
+			&vertexStaging.memory));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			indexBufferSize,
+			indexBuffer.data(),
+			&indexStaging.buffer,
+			&indexStaging.memory));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			vertexBufferSize,
+			nullptr,
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			indexBufferSize,
+			nullptr,
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
+
+		VkCommandBuffer copyCmd{};
+		VKE_CHECK_RESULT(CreateCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true, copyCmd));
+
+		VkBufferCopy copyRegion = {};
+
+		copyRegion.size = vertexBufferSize;
+		vkCmdCopyBuffer(
+			copyCmd,
+			vertexStaging.buffer,
+			newMesh.vertices.buf,
+			1,
+			&copyRegion);
+
+		copyRegion.size = indexBufferSize;
+		vkCmdCopyBuffer(
+			copyCmd,
+			indexStaging.buffer,
+			newMesh.indices.buf,
+			1,
+			&copyRegion);
+
+		VKE_CHECK_RESULT(FlushCommandBuffer(copyCmd, m_queue, true));
+
+		vkDestroyBuffer(m_device, vertexStaging.buffer, nullptr);
+		vkFreeMemory(m_device, vertexStaging.memory, nullptr);
+		vkDestroyBuffer(m_device, indexStaging.buffer, nullptr);
+		vkFreeMemory(m_device, indexStaging.memory, nullptr);
+	}
+	else
+	{
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			vertexBufferSize,
+			vertexBuffer.data(),
+			&newMesh.vertices.buf,
+			&newMesh.vertices.mem));
+
+		VKE_CHECK_RESULT(CreateBuffer(
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+			indexBufferSize,
+			indexBuffer.data(),
+			&newMesh.indices.buf,
+			&newMesh.indices.mem));
+	}
+
+	meshHandle = nullptr;
+
+	return VK_SUCCESS;
+}
+
 VkResult VkEngine::VulkanEngine::LoadTexture(std::string id)
 {
 	m_colorMaps.push_back({});
@@ -1437,6 +1580,19 @@ VkResult VkEngine::VulkanEngine::LoadTexture(std::string id)
 
 	return m_textureHandle->LoadTexture(
 		id,
+		VK_FORMAT_BC3_UNORM_BLOCK,
+		&vulkanTexture);
+}
+
+VkResult VkEngine::VulkanEngine::LoadTextureFromFile(const std::string& path)
+{
+	m_colorMaps.push_back({});
+	m_descriptorSets.push_back({});
+
+	VulkanTexture& vulkanTexture = m_colorMaps[m_colorMaps.size() - 1];
+
+	return m_textureHandle->LoadTextureFromFile(
+		path,
 		VK_FORMAT_BC3_UNORM_BLOCK,
 		&vulkanTexture);
 }

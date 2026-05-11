@@ -58,6 +58,7 @@ namespace VkLoader {
 		~MeshHandle();
 
 		VkResult LoadMesh(std::string const& filename);
+		VkResult LoadMeshFromFile(std::string const& filepath);
 
 		uint32_t GetEntriesSize() const;
 		MeshEntry const& GetEntry(uint32_t index) const;
