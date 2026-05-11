@@ -54,6 +54,13 @@ namespace {
 	}
 }
 
+static bool HasStencilComponent(VkFormat format)
+{
+	return format == VK_FORMAT_D32_SFLOAT_S8_UINT
+		|| format == VK_FORMAT_D24_UNORM_S8_UINT
+		|| format == VK_FORMAT_D16_UNORM_S8_UINT;
+}
+
 
 VkEngine::VulkanEngine::VulkanEngine()
 {
@@ -454,7 +461,9 @@ VkResult VkEngine::VulkanEngine::SetupDepthStencil()
 	depthStencilView.format = m_depthFormat;
 	depthStencilView.flags = 0;
 	depthStencilView.subresourceRange = {};
-	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	if (HasStencilComponent(m_depthFormat))
+		depthStencilView.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 	depthStencilView.subresourceRange.baseMipLevel = 0;
 	depthStencilView.subresourceRange.levelCount = 1;
 	depthStencilView.subresourceRange.baseArrayLayer = 0;
@@ -473,7 +482,9 @@ VkResult VkEngine::VulkanEngine::SetupDepthStencil()
 	SetImageLayoutInfo setImageLayoutInfo{};
 	setImageLayoutInfo.cmdbuffer = m_setupCmdBuffer;
 	setImageLayoutInfo.image = m_depthStencil.image;
-	setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	if (HasStencilComponent(m_depthFormat))
+		setImageLayoutInfo.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 	setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -1092,11 +1103,11 @@ void VulkanEngine::CreateSumbitInfo()
 {
 	m_submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	m_submitInfo.pNext = NULL;
-	m_submitInfo.pWaitDstStageMask = &m_submitPipelineStages;
-	m_submitInfo.waitSemaphoreCount = 1;
-	m_submitInfo.pWaitSemaphores = &m_semaphores.presentComplete;
-	m_submitInfo.signalSemaphoreCount = 1;
-	m_submitInfo.pSignalSemaphores = &m_semaphores.renderComplete;
+	m_submitInfo.pWaitDstStageMask = nullptr;
+	m_submitInfo.waitSemaphoreCount = 0;
+	m_submitInfo.pWaitSemaphores = nullptr;
+	m_submitInfo.signalSemaphoreCount = 0;
+	m_submitInfo.pSignalSemaphores = nullptr;
 }
 
 bool VulkanEngine::GetDepthFormat()
@@ -1496,11 +1507,13 @@ VkResult VkEngine::VulkanEngine::CreateOffscreenFrameBuffer()
 	VkImageView offscreenImageView;
 	VKE_CHECK_RESULT(vkCreateImageView(m_device, &viewInfo, nullptr, &offscreenImageView));
 
+	VkImageView fbAttachments[2] = { offscreenImageView, m_depthStencil.view };
+
 	VkFramebufferCreateInfo fbInfo{};
 	fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbInfo.renderPass = m_renderPass;
-	fbInfo.attachmentCount = 1;
-	fbInfo.pAttachments = &offscreenImageView;
+	fbInfo.attachmentCount = 2;
+	fbInfo.pAttachments = fbAttachments;
 	fbInfo.width = m_width;
 	fbInfo.height = m_height;
 	fbInfo.layers = 1;
