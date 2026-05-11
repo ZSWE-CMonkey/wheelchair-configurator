@@ -14,6 +14,7 @@ namespace VkLoader {
 		void SetImageLayout(VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkImageSubresourceRange subresourceRange);
 
 	private:
+		VkResult LoadFallbackTexture(VkEngine::VulkanTexture* texture);
 		uint32_t GetMemoryType(uint32_t typeBits, VkFlags properties);
 
 		VkPhysicalDevice& m_physicalDevice;
