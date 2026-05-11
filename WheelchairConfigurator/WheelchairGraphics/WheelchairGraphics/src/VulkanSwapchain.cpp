@@ -245,7 +245,7 @@ VkResult VkEngine::VulkanSwapchain::CreateSwapchain(VkCommandBuffer& cmdBuffer, 
 		setImageLayoutInfo.image = m_buffers[i].image;
 		setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
 		SetImageLayout(setImageLayoutInfo);
 
@@ -292,7 +292,7 @@ VkResult VkEngine::VulkanSwapchain::SetupOffscreenImage(VkCommandBuffer& cmdBuff
 		setImageLayoutInfo.image = m_buffers[i].image;
 		setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
 		SetImageLayout(setImageLayoutInfo);
 

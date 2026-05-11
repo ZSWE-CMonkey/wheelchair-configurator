@@ -555,19 +555,7 @@ public partial class SummaryPage : ContentPage
         return new ScrollView { Content = outer };
     }
 
-    private static bool IsVulkanSafe()
-    {
-#if ANDROID
-        try
-        {
-            string? firstAbi = Android.OS.Build.SupportedAbis?.FirstOrDefault();
-            return firstAbi?.StartsWith("arm", StringComparison.OrdinalIgnoreCase) == true;
-        }
-        catch { return false; }
-#else
-        return true;
-#endif
-    }
+    private static bool IsVulkanSafe() => true;
 
     private void StartRenderLoop()
     {

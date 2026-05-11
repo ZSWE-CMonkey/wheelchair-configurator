@@ -41,6 +41,29 @@ WG_API void wgInitializeMoltenVulkanGraphics(const char* appName, int width, int
 	throw std::runtime_error("MoltenVulkan Graphics Plugin NOT Implemented");
 }
 
+#if defined(__ANDROID__)
+WG_API void wgInitializeVulkanGraphicsANDROID(const char* appName, int width, int height)
+{
+	g_graphicsPlugin = GraphicsPluginFactory::CreateVulkanGraphicsPlugin();
+
+	if (!g_graphicsPlugin)
+		throw std::runtime_error("Graphics plugin was not created");
+
+	for (auto& id : g_objects)
+		g_graphicsPlugin->AddObject(id);
+
+	if (g_cameraSettings)
+		g_graphicsPlugin->SetCamera(*g_cameraSettings);
+
+	GP_THROW_IF_FAIL(g_graphicsPlugin->Initialize(std::string(appName), width, height));
+}
+#else
+WG_API void wgInitializeVulkanGraphicsANDROID(const char* appName, int width, int height)
+{
+	throw std::runtime_error("wgInitializeVulkanGraphicsANDROID is not supported on this platform");
+}
+#endif
+
 WG_API void wgSetCamera(float zoom, float x, float y, float z, float rX, float rY, float rZ) {
 	if (g_cameraSettings)
 		g_cameraSettings = nullptr;

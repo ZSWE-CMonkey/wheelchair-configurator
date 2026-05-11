@@ -54,6 +54,13 @@ namespace {
 	}
 }
 
+static bool HasStencilComponent(VkFormat format)
+{
+	return format == VK_FORMAT_D32_SFLOAT_S8_UINT
+		|| format == VK_FORMAT_D24_UNORM_S8_UINT
+		|| format == VK_FORMAT_D16_UNORM_S8_UINT;
+}
+
 
 VkEngine::VulkanEngine::VulkanEngine()
 {
@@ -295,13 +302,7 @@ VkResult VulkanEngine::CreateInstance(std::string appName)
 	appInfo.pEngineName = appName.c_str();
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	std::vector<const char*> enabledExtensions = { VK_KHR_SURFACE_EXTENSION_NAME };
-
-#if defined(_WIN32)
-	enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(__ANDROID__)
-	enabledExtensions.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#endif
+	std::vector<const char*> enabledExtensions = {};
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -358,7 +359,7 @@ VkResult VulkanEngine::CreateDevice(uint32_t graphicsQueueIndex)
 	queueCreateInfo.queueCount = 1;
 	queueCreateInfo.pQueuePriorities = queuePriorities.data();
 
-	std::vector<const char*> enabledExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+	std::vector<const char*> enabledExtensions = {};
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -454,7 +455,9 @@ VkResult VkEngine::VulkanEngine::SetupDepthStencil()
 	depthStencilView.format = m_depthFormat;
 	depthStencilView.flags = 0;
 	depthStencilView.subresourceRange = {};
-	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	if (HasStencilComponent(m_depthFormat))
+		depthStencilView.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 	depthStencilView.subresourceRange.baseMipLevel = 0;
 	depthStencilView.subresourceRange.levelCount = 1;
 	depthStencilView.subresourceRange.baseArrayLayer = 0;
@@ -473,7 +476,9 @@ VkResult VkEngine::VulkanEngine::SetupDepthStencil()
 	SetImageLayoutInfo setImageLayoutInfo{};
 	setImageLayoutInfo.cmdbuffer = m_setupCmdBuffer;
 	setImageLayoutInfo.image = m_depthStencil.image;
-	setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	setImageLayoutInfo.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	if (HasStencilComponent(m_depthFormat))
+		setImageLayoutInfo.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 	setImageLayoutInfo.oldImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	setImageLayoutInfo.newImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -920,9 +925,9 @@ VkResult VkEngine::VulkanEngine::SubmitPostPresentBarrier(VkImage image)
 	postPresentBarrier.pNext = NULL;
 	postPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	postPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	postPresentBarrier.srcAccessMask = 0;
+	postPresentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 	postPresentBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	postPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	postPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	postPresentBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	postPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	postPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -931,8 +936,8 @@ VkResult VkEngine::VulkanEngine::SubmitPostPresentBarrier(VkImage image)
 
 	vkCmdPipelineBarrier(
 		m_postPresentCmdBuffer,
-		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 		0,
 		0, nullptr,
 		0, nullptr,
@@ -963,9 +968,9 @@ VkResult VkEngine::VulkanEngine::SubmitPrePresentBarrier(VkImage image)
 	prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-	prePresentBarrier.dstAccessMask = 0;
+	prePresentBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 	prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+	prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 	prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	prePresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
@@ -973,8 +978,8 @@ VkResult VkEngine::VulkanEngine::SubmitPrePresentBarrier(VkImage image)
 
 	vkCmdPipelineBarrier(
 		m_prePresentCmdBuffer,
-		VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-		VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
 		0,
 		0, nullptr,
 		0, nullptr,
@@ -1092,11 +1097,11 @@ void VulkanEngine::CreateSumbitInfo()
 {
 	m_submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	m_submitInfo.pNext = NULL;
-	m_submitInfo.pWaitDstStageMask = &m_submitPipelineStages;
-	m_submitInfo.waitSemaphoreCount = 1;
-	m_submitInfo.pWaitSemaphores = &m_semaphores.presentComplete;
-	m_submitInfo.signalSemaphoreCount = 1;
-	m_submitInfo.pSignalSemaphores = &m_semaphores.renderComplete;
+	m_submitInfo.pWaitDstStageMask = nullptr;
+	m_submitInfo.waitSemaphoreCount = 0;
+	m_submitInfo.pWaitSemaphores = nullptr;
+	m_submitInfo.signalSemaphoreCount = 0;
+	m_submitInfo.pSignalSemaphores = nullptr;
 }
 
 bool VulkanEngine::GetDepthFormat()
@@ -1262,12 +1267,15 @@ VkResult VkEngine::VulkanEngine::CopySwapchainImageToCPU(VkImage image, const ch
 
 	vkGetImageSubresourceLayout(m_device, dstImage, &subResource, &subResourceLayout);
 
-	vkMapMemory(m_device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, (void**)imagedata);
-	*imagedata += subResourceLayout.offset;
-
+	void* mapped = nullptr;
+	vkMapMemory(m_device, dstImageMemory, 0, VK_WHOLE_SIZE, 0, &mapped);
+	const char* src = reinterpret_cast<const char*>(mapped) + subResourceLayout.offset;
+	size_t dataSize = static_cast<size_t>(m_width) * m_height * 4;
+	m_cpuBuffer.assign(src, src + dataSize);
 	vkUnmapMemory(m_device, dstImageMemory);
 	vkFreeMemory(m_device, dstImageMemory, nullptr);
 	vkDestroyImage(m_device, dstImage, nullptr);
+	*imagedata = reinterpret_cast<const char*>(m_cpuBuffer.data());
 
 	return VK_SUCCESS;
 }
@@ -1496,11 +1504,13 @@ VkResult VkEngine::VulkanEngine::CreateOffscreenFrameBuffer()
 	VkImageView offscreenImageView;
 	VKE_CHECK_RESULT(vkCreateImageView(m_device, &viewInfo, nullptr, &offscreenImageView));
 
+	VkImageView fbAttachments[2] = { offscreenImageView, m_depthStencil.view };
+
 	VkFramebufferCreateInfo fbInfo{};
 	fbInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	fbInfo.renderPass = m_renderPass;
-	fbInfo.attachmentCount = 1;
-	fbInfo.pAttachments = &offscreenImageView;
+	fbInfo.attachmentCount = 2;
+	fbInfo.pAttachments = fbAttachments;
 	fbInfo.width = m_width;
 	fbInfo.height = m_height;
 	fbInfo.layers = 1;
