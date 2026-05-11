@@ -172,6 +172,7 @@ namespace VkEngine {
 		VkMemoryRequirements m_memReq;
 		VkDeviceMemory m_offscreenImageMemory;
 		VkFramebuffer m_offscreenFramebuffer;
+		std::vector<uint8_t> m_cpuBuffer;
 
 		std::vector<Mesh> m_meshes{};
 
