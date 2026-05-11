@@ -1,8 +1,9 @@
 @echo off
 
 set ABIS=armeabi-v7a arm64-v8a x86 x86_64
-set SRC_BASE=out-android
-set DST_BASE=..\WheelchairConfigurator\Resources\libs
+set SCRIPT_DIR=%~dp0
+set SRC_BASE=%SCRIPT_DIR%out-android
+set DST_BASE=%SCRIPT_DIR%..\WheelchairConfigurator\Resources\libs
 
 echo Exporting Android libraries to MAUI app...
 
