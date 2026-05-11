@@ -59,4 +59,13 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Local IDE / tooling
+.vs/
+.claude/
+.claudesignore
+CLAUDE.md
+
+# Reference docs (not part of source)
+/DATA/
 *.tmp
