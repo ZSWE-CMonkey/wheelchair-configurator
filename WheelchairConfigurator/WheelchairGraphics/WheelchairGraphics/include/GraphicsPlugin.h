@@ -50,6 +50,7 @@ namespace GraphicsPlugin {
 		virtual GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) = 0;
 		virtual GPluginResult SetCamera(CameraSettings setting) = 0;
 		virtual GPluginResult AddObject(std::string objectId) = 0;
+		virtual GPluginResult AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath) = 0;
 		virtual GPluginResult Render(const char** out) = 0;
 		virtual GPluginResult DeInitialize() = 0;
 	};
