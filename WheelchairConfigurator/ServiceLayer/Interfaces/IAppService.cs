@@ -56,4 +56,8 @@ public interface IAppService
 
     Task<AppSettingsModel> GetSettingsAsync();
     Task SaveSettingsAsync(AppSettingsModel settings);
+
+    // ── 3D Models ─────────────────────────────────────────────────────────────
+
+    Task<List<Model3DModel>> GetAllModel3DsAsync();
 }

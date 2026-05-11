@@ -22,6 +22,7 @@ public class AppService : IAppService
     private readonly IAppSettingRepository _settingRepo;
     private readonly IConfigurationEngine _engine;
     private readonly IExportFileBuilder _fileBuilder;
+    private readonly Model3DRepository _model3DRepo;
 
     public AppService(
         ICategoryRepository categoryRepo,
@@ -34,7 +35,8 @@ public class AppService : IAppService
         IActivityLogRepository activityLogRepo,
         IAppSettingRepository settingRepo,
         IConfigurationEngine engine,
-        IExportFileBuilder fileBuilder)
+        IExportFileBuilder fileBuilder,
+        Model3DRepository model3DRepo)
     {
         _categoryRepo = categoryRepo;
         _componentRepo = componentRepo;
@@ -47,6 +49,7 @@ public class AppService : IAppService
         _settingRepo = settingRepo;
         _engine = engine;
         _fileBuilder = fileBuilder;
+        _model3DRepo = model3DRepo;
     }
 
     // ── Categories ────────────────────────────────────────────────────────────
@@ -448,5 +451,18 @@ public class AppService : IAppService
     public async Task SaveSettingsAsync(AppSettingsModel settings)
     {
         await _settingRepo.SetAsync("RenderingEnabled", settings.RenderingEnabled ? "true" : "false");
+    }
+
+    // ── 3D Models ─────────────────────────────────────────────────────────────
+
+    public async Task<List<Model3DModel>> GetAllModel3DsAsync()
+    {
+        var models = await _model3DRepo.GetAllAsync();
+        return models.Select(m => new Model3DModel
+        {
+            ComponentId = m.ComponentId,
+            FilePath = m.FilePath,
+            TextureId = m.TextureId
+        }).ToList();
     }
 }

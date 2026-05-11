@@ -61,6 +61,7 @@ namespace WheelchairConfigurator
             // Repositories without interfaces (used directly by pages, not by AppService)
             builder.Services.AddSingleton(_ => new ComponentSpecsRepository(asyncDb));
             builder.Services.AddSingleton(_ => new CompatibilityRuleRepository(asyncDb));
+            builder.Services.AddSingleton(_ => new Model3DRepository(asyncDb));
 
             // ── ExportLayer ───────────────────────────────────────────────────────────
             builder.Services.AddSingleton<IExportFileBuilder>(sp =>
@@ -132,6 +133,41 @@ namespace WheelchairConfigurator
             catch (Exception ex)
             {
                 Console.WriteLine("[MauiProgram] DB init failed: " + ex.Message);
+            }
+
+            // ── Copy 3D model files to AppDataDirectory/models/ ───────────────────────
+            try
+            {
+                var modelsDestDir = Path.Combine(FileSystem.AppDataDirectory, "models");
+                Directory.CreateDirectory(modelsDestDir);
+
+                var model3DRepo = app.Services.GetRequiredService<Model3DRepository>();
+                var models3D = Task.Run(() => model3DRepo.GetAllAsync()).GetAwaiter().GetResult();
+
+                foreach (var model in models3D)
+                {
+                    foreach (var filename in new[] { model.FilePath, model.TextureId })
+                    {
+                        if (string.IsNullOrEmpty(filename)) continue;
+                        var destPath = Path.Combine(modelsDestDir, filename);
+                        if (File.Exists(destPath)) continue;
+                        try
+                        {
+                            using var s = FileSystem.OpenAppPackageFileAsync("models/" + filename).GetAwaiter().GetResult();
+                            using var fs = File.Create(destPath);
+                            s.CopyTo(fs);
+                            Console.WriteLine("[MauiProgram] Copied model file: " + filename);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("[MauiProgram] Could not copy model file " + filename + ": " + ex.Message);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[MauiProgram] Model copy failed: " + ex.Message);
             }
 
             return app;

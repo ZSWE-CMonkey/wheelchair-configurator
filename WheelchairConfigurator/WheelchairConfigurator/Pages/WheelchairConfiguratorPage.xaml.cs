@@ -60,25 +60,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         InitializeComponent();
 
         if (!IsVulkanSafe())
-        {
             _renderUnavailable = true;
-        }
-        else
-        {
-            try
-            {
-                _tungTungTungSahur = new Bazilišek("app", 800, 600);
-                _tungTungTungSahur.BrmBrmPatatim("models/test");
-                _tungTungTungSahur.OtevřítKomnatu();
-                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
-            }
-            catch
-            {
-                _tungTungTungSahur = null;
-                _renderUnavailable = true;
-            }
-        }
 
         BuildSharedViews();
         StartRenderLoop();
@@ -94,9 +76,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
     private async Task LoadRealData()
     {
         var settings = await _appService.GetSettingsAsync();
-        if (!settings.RenderingEnabled && _tungTungTungSahur is not null)
+        if (!settings.RenderingEnabled)
         {
-            _tungTungTungSahur.ZabijBaziliška();
+            _tungTungTungSahur?.ZabijBaziliška();
             _tungTungTungSahur = null;
             _renderUnavailable = true;
         }
@@ -132,6 +114,44 @@ public partial class WheelchairConfiguratorPage : ContentPage
             _selectedComponents[cat.Id] = null;
 
         await BuildComponentPanels();
+
+        if (!_renderUnavailable && _tungTungTungSahur == null)
+        {
+            List<Model3DModel> models3D;
+            try { models3D = await _appService.GetAllModel3DsAsync(); }
+            catch { models3D = new(); }
+            await Task.Run(() => InitBazilisek(models3D));
+        }
+    }
+
+    private void InitBazilisek(List<Model3DModel> models3D)
+    {
+        var modelsDir = Path.Combine(FileSystem.AppDataDirectory, "models");
+        try
+        {
+            var baz = new Bazilišek("app", 800, 600);
+            bool hasModels = false;
+
+            foreach (var m in models3D)
+            {
+                if (string.IsNullOrEmpty(m.FilePath) || string.IsNullOrEmpty(m.TextureId)) continue;
+                var daePath = Path.Combine(modelsDir, m.FilePath);
+                var ktxPath = Path.Combine(modelsDir, m.TextureId);
+                if (!File.Exists(daePath) || !File.Exists(ktxPath)) continue;
+                baz.BrmBrmPatatimZesouboru($"model_{m.ComponentId}", daePath, ktxPath);
+                hasModels = true;
+            }
+
+            if (!hasModels)
+                baz.BrmBrmPatatim("models/test");
+
+            baz.OtevřítKomnatu();
+            _tungTungTungSahur = baz;
+        }
+        catch
+        {
+            _renderUnavailable = true;
+        }
     }
 
     private async Task BuildComponentPanels()

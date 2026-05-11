@@ -809,5 +809,30 @@
             "ComfortLevel": 3
         }
     ],
-    "Models3D": []
+    "Models3D": [
+        {
+            "ComponentName": "Wheel, caster, 210x65, solid",
+            "FilePath": "SampleWheel.dae",
+            "TextureId": "SampleWheel.ktx",
+            "AnchorX": 0.0,
+            "AnchorY": 0.0,
+            "AnchorZ": 0.0
+        },
+        {
+            "ComponentName": "Motor, AP-Unit, front, Corpus/CorpusVS",
+            "FilePath": "SampleMotor.dae",
+            "TextureId": "SampleMotor.ktx",
+            "AnchorX": 0.0,
+            "AnchorY": 0.0,
+            "AnchorZ": 0.0
+        },
+        {
+            "ComponentName": "SEAT FRAME ADJ 520-570 mm",
+            "FilePath": "SampleSeat.dae",
+            "TextureId": "SampleSeat.ktx",
+            "AnchorX": 0.0,
+            "AnchorY": 0.0,
+            "AnchorZ": 0.0
+        }
+    ]
 }
