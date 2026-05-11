@@ -3,6 +3,7 @@ using ConfigurationLogic;
 using WheelchairConfigurator.Data;
 using WheelchairConfigurator.Data.Providers;
 using WheelchairConfigurator.Data.Repositories;
+using WheelchairConfigurator.ServiceLayer.Models;
 using WheelchairConfigurator.Service;
 using WheelchairConfigurator.ServiceLayer;
 using WheelchairConfigurator.ServiceLayer.Interfaces;
@@ -53,6 +54,9 @@ namespace WheelchairConfigurator
             builder.Services.AddSingleton<IConfigurationItemRepository>(_ => new ConfigurationItemRepository(asyncDb));
             builder.Services.AddSingleton<ISpecialistRepository>(_ => new SpecialistRepository(asyncDb));
             builder.Services.AddSingleton<IPatientRepository>(_ => new PatientRepository(asyncDb));
+            builder.Services.AddSingleton<IPatientMeasurementRepository>(_ => new PatientMeasurementRepository(asyncDb));
+            builder.Services.AddSingleton<IActivityLogRepository>(_ => new ActivityLogRepository(asyncDb));
+            builder.Services.AddSingleton<IAppSettingRepository>(_ => new AppSettingRepository(asyncDb));
 
             // Repositories without interfaces (used directly by pages, not by AppService)
             builder.Services.AddSingleton(_ => new ComponentSpecsRepository(asyncDb));
@@ -94,6 +98,11 @@ namespace WheelchairConfigurator
             builder.Services.AddTransient<SummaryPage>();
             builder.Services.AddTransient<PatientSelectPage>();
             builder.Services.AddTransient<ComponentManagerPage>();
+            builder.Services.AddTransient<TherapistManagerPage>();
+            builder.Services.AddTransient<PatientManagerPage>();
+            builder.Services.AddTransient<SettingsPage>();
+            builder.Services.AddTransient<ActivityLogPage>();
+            builder.Services.AddTransient<NewMeasurementPage>();
 
             var app = builder.Build();
 

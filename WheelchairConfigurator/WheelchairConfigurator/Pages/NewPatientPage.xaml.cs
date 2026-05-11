@@ -8,6 +8,10 @@ namespace WheelchairConfigurator.Pages;
 public partial class NewPatientPage : ContentPage
 {
     public UserInput userInput = new();
+    private string _birthNumber = string.Empty;
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+
     private readonly List<ContentView> _panels;
     private readonly NavigationState _navState;
     private readonly IAppService _appService;
@@ -27,11 +31,13 @@ public partial class NewPatientPage : ContentPage
         [
             new SideBarView("Informace o pacientovi",
             [
-                new SideBarField { Label = "Identifikátor pacienta", Type = FieldType.Entry, Keyboard = Keyboard.Default, MaxLength = 20, OnSave = v => userInput.patientIdentificator = v },
-                new SideBarField { Label = "Výška trupu (cm)",        Type = FieldType.Entry, OnSave = v => userInput.BodyHeight   = double.TryParse(v, out var x) ? x : 0 },
-                new SideBarField { Label = "Hmotnost (kg)",           Type = FieldType.Entry, OnSave = v => userInput.Weight       = double.TryParse(v, out var x) ? x : 0 },
-                new SideBarField { Label = "Šířka pánve (cm)",        Type = FieldType.Entry, OnSave = v => userInput.PelvisWidth  = double.TryParse(v, out var x) ? x : 0 },
-                new SideBarField { Label = "Délka stehna (cm)",       Type = FieldType.Entry, OnSave = v => userInput.ThighLength  = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "Rodné číslo",              Type = FieldType.Entry, Keyboard = Keyboard.Default, MaxLength = 20, OnSave = v => _birthNumber          = v },
+                new SideBarField { Label = "Jméno",                    Type = FieldType.Entry, Keyboard = Keyboard.Default, MaxLength = 50, OnSave = v => _firstName             = v },
+                new SideBarField { Label = "Příjmení",                 Type = FieldType.Entry, Keyboard = Keyboard.Default, MaxLength = 50, OnSave = v => _lastName              = v },
+                new SideBarField { Label = "Výška trupu (cm)",         Type = FieldType.Entry, OnSave = v => userInput.BodyHeight   = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "Hmotnost (kg)",            Type = FieldType.Entry, OnSave = v => userInput.Weight       = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "Šířka pánve (cm)",         Type = FieldType.Entry, OnSave = v => userInput.PelvisWidth  = double.TryParse(v, out var x) ? x : 0 },
+                new SideBarField { Label = "Délka stehna (cm)",        Type = FieldType.Entry, OnSave = v => userInput.ThighLength  = double.TryParse(v, out var x) ? x : 0 },
             ]),
 
             new SideBarView("",
@@ -45,8 +51,8 @@ public partial class NewPatientPage : ContentPage
 
             new SideBarView("Informace o vozíku",
             [
-                new SideBarField { Label = "Ovládání",       Type = FieldType.Picker, Options = ["Hand control", "Head control", "Sip & puff"],  OnSave = v => userInput.Control     = v },
-                new SideBarField { Label = "Terén a prostředí", Type = FieldType.Picker, Options = ["Indoor", "Outdoor", "Kombinace"],           OnSave = v => userInput.Environment = v },
+                new SideBarField { Label = "Ovládání",            Type = FieldType.Picker, Options = ["Hand control", "Head control", "Sip & puff"],  OnSave = v => userInput.Control     = v },
+                new SideBarField { Label = "Terén a prostředí",   Type = FieldType.Picker, Options = ["Indoor", "Outdoor", "Kombinace"],              OnSave = v => userInput.Environment = v },
             ]),
         ];
 
@@ -96,7 +102,6 @@ public partial class NewPatientPage : ContentPage
         }
     }
 
-
     private View BuildLandscapeLayout()
     {
         var grid = new Grid
@@ -137,7 +142,6 @@ public partial class NewPatientPage : ContentPage
 
         return grid;
     }
-
 
     private View BuildPortraitLayout()
     {
@@ -180,7 +184,6 @@ public partial class NewPatientPage : ContentPage
         return grid;
     }
 
-
     private void SaveAllPanels()
     {
         foreach (var panel in _panels)
@@ -200,12 +203,36 @@ public partial class NewPatientPage : ContentPage
         }
 
         SaveAllPanels();
+
+        var digits = _birthNumber.Replace("/", "").Replace(" ", "");
+        if ((digits.Length != 9 && digits.Length != 10) || !digits.All(char.IsDigit))
+        {
+            await DisplayAlert("Chyba", "Rodné číslo musí mít 9 nebo 10 číslic (formát YYMMDDXXXX nebo YYMMDD/XXXX).", "OK");
+            return;
+        }
+
         userInput.Date = DateTime.Today;
 
-        await _appService.SavePatientAsync(new PatientModel
+        var specialist = _navState.ActiveSpecialist;
+
+        var patientModel = new PatientModel
         {
-            SpecialistId = 1,
-            PatientIdentificator = userInput.patientIdentificator,
+            BirthNumber = _birthNumber,
+            FirstName = _firstName,
+            LastName = _lastName,
+            CreatedBySpecialistId = specialist?.Id ?? 1,
+            CreatedBySpecialistName = specialist?.FullName ?? "",
+        };
+        var savedPatient = await _appService.SavePatientAsync(patientModel);
+
+        var measurement = new PatientMeasurementModel
+        {
+            PatientId = savedPatient.Id,
+            PatientBirthNumber = _birthNumber,
+            PatientFullName = savedPatient.FullName,
+            MeasuredAt = DateTime.Now,
+            CreatedBySpecialistId = specialist?.Id ?? 1,
+            CreatedBySpecialistName = specialist?.FullName ?? "",
             BodyHeight = userInput.BodyHeight,
             PelvisWidth = userInput.PelvisWidth,
             ThighLength = userInput.ThighLength,
@@ -217,9 +244,10 @@ public partial class NewPatientPage : ContentPage
             Environment = userInput.Environment,
             Legs = userInput.Legs,
             Pain = userInput.Pain,
-        });
+        };
+        var savedMeasurement = await _appService.SaveMeasurementAsync(measurement);
 
-        _navState.Patient = userInput;
+        _navState.ActiveMeasurement = savedMeasurement;
         _navState.SelectedComponents.Clear();
 
         await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
@@ -227,6 +255,6 @@ public partial class NewPatientPage : ContentPage
 
     private async void OnBackClicked(object? sender, EventArgs e)
     {
-        await Shell.Current.GoToAsync("mainPage");
+        await Shell.Current.GoToAsync("..");
     }
 }

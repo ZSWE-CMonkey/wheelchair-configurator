@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="WheelchairConfigurator.Pages.SettingsPage"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto, *, Auto" Padding="20" RowSpacing="16">
+
+        <Label Grid.Row="0" Text="Nastavení"
+               FontSize="22" FontAttributes="Bold" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="20">
+
+                <!-- 3D náhled -->
+                <Border Padding="16" StrokeThickness="1"
+                        Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                            <Label Text="3D náhled vozíku" FontSize="15" FontAttributes="Bold" />
+                            <Label Text="Vypnutím se ušetří výpočetní výkon"
+                                   FontSize="12" TextColor="Gray" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="RenderingSwitch"
+                                VerticalOptions="Center"
+                                Toggled="OnRenderingToggled" />
+                    </Grid>
+                </Border>
+
+                <!-- Export katalogu -->
+                <Border Padding="16" StrokeThickness="1"
+                        Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Katalog komponent" FontSize="15" FontAttributes="Bold" />
+                        <Button Text="Exportovat katalog (JSON)"
+                                Clicked="OnExportCatalogClicked"
+                                HorizontalOptions="Fill" />
+                        <Button Text="Importovat katalog (JSON)"
+                                Clicked="OnImportCatalogClicked"
+                                HorizontalOptions="Fill" />
+                        <Label x:Name="CatalogStatusLabel" FontSize="12" TextColor="Gray" />
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="2" Text="Zpět" BackgroundColor="Red"
+                Clicked="OnBackClicked" HorizontalOptions="Fill" />
+
+    </Grid>
+</ContentPage>

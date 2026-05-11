@@ -9,6 +9,9 @@ namespace ConfigurationLogic.Graphics
         private static extern void wgInitializeVulkanGraphicsWIN32(string appName, int width, int height);
 
         [DllImport("WheelchairGraphics")]
+        private static extern void wgInitializeVulkanGraphicsANDROID(string appName, int width, int height);
+
+        [DllImport("WheelchairGraphics")]
         private static extern void wgSetCamera(float zoom, float x, float y, float z, float rX, float rY, float rZ);
 
         [DllImport("WheelchairGraphics")]
@@ -33,8 +36,11 @@ namespace ConfigurationLogic.Graphics
 
         public bool Initialize()
         {
-            //here add wgSetCamera if you want different
+#if ANDROID
+            wgInitializeVulkanGraphicsANDROID(_appName, _width, _height);
+#else
             wgInitializeVulkanGraphicsWIN32(_appName, _width, _height);
+#endif
             return true;
         }
 

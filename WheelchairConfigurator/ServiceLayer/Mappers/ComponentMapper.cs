@@ -15,6 +15,8 @@ public static class ComponentMapper
         Id = entity.Id,
         Name = entity.Name,
         Price = entity.Price,
-        CatalogUrl = entity.CatalogUrl
+        CatalogUrl = entity.CatalogUrl,
+        Manufacturer = entity.Manufacturer,
+        ManufacturerCode = entity.ManufacturerCode,
     };
 }

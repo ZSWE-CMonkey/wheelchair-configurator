@@ -19,9 +19,11 @@ public class SpecialistRepository : GenericRepository<Specialist>, ISpecialistRe
               .Where(s => s.Email == email)
               .FirstOrDefaultAsync();
 
-    /// <summary>
-    /// Returns all specialists belonging to the specified clinic.
-    /// </summary>
+    public async Task<List<Specialist>> GetAllActiveAsync()
+        => await _db.Table<Specialist>()
+                    .Where(s => s.IsActive)
+                    .ToListAsync();
+
     public Task<List<Specialist>> GetByClinicAsync(string clinic)
         => _db.Table<Specialist>()
               .Where(s => s.Clinic == clinic)

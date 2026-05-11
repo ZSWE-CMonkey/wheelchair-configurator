@@ -16,4 +16,7 @@ public class Specialist
 
     public string? Email { get; set; }
     public string? Clinic { get; set; }
+
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

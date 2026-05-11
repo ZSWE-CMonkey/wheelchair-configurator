@@ -1,68 +1,131 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="WheelchairConfigurator.Pages.MainPage"
              xmlns:local="clr-namespace:WheelchairConfigurator"
              Shell.NavBarIsVisible="False">
 
-    <Grid>
+    <Grid RowDefinitions="Auto, *, Auto" Padding="30" RowSpacing="0">
 
-        <ScrollView>
-            <VerticalStackLayout x:Name="Testing"
-                                 Padding="30"
-                                 Spacing="20"
-                                 VerticalOptions="Center"
-                                 HorizontalOptions="Fill">
+        <!-- Horní pruh — aktivní terapeut -->
+        <Border Grid.Row="0"
+                Padding="16,12"
+                StrokeThickness="1"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}"
+                Margin="0,0,0,20">
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
+                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                    <Label Text="Přihlášený terapeut"
+                           FontSize="11"
+                           TextColor="Gray" />
+                    <Label x:Name="SpecialistLabel"
+                           Text="Není vybrán"
+                           FontSize="15"
+                           FontAttributes="Bold" />
+                </VerticalStackLayout>
+                <Button Grid.Column="1"
+                        x:Name="SelectSpecialistBtn"
+                        Text="Vybrat"
+                        Clicked="OnSelectSpecialistClicked"
+                        VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Střed — navigační tlačítka -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout x:Name="MainButtons"
+                                 Spacing="12"
+                                 VerticalOptions="Center">
 
                 <Image Source="tungtungtungsahur.png"
-                       HeightRequest="185"
+                       HeightRequest="120"
                        Aspect="AspectFit"
-                       SemanticProperties.Description="mainpage picture" />
+                       Margin="0,0,0,10" />
 
-                <Label Text="E-Vozík builder SKIBIDI 67 67 67 xdDDDDDDDDDDDDDDDDDDDD BAZILISEK LOOOOL XDDDDDDDDD"
+                <Label Text="E-Vozík Builder"
                        Style="{StaticResource Headline}"
-                       HorizontalTextAlignment="Center"
-                       SemanticProperties.HeadingLevel="Level1" />
+                       HorizontalTextAlignment="Center" />
 
                 <Label Text="Konfigurátor elektrických vozíků"
                        Style="{StaticResource SubHeadline}"
                        HorizontalTextAlignment="Center"
-                       SemanticProperties.HeadingLevel="Level2" />
+                       Margin="0,0,0,16" />
 
-                <Button x:Name="toNewPatientBtn"           
-                        Text="Přidat pacienta"
-                        SemanticProperties.Hint="Redirects to New Patient Page"
+                <!-- Pacientská sekce -->
+                <Label Text="PACIENTI"
+                       FontSize="11"
+                       TextColor="Gray"
+                       CharacterSpacing="1.5" />
+
+                <Button x:Name="ToNewPatientBtn"
+                        Text="Nový pacient a konfigurace"
                         Clicked="OnToNewPatientClicked"
-                        HorizontalOptions="Fill" />
+                        HorizontalOptions="Fill"
+                        IsEnabled="False" />
 
-                <Button x:Name="toPatientSelectBtn"
-                        Text="Vybrat pacienta"
-                        SemanticProperties.Hint="Redirects to Patient Select Page"
+                <Button x:Name="ToPatientSelectBtn"
+                        Text="Pokračovat v konfiguraci"
                         Clicked="OnToPatientSelectClicked"
+                        HorizontalOptions="Fill"
+                        IsEnabled="False" />
+
+                <Button x:Name="ToPatientManagerBtn"
+                        Text="Správa pacientů"
+                        Clicked="OnToPatientManagerClicked"
+                        HorizontalOptions="Fill"
+                        IsEnabled="False" />
+
+                <Label x:Name="SpecialistHintLabel"
+                       Text="Nejprve vyberte terapeuta pro přístup k pacientům."
+                       FontSize="12"
+                       TextColor="Orange"
+                       HorizontalTextAlignment="Center"
+                       IsVisible="False" />
+
+                <!-- Admin sekce -->
+                <Label Text="ADMINISTRACE"
+                       FontSize="11"
+                       TextColor="Gray"
+                       CharacterSpacing="1.5"
+                       Margin="0,12,0,0" />
+
+                <Button x:Name="ToTherapistManagerBtn"
+                        Text="Správa terapeutů"
+                        Clicked="OnToTherapistManagerClicked"
                         HorizontalOptions="Fill" />
 
-                <Button x:Name="toComponentManagerBtn"
+                <Button x:Name="ToComponentManagerBtn"
                         Text="Spravovat součástky"
-                        SemanticProperties.Hint="Redirects to Component Manager Page"
                         Clicked="OnToComponentManagerClicked"
+                        HorizontalOptions="Fill" />
+
+                <Button x:Name="ToActivityLogBtn"
+                        Text="Historie aktivity"
+                        Clicked="OnToActivityLogClicked"
+                        HorizontalOptions="Fill" />
+
+                <Button x:Name="ToSettingsBtn"
+                        Text="Nastavení"
+                        Clicked="OnToSettingsClicked"
                         HorizontalOptions="Fill" />
 
             </VerticalStackLayout>
         </ScrollView>
 
-        <Label FontSize="12"
-           TextColor="Gray"
-           HorizontalOptions="End"
-           VerticalOptions="End"
-           Margin="15">
-                <Label.Text>
-                    <MultiBinding StringFormat="v{0}.{1}.{2}">
-                        <Binding Source="{x:Static local:Version.Major}" />
-                        <Binding Source="{x:Static local:Version.Minor}" />
-                        <Binding Source="{x:Static local:Version.Patch}" />
-                    </MultiBinding>
-                </Label.Text>
-            </Label>
+        <!-- Dolní část — verze -->
+        <Label Grid.Row="2"
+               FontSize="12"
+               TextColor="Gray"
+               HorizontalOptions="End"
+               Margin="0,8,0,0">
+            <Label.Text>
+                <MultiBinding StringFormat="v{0}.{1}.{2}">
+                    <Binding Source="{x:Static local:Version.Major}" />
+                    <Binding Source="{x:Static local:Version.Minor}" />
+                    <Binding Source="{x:Static local:Version.Patch}" />
+                </MultiBinding>
+            </Label.Text>
+        </Label>
 
     </Grid>
 </ContentPage>

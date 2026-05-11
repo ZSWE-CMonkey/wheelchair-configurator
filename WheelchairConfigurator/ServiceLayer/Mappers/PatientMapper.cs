@@ -7,35 +7,25 @@ public static class PatientMapper
 {
     public static Patient Map(PatientModel model) => new()
     {
-        SpecialistId = model.SpecialistId,
-        PatientIdentificator = model.PatientIdentificator,
-        BodyHeight = model.BodyHeight,
-        PelvisWidth = model.PelvisWidth,
-        ThighLength = model.ThighLength,
-        Weight = model.Weight,
-        BodyStability = model.BodyStability,
-        HeadStability = model.HeadStability,
-        BedsoreRisk = model.BedsoreRisk,
-        Control = model.Control,
-        Environment = model.Environment,
-        Legs = model.Legs,
-        Pain = model.Pain,
+        Id = model.Id,
+        BirthNumber = model.BirthNumber,
+        FirstName = model.FirstName,
+        LastName = model.LastName,
+        IsActive = model.IsActive,
+        CreatedAt = model.CreatedAt == default ? DateTime.Now : model.CreatedAt,
+        CreatedBySpecialistId = model.CreatedBySpecialistId,
+        CreatedBySpecialistName = model.CreatedBySpecialistName,
     };
 
     public static PatientModel Map(Patient entity) => new()
     {
-        SpecialistId = entity.SpecialistId,
-        PatientIdentificator = entity.PatientIdentificator,
-        BodyHeight = entity.BodyHeight,
-        PelvisWidth = entity.PelvisWidth,
-        ThighLength = entity.ThighLength,
-        Weight = entity.Weight,
-        BodyStability = entity.BodyStability,
-        HeadStability = entity.HeadStability,
-        BedsoreRisk = entity.BedsoreRisk,
-        Control = entity.Control,
-        Environment = entity.Environment,
-        Legs = entity.Legs,
-        Pain = entity.Pain,
+        Id = entity.Id,
+        BirthNumber = entity.BirthNumber,
+        FirstName = entity.FirstName,
+        LastName = entity.LastName,
+        IsActive = entity.IsActive,
+        CreatedAt = entity.CreatedAt,
+        CreatedBySpecialistId = entity.CreatedBySpecialistId,
+        CreatedBySpecialistName = entity.CreatedBySpecialistName,
     };
 }

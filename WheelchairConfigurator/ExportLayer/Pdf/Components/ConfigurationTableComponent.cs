@@ -11,19 +11,17 @@ namespace WheelchairConfigurator.Export.Pdf.Components;
 /// </summary>
 public class ConfigurationTableComponent : IPdfComponent
 {
-    // Column widths definitions
-    // Calculated based on a standard A4 page width with margins.
-    private static readonly Unit ItemCategory = Unit.FromCentimeter(3.38);
-    private static readonly Unit ItemName = Unit.FromCentimeter(5.07);
-    private static readonly Unit ItemCode = Unit.FromCentimeter(3.38);
-    private static readonly Unit Qty = Unit.FromCentimeter(1.79);
-    private static readonly Unit Price = Unit.FromCentimeter(3.38);
+    // Column widths — total ~17 cm (A4 with 2 cm margins each side)
+    private static readonly Unit ColCategory = Unit.FromCentimeter(3.0);
+    private static readonly Unit ColName = Unit.FromCentimeter(4.0);
+    private static readonly Unit ColManufacturer = Unit.FromCentimeter(3.2);
+    private static readonly Unit ColItemCode = Unit.FromCentimeter(2.6);
+    private static readonly Unit ColQty = Unit.FromCentimeter(1.6);
+    private static readonly Unit ColPrice = Unit.FromCentimeter(2.6);
 
-    /// <summary>
-    /// Maximum character lengths for category and name fields to ensure the table layout remains intact. Longer text will be truncated with an ellipsis.
-    /// </summary>
-    private const int MaxCategoryLength = 25;
-    private const int MaxNameLength = 40;
+    private const int MaxCategoryLength = 22;
+    private const int MaxNameLength = 32;
+    private const int MaxManufacturerLength = 24;
 
     private readonly ConfigurationExportModel _model;
 
@@ -59,11 +57,12 @@ public class ConfigurationTableComponent : IPdfComponent
         table.Borders.Visible = false;
         table.Format.Font.Size = 12;
 
-        table.AddColumn(ItemCategory);
-        table.AddColumn(ItemName);
-        table.AddColumn(ItemCode);
-        table.AddColumn(Qty);
-        table.AddColumn(Price);
+        table.AddColumn(ColCategory);
+        table.AddColumn(ColName);
+        table.AddColumn(ColManufacturer);
+        table.AddColumn(ColItemCode);
+        table.AddColumn(ColQty);
+        table.AddColumn(ColPrice);
 
         return table;
     }
@@ -79,9 +78,10 @@ public class ConfigurationTableComponent : IPdfComponent
 
         SetHeaderCell(row.Cells[0], "Kategorie", ParagraphAlignment.Left);
         SetHeaderCell(row.Cells[1], "Název komponenty", ParagraphAlignment.Left);
-        SetHeaderCell(row.Cells[2], "Kód položky", ParagraphAlignment.Right);
-        SetHeaderCell(row.Cells[3], "Ks", ParagraphAlignment.Right);
-        SetHeaderCell(row.Cells[4], "Cena", ParagraphAlignment.Right);
+        SetHeaderCell(row.Cells[2], "Výrobce", ParagraphAlignment.Left);
+        SetHeaderCell(row.Cells[3], "Kód výrobce", ParagraphAlignment.Right);
+        SetHeaderCell(row.Cells[4], "Ks", ParagraphAlignment.Right);
+        SetHeaderCell(row.Cells[5], "Cena", ParagraphAlignment.Right);
     }
 
     /// <summary>
@@ -115,9 +115,10 @@ public class ConfigurationTableComponent : IPdfComponent
 
         AddCell(row, 0, Truncate(item.CategoryName, MaxCategoryLength));
         AddCell(row, 1, Truncate(item.ComponentName, MaxNameLength));
-        AddCell(row, 2, item.ItemCode, ParagraphAlignment.Right);
-        AddCell(row, 3, item.Quantity.ToString(), ParagraphAlignment.Right);
-        AddCell(row, 4, $"{item.Price:N2} Kč", ParagraphAlignment.Right);
+        AddCell(row, 2, Truncate(item.Manufacturer, MaxManufacturerLength));
+        AddCell(row, 3, item.ManufacturerCode, ParagraphAlignment.Right);
+        AddCell(row, 4, item.Quantity.ToString(), ParagraphAlignment.Right);
+        AddCell(row, 5, $"{item.Price:N2} Kč", ParagraphAlignment.Right);
     }
 
     /// <summary>

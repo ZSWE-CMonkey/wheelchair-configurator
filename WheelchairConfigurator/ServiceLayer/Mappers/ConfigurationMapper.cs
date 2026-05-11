@@ -3,26 +3,28 @@ using WheelchairConfigurator.ServiceLayer.Models;
 
 namespace WheelchairConfigurator.ServiceLayer.Mappers;
 
-/// <summary>
-/// Maps between Configuration domain entity and ConfigurationModel.
-/// Handles both directions — DB to UI and UI to DB.
-/// </summary>
 public static class ConfigurationMapper
 {
-    /// <summary>Converts a Configuration entity to a ConfigurationModel for UI.</summary>
     public static ConfigurationModel Map(Configuration entity) => new()
     {
         Id = entity.Id,
         SpecialistId = entity.SpecialistId,
+        SpecialistName = entity.SpecialistName,
         CreatedAt = entity.CreatedAt,
-        PatientIdentificator = entity.PatientIdentificator
+        PatientMeasurementId = entity.PatientMeasurementId,
+        PatientBirthNumber = entity.PatientBirthNumber,
+        PatientName = entity.PatientName,
+        Hash = entity.Hash,
     };
 
-    /// <summary>Converts a ConfigurationRequest from UI to a Configuration entity for DB.</summary>
     public static Configuration Map(ConfigurationRequest request) => new()
     {
         SpecialistId = request.SpecialistId,
+        SpecialistName = request.SpecialistName,
         CreatedAt = DateTime.Now,
-        PatientIdentificator = request.PatientIdentificator
+        PatientMeasurementId = request.PatientMeasurementId,
+        PatientBirthNumber = request.PatientBirthNumber,
+        PatientName = request.PatientName,
+        Hash = Guid.NewGuid().ToString("N"),
     };
 }

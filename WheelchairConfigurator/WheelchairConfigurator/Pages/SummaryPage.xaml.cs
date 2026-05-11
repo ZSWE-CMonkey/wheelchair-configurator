@@ -15,6 +15,7 @@ public partial class SummaryPage : ContentPage
     private readonly NavigationState _navState;
 
     private int _configurationId = 0;
+    private ConfigurationModel? _loadedConfig = null;
 
     public int ConfigurationId
     {
@@ -38,6 +39,7 @@ public partial class SummaryPage : ContentPage
     private Button _mainMenuBtn = default!;
     private Button _backBtn = default!;
     private Button _exportBtn = default!;
+    private Button _copyBtn = default!;
     private Button _previewToggleBtn = default!;
     private bool _previewVisible = false;
 
@@ -102,6 +104,14 @@ public partial class SummaryPage : ContentPage
 
     private async Task LoadData()
     {
+        var settings = await _appService.GetSettingsAsync();
+        if (!settings.RenderingEnabled && _tungTungTungSahur is not null)
+        {
+            _tungTungTungSahur.ZabijBaziliška();
+            _tungTungTungSahur = null;
+            _renderUnavailable = true;
+        }
+
         List<ComponentModel> components;
 
         if (_configurationId > 0)
@@ -109,21 +119,45 @@ public partial class SummaryPage : ContentPage
             // Mode B: load saved configuration from DB
             try
             {
+                _loadedConfig = await _appService.GetConfigurationAsync(_configurationId);
                 components = await _appService.GetConfigurationComponentsAsync(_configurationId);
             }
             catch
             {
+                _loadedConfig = null;
                 components = new();
             }
-            PatientIdLabel.Text = $"Konfigurace #{_configurationId}";
-            LoadPatientData(null);
+            if (_loadedConfig is not null)
+            {
+                PatientIdLabel.Text = _loadedConfig.PatientName;
+                DateLabel.Text = $"Konfigurace #{_loadedConfig.Id}  |  {_loadedConfig.CreatedAt:dd.MM.yyyy}";
+                BodyHeightLabel.Text = $"Terapeut: {_loadedConfig.SpecialistName}";
+                PelvisWidthLabel.Text = $"Rodné číslo: {_loadedConfig.PatientBirthNumber}";
+                ThighLengthLabel.Text = string.Empty;
+                WeightLabel.Text = string.Empty;
+                BodyStabilityLabel.Text = string.Empty;
+                HeadStabilityLabel.Text = string.Empty;
+                BedsoreRiskLabel.Text = string.Empty;
+                ControlLabel.Text = string.Empty;
+                EnvironmentLabel.Text = string.Empty;
+                LegsLabel.Text = string.Empty;
+                PainLabel.Text = string.Empty;
+            }
+            else
+            {
+                PatientIdLabel.Text = $"Konfigurace #{_configurationId}";
+                LoadPatientData(null);
+            }
+            _copyBtn.IsVisible = true;
         }
         else
         {
             // Mode A: fresh selection from NavigationState
+            _loadedConfig = null;
             components = _navState.SelectedComponents;
             var patient = _navState.Patient;
             LoadPatientData(patient);
+            _copyBtn.IsVisible = false;
         }
 
         BuildComponentsList(components);
@@ -188,12 +222,18 @@ public partial class SummaryPage : ContentPage
 
         foreach (var c in components)
         {
-            ComponentsLayout.Children.Add(new Label
+            var row = new VerticalStackLayout { Spacing = 1, Margin = new Thickness(0, 4, 0, 0) };
+            row.Children.Add(new Label { Text = $"[{c.Id}] {c.Name}", FontSize = 13, FontAttributes = FontAttributes.Bold });
+            if (!string.IsNullOrEmpty(c.Manufacturer))
             {
-                Text = c.Name,
-                FontSize = 13,
-                Margin = new Thickness(0, 4, 0, 0)
-            });
+                row.Children.Add(new Label
+                {
+                    Text = $"{c.Manufacturer}  {c.ManufacturerCode}".TrimEnd(),
+                    FontSize = 11,
+                    TextColor = Colors.Gray
+                });
+            }
+            ComponentsLayout.Children.Add(row);
             ComponentsLayout.Children.Add(new BoxView
             {
                 HeightRequest = 1,
@@ -332,6 +372,14 @@ public partial class SummaryPage : ContentPage
             HorizontalOptions = LayoutOptions.Fill
         };
         _exportBtn.Clicked += OnExportClicked;
+
+        _copyBtn = new Button
+        {
+            Text = "Kopírovat a upravit",
+            HorizontalOptions = LayoutOptions.Fill,
+            IsVisible = false
+        };
+        _copyBtn.Clicked += OnCopyClicked;
     }
 
     private void OnPreviewToggleClicked(object? sender, EventArgs e)
@@ -370,7 +418,7 @@ public partial class SummaryPage : ContentPage
         View[] shared =
         [
             _patientPanel, _componentsPanel, _renderPanel,
-            _previewToggleBtn, _mainMenuBtn, _backBtn, _exportBtn
+            _previewToggleBtn, _mainMenuBtn, _backBtn, _copyBtn, _exportBtn
         ];
 
         foreach (var view in shared)
@@ -430,13 +478,16 @@ public partial class SummaryPage : ContentPage
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
             }
         };
         Grid.SetColumn(_mainMenuBtn, 0);
         Grid.SetColumn(_backBtn, 1);
-        Grid.SetColumn(_exportBtn, 2);
+        Grid.SetColumn(_copyBtn, 2);
+        Grid.SetColumn(_exportBtn, 3);
         btnGrid.Children.Add(_mainMenuBtn);
         btnGrid.Children.Add(_backBtn);
+        btnGrid.Children.Add(_copyBtn);
         btnGrid.Children.Add(_exportBtn);
 
         Grid.SetRow(btnGrid, 1);
@@ -486,13 +537,16 @@ public partial class SummaryPage : ContentPage
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Star),
                 new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
             }
         };
         Grid.SetColumn(_mainMenuBtn, 0);
         Grid.SetColumn(_backBtn, 1);
-        Grid.SetColumn(_exportBtn, 2);
+        Grid.SetColumn(_copyBtn, 2);
+        Grid.SetColumn(_exportBtn, 3);
         btnGrid.Children.Add(_mainMenuBtn);
         btnGrid.Children.Add(_backBtn);
+        btnGrid.Children.Add(_copyBtn);
         btnGrid.Children.Add(_exportBtn);
 
         Grid.SetRow(btnGrid, 3);
@@ -501,19 +555,7 @@ public partial class SummaryPage : ContentPage
         return new ScrollView { Content = outer };
     }
 
-    private static bool IsVulkanSafe()
-    {
-#if ANDROID
-        try
-        {
-            string? firstAbi = Android.OS.Build.SupportedAbis?.FirstOrDefault();
-            return firstAbi?.StartsWith("arm", StringComparison.OrdinalIgnoreCase) == true;
-        }
-        catch { return false; }
-#else
-        return true;
-#endif
-    }
+    private static bool IsVulkanSafe() => true;
 
     private void StartRenderLoop()
     {
@@ -580,7 +622,7 @@ public partial class SummaryPage : ContentPage
     private async void OnBackClicked(object sender, EventArgs e)
     {
         _tungTungTungSahur?.ZabijBaziliška();
-        await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+        await Shell.Current.GoToAsync("..");
     }
 
     private async void OnExportClicked(object sender, EventArgs e)
@@ -596,8 +638,11 @@ public partial class SummaryPage : ContentPage
             {
                 var request = new ConfigurationRequest
                 {
-                    SpecialistId = 1,
-                    PatientIdentificator = _navState.Patient?.patientIdentificator ?? "",
+                    SpecialistId = _navState.ActiveSpecialist?.Id ?? 1,
+                    SpecialistName = _navState.ActiveSpecialist?.FullName ?? "",
+                    PatientMeasurementId = _navState.ActiveMeasurement?.Id ?? 0,
+                    PatientBirthNumber = _navState.ActiveMeasurement?.PatientBirthNumber ?? "",
+                    PatientName = _navState.ActiveMeasurement?.PatientFullName ?? "",
                     SelectedComponentIds = _navState.SelectedComponents.Select(c => c.Id).ToList(),
                     Patient = BuildPatientProfile()
                 };
@@ -654,6 +699,31 @@ public partial class SummaryPage : ContentPage
                 _panStart = new Point(e.TotalX, e.TotalY);
                 _tungTungTungSahur?.PomaluSanjski(-(float)delta.Y, (float)delta.X);
                 break;
+        }
+    }
+
+    private async void OnCopyClicked(object? sender, EventArgs e)
+    {
+        if (_configurationId <= 0 || _loadedConfig is null) return;
+
+        try
+        {
+            var components = await _appService.GetConfigurationComponentsAsync(_configurationId);
+            _navState.SelectedComponents = components;
+
+            if (_loadedConfig.PatientMeasurementId > 0)
+            {
+                var measurement = await _appService.GetMeasurementByIdAsync(_loadedConfig.PatientMeasurementId);
+                if (measurement is not null)
+                    _navState.ActiveMeasurement = measurement;
+            }
+
+            _tungTungTungSahur?.ZabijBaziliška();
+            await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlert("Chyba", ex.Message, "OK");
         }
     }
 

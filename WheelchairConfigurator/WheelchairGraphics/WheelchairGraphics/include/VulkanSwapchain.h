@@ -8,19 +8,11 @@
 #define GET_INSTANCE_PROC_ADDR(inst, entrypoint)                        \
 {                                                                       \
     fn_##entrypoint = (PFN_vk##entrypoint) vkGetInstanceProcAddr(inst, "vk"#entrypoint); \
-    if (fn_##entrypoint == NULL)                                         \
-	{																    \
-        throw std::runtime_error("Function was not loaded");            \
-    }                                                                   \
 }
 
 #define GET_DEVICE_PROC_ADDR(dev, entrypoint)                           \
 {                                                                       \
     fn_##entrypoint = (PFN_vk##entrypoint) vkGetDeviceProcAddr(dev, "vk"#entrypoint);   \
-    if (fn_##entrypoint == NULL)                                         \
-	{																    \
-        throw std::runtime_error("Function was not loaded");            \
-    }                                                                   \
 }
 
 

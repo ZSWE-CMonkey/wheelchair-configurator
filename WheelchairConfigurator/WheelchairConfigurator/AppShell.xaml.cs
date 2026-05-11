@@ -14,6 +14,11 @@ namespace WheelchairConfigurator
             Routing.RegisterRoute("wheelchairConfiguratorPage", typeof(WheelchairConfiguratorPage));
             Routing.RegisterRoute("summaryPage", typeof(SummaryPage));
             Routing.RegisterRoute("componentManagerPage", typeof(ComponentManagerPage));
+            Routing.RegisterRoute("therapistManagerPage", typeof(TherapistManagerPage));
+            Routing.RegisterRoute("patientManagerPage", typeof(PatientManagerPage));
+            Routing.RegisterRoute("settingsPage", typeof(SettingsPage));
+            Routing.RegisterRoute("activityLogPage", typeof(ActivityLogPage));
+            Routing.RegisterRoute("newMeasurementPage", typeof(NewMeasurementPage));
 
 
 
