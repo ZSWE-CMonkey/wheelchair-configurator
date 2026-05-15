@@ -28,9 +28,7 @@ public partial class SummaryPage : ContentPage
     }
 
     private Bazilišek? _tungTungTungSahur = null;
-    private CancellationTokenSource _cts = default!;
     private SKBitmap? _skibidiFrame = null;
-    private readonly object _mutex = new();
     private bool _renderUnavailable = false;
 
     private Border _patientPanel = default!;
@@ -73,42 +71,25 @@ public partial class SummaryPage : ContentPage
         BuildSharedViews();
 
         if (!IsVulkanSafe())
-        {
             _renderUnavailable = true;
-        }
-        else
-        {
-            try
-            {
-                _tungTungTungSahur = new Bazilišek("app", 800, 600);
-                _tungTungTungSahur.BrmBrmPatatim("models/test");
-                _tungTungTungSahur.OtevřítKomnatu();
-                _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                _skibidiFrame = _tungTungTungSahur.JaJsemHagrid();
-            }
-            catch
-            {
-                _tungTungTungSahur = null;
-                _renderUnavailable = true;
-            }
-        }
 
-        StartRenderLoop();
+        Console.WriteLine("[Summary] Constructor done");
+
         Dispatcher.Dispatch(async () => await LoadData());
-    }
-
-    ~SummaryPage()
-    {
-        StopRenderLoop();
     }
 
     private async Task LoadData()
     {
+        Console.WriteLine("[Summary] LoadData start");
+
         var settings = await _appService.GetSettingsAsync();
-        if (!settings.RenderingEnabled && _tungTungTungSahur is not null)
+        if (!settings.RenderingEnabled)
         {
-            _tungTungTungSahur.ZabijBaziliška();
-            _tungTungTungSahur = null;
+            if (_tungTungTungSahur != null)
+            {
+                await _tungTungTungSahur.ShutdownAsync();
+                _tungTungTungSahur = null;
+            }
             _renderUnavailable = true;
         }
 
@@ -161,6 +142,62 @@ public partial class SummaryPage : ContentPage
         }
 
         BuildComponentsList(components);
+
+        if (!_renderUnavailable && _tungTungTungSahur == null)
+        {
+            try
+            {
+                _tungTungTungSahur = new Bazilišek("summary", 800, 600);
+                _tungTungTungSahur.StartRenderLoop(OnFrameReady);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[Summary] Bazilisek init failed: " + ex.Message);
+                _tungTungTungSahur = null;
+                _renderUnavailable = true;
+            }
+        }
+
+        if (_tungTungTungSahur != null)
+        {
+            try
+            {
+                var allModels = await _appService.GetAllModel3DsAsync();
+                var modelMap = allModels
+                    .Where(m => m.ComponentId > 0)
+                    .GroupBy(m => m.ComponentId)
+                    .ToDictionary(g => g.Key, g => g.First());
+                var modelsDir = Path.Combine(FileSystem.AppDataDirectory, "models");
+                var scene = new List<(string id, string geom, string tex, float scale)>();
+                foreach (var c in components)
+                {
+                    if (!modelMap.TryGetValue(c.Id, out var m)) continue;
+                    if (string.IsNullOrEmpty(m.FilePath)) continue;
+                    var geomPath = Path.Combine(modelsDir, m.FilePath);
+                    if (!File.Exists(geomPath)) continue;
+                    var texPath = string.IsNullOrEmpty(m.TextureId) ? "" : Path.Combine(modelsDir, m.TextureId);
+                    if (!string.IsNullOrEmpty(texPath) && !File.Exists(texPath)) texPath = "";
+                    scene.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale));
+                }
+                Console.WriteLine($"[Summary] LoadData: scene built ({scene.Count} models)");
+                await _tungTungTungSahur.RebuildSceneAsync(scene);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[Summary] RebuildScene exception: " + ex.Message);
+                _renderUnavailable = true;
+            }
+        }
+
+        Console.WriteLine("[Summary] LoadData done");
+    }
+
+    private void OnFrameReady(SKBitmap frame)
+    {
+        var old = _skibidiFrame;
+        _skibidiFrame = frame;
+        old?.Dispose();
+        MainThread.BeginInvokeOnMainThread(() => Canvas?.InvalidateSurface());
     }
 
     private void LoadPatientData(UserInput? patient)
@@ -241,26 +278,6 @@ public partial class SummaryPage : ContentPage
                 Margin = new Thickness(0, 4)
             });
         }
-    }
-
-    private PatientProfileModel? BuildPatientProfile()
-    {
-        var p = _navState.Patient;
-        if (p is null) return null;
-        return new PatientProfileModel
-        {
-            PelvisWidthCm = (int)p.PelvisWidth,
-            ThighLengthCm = (int)p.ThighLength,
-            LowerLegLengthCm = 0,
-            WeightKg = (int)p.Weight,
-            TrunkStability = p.BodyStability switch
-            {
-                "Dobrá" => TrunkStabilityLevel.Good,
-                "Střední" => TrunkStabilityLevel.Fair,
-                _ => TrunkStabilityLevel.Poor
-            },
-            HasPressureSoresRisk = p.BedsoreRisk == "Vysoké"
-        };
     }
 
     private void BuildSharedViews()
@@ -557,45 +574,6 @@ public partial class SummaryPage : ContentPage
 
     private static bool IsVulkanSafe() => true;
 
-    private void StartRenderLoop()
-    {
-        _cts = new CancellationTokenSource();
-
-        _ = Task.Run(async () =>
-        {
-            while (!_cts.Token.IsCancellationRequested)
-            {
-                if (_tungTungTungSahur == null) { await Task.Yield(); continue; }
-
-                try
-                {
-                    _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                    SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
-                    if (frame != null)
-                    {
-                        _skibidiFrame = frame;
-                        MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
-                    }
-                }
-                catch
-                {
-                    _tungTungTungSahur = null;
-                    _renderUnavailable = true;
-                    MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
-                    break;
-                }
-                await Task.Delay(6);
-            }
-        });
-    }
-
-    private void StopRenderLoop()
-    {
-        _cts?.Cancel();
-        _cts = null!;
-        _tungTungTungSahur = null;
-    }
-
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
@@ -609,19 +587,28 @@ public partial class SummaryPage : ContentPage
         }
 
         if (_skibidiFrame == null) return;
-        lock (_mutex)
-            canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
+        canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
     }
 
     private async void OnMainMenuClicked(object sender, EventArgs e)
     {
-        _tungTungTungSahur?.ZabijBaziliška();
+        Console.WriteLine("[Summary] Navigating away (mainMenu)");
+        if (_tungTungTungSahur != null)
+        {
+            await _tungTungTungSahur.ShutdownAsync();
+            _tungTungTungSahur = null;
+        }
         await Shell.Current.GoToAsync("mainPage");
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        _tungTungTungSahur?.ZabijBaziliška();
+        Console.WriteLine("[Summary] Navigating away (back)");
+        if (_tungTungTungSahur != null)
+        {
+            await _tungTungTungSahur.ShutdownAsync();
+            _tungTungTungSahur = null;
+        }
         await Shell.Current.GoToAsync("..");
     }
 
@@ -632,27 +619,11 @@ public partial class SummaryPage : ContentPage
 
         try
         {
-            int configId = _configurationId;
-
+            int configId = _configurationId != 0 ? _configurationId : (_navState.ConfigurationId ?? 0);
             if (configId == 0)
             {
-                var request = new ConfigurationRequest
-                {
-                    SpecialistId = _navState.ActiveSpecialist?.Id ?? 1,
-                    SpecialistName = _navState.ActiveSpecialist?.FullName ?? "",
-                    PatientMeasurementId = _navState.ActiveMeasurement?.Id ?? 0,
-                    PatientBirthNumber = _navState.ActiveMeasurement?.PatientBirthNumber ?? "",
-                    PatientName = _navState.ActiveMeasurement?.PatientFullName ?? "",
-                    SelectedComponentIds = _navState.SelectedComponents.Select(c => c.Id).ToList(),
-                    Patient = BuildPatientProfile()
-                };
-                var result = await _appService.SaveConfigurationAsync(request);
-                if (!result.IsSuccess)
-                {
-                    await DisplayAlert("Chyba", result.Message, "OK");
-                    return;
-                }
-                configId = result.ConfigurationId!.Value;
+                await DisplayAlert("Chyba", "Konfigurace nebyla uložena. Vrať se zpět a klikni Pokračovat znovu.", "OK");
+                return;
             }
 
             var pdfBytes = await _appService.ExportConfigurationAsync(configId);
@@ -718,7 +689,12 @@ public partial class SummaryPage : ContentPage
                     _navState.ActiveMeasurement = measurement;
             }
 
-            _tungTungTungSahur?.ZabijBaziliška();
+            Console.WriteLine("[Summary] Navigating away (copy&edit)");
+            if (_tungTungTungSahur != null)
+            {
+                await _tungTungTungSahur.ShutdownAsync();
+                _tungTungTungSahur = null;
+            }
             await Shell.Current.GoToAsync("wheelchairConfiguratorPage");
         }
         catch (Exception ex)
@@ -727,17 +703,13 @@ public partial class SummaryPage : ContentPage
         }
     }
 
-    protected override void OnDisappearing()
+    protected override async void OnDisappearing()
     {
-        _tungTungTungSahur?.ZabijBaziliška();
         base.OnDisappearing();
-        StopRenderLoop();
-    }
-
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-        if (_cts == null || _cts.IsCancellationRequested)
-            StartRenderLoop();
+        if (_tungTungTungSahur != null)
+        {
+            await _tungTungTungSahur.ShutdownAsync();
+            _tungTungTungSahur = null;
+        }
     }
 }

@@ -18,10 +18,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
     private readonly Dictionary<int, Border?> _selectedBorders = [];
 
     private Bazilišek? _tungTungTungSahur = null;
-    private CancellationTokenSource _cts = default!;
     private SKBitmap? _skibidiFrame = null;
-    private readonly object _mutex = new();
     private bool _renderUnavailable = false;
+    private Dictionary<int, Model3DModel> _modelsByComponentId = new();
 
     private Border _patientPanel = default!;
     private Border _componentsPanel = default!;
@@ -63,14 +62,8 @@ public partial class WheelchairConfiguratorPage : ContentPage
             _renderUnavailable = true;
 
         BuildSharedViews();
-        StartRenderLoop();
 
         Dispatcher.Dispatch(async () => await LoadRealData());
-    }
-
-    ~WheelchairConfiguratorPage()
-    {
-        StopRenderLoop();
     }
 
     private async Task LoadRealData()
@@ -78,7 +71,8 @@ public partial class WheelchairConfiguratorPage : ContentPage
         var settings = await _appService.GetSettingsAsync();
         if (!settings.RenderingEnabled)
         {
-            _tungTungTungSahur?.ZabijBaziliška();
+            if (_tungTungTungSahur != null)
+                await _tungTungTungSahur.ShutdownAsync();
             _tungTungTungSahur = null;
             _renderUnavailable = true;
         }
@@ -115,43 +109,76 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
         await BuildComponentPanels();
 
+        try
+        {
+            var allModels = await _appService.GetAllModel3DsAsync();
+            _modelsByComponentId = allModels
+                .Where(m => m.ComponentId > 0)
+                .GroupBy(m => m.ComponentId)
+                .ToDictionary(g => g.Key, g => g.First());
+            Console.WriteLine($"[Configurator] Loaded {_modelsByComponentId.Count} model mappings");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[Configurator] Failed to load model mappings: " + ex.Message);
+            _modelsByComponentId = new();
+        }
+
         if (!_renderUnavailable && _tungTungTungSahur == null)
         {
-            List<Model3DModel> models3D;
-            try { models3D = await _appService.GetAllModel3DsAsync(); }
-            catch { models3D = new(); }
-            await Task.Run(() => InitBazilisek(models3D));
+            try
+            {
+                _tungTungTungSahur = new Bazilišek("app", 800, 600);
+                _tungTungTungSahur.StartRenderLoop(OnFrameReady);
+                Console.WriteLine("[Configurator] Bazilisek created");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[Configurator] Bazilisek init failed: " + ex.Message);
+                _tungTungTungSahur = null;
+                _renderUnavailable = true;
+            }
         }
     }
 
-    private void InitBazilisek(List<Model3DModel> models3D)
+    private async Task RefreshSceneAsync()
     {
+        if (_renderUnavailable || _tungTungTungSahur == null) return;
+
         var modelsDir = Path.Combine(FileSystem.AppDataDirectory, "models");
+        var sceneModels = new List<(string id, string geom, string tex, float scale)>();
+
+        foreach (var comp in _selectedComponents.Values)
+        {
+            if (comp is null) continue;
+            if (!_modelsByComponentId.TryGetValue(comp.Id, out var m)) continue;
+            if (string.IsNullOrEmpty(m.FilePath)) continue;
+            var geomPath = Path.Combine(modelsDir, m.FilePath);
+            if (!File.Exists(geomPath)) continue;
+            var texPath = string.IsNullOrEmpty(m.TextureId) ? "" : Path.Combine(modelsDir, m.TextureId);
+            if (!string.IsNullOrEmpty(texPath) && !File.Exists(texPath)) texPath = "";
+            sceneModels.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale));
+        }
+
+        Console.WriteLine($"[Configurator] RefreshScene: {sceneModels.Count} models");
+
         try
         {
-            var baz = new Bazilišek("app", 800, 600);
-            bool hasModels = false;
-
-            foreach (var m in models3D)
-            {
-                if (string.IsNullOrEmpty(m.FilePath) || string.IsNullOrEmpty(m.TextureId)) continue;
-                var daePath = Path.Combine(modelsDir, m.FilePath);
-                var ktxPath = Path.Combine(modelsDir, m.TextureId);
-                if (!File.Exists(daePath) || !File.Exists(ktxPath)) continue;
-                baz.BrmBrmPatatimZesouboru($"model_{m.ComponentId}", daePath, ktxPath);
-                hasModels = true;
-            }
-
-            if (!hasModels)
-                baz.BrmBrmPatatim("models/test");
-
-            baz.OtevřítKomnatu();
-            _tungTungTungSahur = baz;
+            await _tungTungTungSahur.RebuildSceneAsync(sceneModels);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine("[Configurator] RebuildScene exception: " + ex.Message);
             _renderUnavailable = true;
         }
+    }
+
+    private void OnFrameReady(SKBitmap frame)
+    {
+        var old = _skibidiFrame;
+        _skibidiFrame = frame;
+        old?.Dispose();
+        MainThread.BeginInvokeOnMainThread(() => Canvas?.InvalidateSurface());
     }
 
     private async Task BuildComponentPanels()
@@ -245,7 +272,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
         }
     }
 
-    private void OnComponentTapped(ComponentModel component, Border tappedBorder, int categoryId)
+    private async void OnComponentTapped(ComponentModel component, Border tappedBorder, int categoryId)
     {
         if (_selectedBorders.TryGetValue(categoryId, out var prev) && prev is not null)
         {
@@ -262,6 +289,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
         _continueBtn.IsEnabled = _categories.Count > 0
             && _selectedComponents.Count == _categories.Count
             && _selectedComponents.Values.All(c => c is not null);
+
+        Console.WriteLine($"[Configurator] Tap: cat={categoryId}, comp={component.Id}");
+        await RefreshSceneAsync();
     }
 
     private PatientProfileModel? BuildPatientProfile()
@@ -551,44 +581,6 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
     private static bool IsVulkanSafe() => true;
 
-    private void StartRenderLoop()
-    {
-        _cts = new CancellationTokenSource();
-
-        _ = Task.Run(async () =>
-        {
-            while (!_cts.Token.IsCancellationRequested)
-            {
-                if (_tungTungTungSahur == null) { await Task.Yield(); continue; }
-
-                try
-                {
-                    _tungTungTungSahur.ToJáJsemVypustilBaziliška();
-                    SKBitmap? frame = _tungTungTungSahur.JaJsemHagrid();
-                    if (frame != null)
-                    {
-                        _skibidiFrame = frame;
-                        MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
-                    }
-                }
-                catch
-                {
-                    _tungTungTungSahur = null;
-                    _renderUnavailable = true;
-                    MainThread.BeginInvokeOnMainThread(() => Canvas.InvalidateSurface());
-                    break;
-                }
-                await Task.Delay(6);
-            }
-        });
-    }
-
-    private void StopRenderLoop()
-    {
-        _cts?.Cancel();
-        _tungTungTungSahur = null;
-    }
-
     void OnPaintSurface(object sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
@@ -602,13 +594,17 @@ public partial class WheelchairConfiguratorPage : ContentPage
         }
 
         if (_skibidiFrame == null) return;
-        lock (_mutex)
-            canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
+        canvas.DrawBitmap(_skibidiFrame, e.Info.Rect);
     }
 
     private async void OnBackClicked(object sender, EventArgs e)
     {
-        _tungTungTungSahur?.ZabijBaziliška();
+        Console.WriteLine("[Configurator] OnBackClicked: shutting down render");
+        if (_tungTungTungSahur != null)
+        {
+            await _tungTungTungSahur.ShutdownAsync();
+            _tungTungTungSahur = null;
+        }
         await Shell.Current.GoToAsync("..");
     }
 
@@ -619,8 +615,37 @@ public partial class WheelchairConfiguratorPage : ContentPage
             .Cast<ComponentModel>()
             .ToList();
 
-        _tungTungTungSahur?.ZabijBaziliška();
-        await Shell.Current.GoToAsync("summaryPage");
+        Console.WriteLine($"[Configurator] Continue: saving config (components={_navState.SelectedComponents.Count})");
+
+        var request = new ConfigurationRequest
+        {
+            SpecialistId = _navState.ActiveSpecialist?.Id ?? 0,
+            SpecialistName = _navState.ActiveSpecialist?.FullName ?? "",
+            PatientMeasurementId = _navState.ActiveMeasurement?.Id ?? 0,
+            PatientBirthNumber = _navState.ActiveMeasurement?.PatientBirthNumber ?? "",
+            PatientName = _navState.ActiveMeasurement?.PatientFullName ?? "",
+            SelectedComponentIds = _navState.SelectedComponents.Select(c => c.Id).ToList(),
+            Patient = BuildPatientProfile()
+        };
+
+        var result = await _appService.SaveConfigurationAsync(request);
+        if (!result.IsSuccess)
+        {
+            await DisplayAlert("Chyba uložení", result.Message, "OK");
+            return;
+        }
+
+        _navState.ConfigurationId = result.ConfigurationId;
+        Console.WriteLine($"[Configurator] Saved as ConfigurationId={result.ConfigurationId}");
+
+        if (_tungTungTungSahur != null)
+        {
+            await _tungTungTungSahur.ShutdownAsync();
+            _tungTungTungSahur = null;
+        }
+
+        Console.WriteLine($"[Configurator] Navigating to summaryPage?configId={result.ConfigurationId}");
+        await Shell.Current.GoToAsync($"summaryPage?configId={result.ConfigurationId}");
     }
 
     private Point _panStart;

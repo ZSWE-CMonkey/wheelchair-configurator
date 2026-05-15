@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using WheelchairConfigurator.Data;
 using WheelchairConfigurator.Data.Repositories;
 using WheelchairConfigurator.Domain.Models;
 using WheelchairConfigurator.Export;
@@ -23,6 +24,7 @@ public class AppService : IAppService
     private readonly IConfigurationEngine _engine;
     private readonly IExportFileBuilder _fileBuilder;
     private readonly Model3DRepository _model3DRepo;
+    private readonly DbInitializer _dbInitializer;
 
     public AppService(
         ICategoryRepository categoryRepo,
@@ -36,7 +38,8 @@ public class AppService : IAppService
         IAppSettingRepository settingRepo,
         IConfigurationEngine engine,
         IExportFileBuilder fileBuilder,
-        Model3DRepository model3DRepo)
+        Model3DRepository model3DRepo,
+        DbInitializer dbInitializer)
     {
         _categoryRepo = categoryRepo;
         _componentRepo = componentRepo;
@@ -50,6 +53,7 @@ public class AppService : IAppService
         _engine = engine;
         _fileBuilder = fileBuilder;
         _model3DRepo = model3DRepo;
+        _dbInitializer = dbInitializer;
     }
 
     // ── Categories ────────────────────────────────────────────────────────────
@@ -462,7 +466,20 @@ public class AppService : IAppService
         {
             ComponentId = m.ComponentId,
             FilePath = m.FilePath,
-            TextureId = m.TextureId
+            TextureId = m.TextureId,
+            Scale = (float)m.Scale
         }).ToList();
+    }
+
+    // ── Dev tools ─────────────────────────────────────────────────────────────
+
+    public Task LoadTestDataAsync()
+    {
+        return Task.Run(() => _dbInitializer.Initialize(resetOnStart: true));
+    }
+
+    public Task WipeDatabaseAsync()
+    {
+        return Task.Run(() => _dbInitializer.WipeOnly());
     }
 }

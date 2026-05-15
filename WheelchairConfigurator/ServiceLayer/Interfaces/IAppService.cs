@@ -60,4 +60,17 @@ public interface IAppService
     // ── 3D Models ─────────────────────────────────────────────────────────────
 
     Task<List<Model3DModel>> GetAllModel3DsAsync();
+
+    // ── Dev tools ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// DEV ONLY: drops all tables, recreates schema, reseeds catalog from seed_data.json
+    /// (including test specialist + patient).
+    /// </summary>
+    Task LoadTestDataAsync();
+
+    /// <summary>
+    /// DEV ONLY: drops all tables and recreates an empty schema. No seed data is loaded.
+    /// </summary>
+    Task WipeDatabaseAsync();
 }

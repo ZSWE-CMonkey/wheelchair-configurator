@@ -138,14 +138,14 @@ public partial class ComponentManagerPage : ContentPage
         };
 
         var add = AddSection();
-        var remove = RemoveSection(collectionHeight: 0);
+        var remove = RemoveSection(collectionHeight: 360);
 
         Grid.SetColumn(add, 0);
         Grid.SetColumn(remove, 1);
         grid.Children.Add(add);
         grid.Children.Add(remove);
 
-        return grid;
+        return new ScrollView { Content = grid };
     }
 
     private View BuildPortraitLayout()

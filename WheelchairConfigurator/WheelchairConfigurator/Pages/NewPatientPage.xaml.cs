@@ -104,9 +104,8 @@ public partial class NewPatientPage : ContentPage
 
     private View BuildLandscapeLayout()
     {
-        var grid = new Grid
+        var panelsGrid = new Grid
         {
-            Padding = new Thickness(20),
             ColumnSpacing = 20,
             ColumnDefinitions =
             {
@@ -115,32 +114,45 @@ public partial class NewPatientPage : ContentPage
                 new ColumnDefinition(GridLength.Star),
             }
         };
-
         Grid.SetColumn(_panels[0], 0);
         Grid.SetColumn(_panels[1], 1);
-        grid.Children.Add(_panels[0]);
-        grid.Children.Add(_panels[1]);
+        Grid.SetColumn(_panels[2], 2);
+        panelsGrid.Children.Add(_panels[0]);
+        panelsGrid.Children.Add(_panels[1]);
+        panelsGrid.Children.Add(_panels[2]);
 
-        var col3 = new Grid
+        var buttonsRow = new Grid
         {
+            ColumnSpacing = 12,
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+            }
+        };
+        Grid.SetColumn(_continueBtn, 0);
+        Grid.SetColumn(_backBtn, 1);
+        buttonsRow.Children.Add(_continueBtn);
+        buttonsRow.Children.Add(_backBtn);
+
+        var scroll = new ScrollView { Content = panelsGrid };
+
+        var outer = new Grid
+        {
+            Padding = new Thickness(20),
+            RowSpacing = 12,
             RowDefinitions =
             {
                 new RowDefinition(GridLength.Star),
                 new RowDefinition(GridLength.Auto),
-                new RowDefinition(GridLength.Auto),
             }
         };
-        Grid.SetRow(_panels[2], 0);
-        Grid.SetRow(_continueBtn, 1);
-        Grid.SetRow(_backBtn, 2);
-        col3.Children.Add(_panels[2]);
-        col3.Children.Add(_continueBtn);
-        col3.Children.Add(_backBtn);
+        Grid.SetRow(scroll, 0);
+        Grid.SetRow(buttonsRow, 1);
+        outer.Children.Add(scroll);
+        outer.Children.Add(buttonsRow);
 
-        Grid.SetColumn(col3, 2);
-        grid.Children.Add(col3);
-
-        return grid;
+        return outer;
     }
 
     private View BuildPortraitLayout()

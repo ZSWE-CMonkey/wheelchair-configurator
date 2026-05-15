@@ -52,4 +52,14 @@ public class DbInitializer
 
         Console.WriteLine("[DbInitializer] Initialization complete.");
     }
+
+    /// <summary>
+    /// DEV ONLY: drops all tables and recreates an empty schema. No seed data is loaded.
+    /// </summary>
+    public void WipeOnly()
+    {
+        Console.WriteLine("[DbInitializer] Wipe only — dropping tables without seed.");
+        _dbService.ResetDatabase();
+        Console.WriteLine("[DbInitializer] Wipe complete.");
+    }
 }

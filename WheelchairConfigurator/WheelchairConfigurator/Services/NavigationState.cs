@@ -7,6 +7,7 @@ public class NavigationState
     public SpecialistModel? ActiveSpecialist { get; set; }
     public PatientMeasurementModel? ActiveMeasurement { get; set; }
     public List<ComponentModel> SelectedComponents { get; set; } = new();
+    public int? ConfigurationId { get; set; }
 
     public UserInput? Patient
     {

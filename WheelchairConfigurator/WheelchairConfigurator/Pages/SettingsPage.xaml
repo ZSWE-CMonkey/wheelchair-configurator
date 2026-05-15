@@ -42,6 +42,28 @@
                     </VerticalStackLayout>
                 </Border>
 
+                <!-- Vývojářské nástroje -->
+                <Border Padding="16" StrokeThickness="2"
+                        Stroke="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Vývojářské nástroje" FontSize="15" FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#D32F2F, Dark=#EF5350}" />
+                        <Label Text="Načtení testovacích dat: dropne tabulky a načte seed_data.json (komponenty + testovací terapeut + testovací pacient)."
+                               FontSize="12" TextColor="Gray" />
+                        <Button x:Name="LoadTestDataBtn" Text="Načíst testovací data"
+                                BackgroundColor="#2E7D32" TextColor="White"
+                                Clicked="OnLoadTestDataClicked"
+                                HorizontalOptions="Fill" />
+                        <Label Text="Vymazání databáze: dropne tabulky a nechá prázdné schéma. SMAŽE veškerá data včetně katalogu."
+                               FontSize="12" TextColor="Gray" />
+                        <Button x:Name="WipeDbBtn" Text="Vymazat databázi"
+                                BackgroundColor="#D32F2F" TextColor="White"
+                                Clicked="OnWipeDbClicked"
+                                HorizontalOptions="Fill" />
+                        <Label x:Name="DevStatusLabel" FontSize="12" TextColor="Gray" />
+                    </VerticalStackLayout>
+                </Border>
+
             </VerticalStackLayout>
         </ScrollView>
 

@@ -78,6 +78,60 @@ public partial class SettingsPage : ContentPage
         }
     }
 
+    private async void OnLoadTestDataClicked(object sender, EventArgs e)
+    {
+        bool confirm = await DisplayAlert(
+            "Načtení testovacích dat",
+            "Tato akce SMAŽE všechna existující data a načte testovací katalog + terapeuta + pacienta. Pokračovat?",
+            "Ano, načti",
+            "Zrušit");
+        if (!confirm) return;
+
+        await RunDevAction(
+            "Načítám...",
+            () => _appService.LoadTestDataAsync(),
+            "Hotovo. Restartuj aplikaci pro úplný efekt (nové 3D soubory se zkopírují při dalším startu).");
+    }
+
+    private async void OnWipeDbClicked(object sender, EventArgs e)
+    {
+        bool confirm = await DisplayAlert(
+            "Vymazání databáze",
+            "Tato akce SMAŽE všechna data včetně katalogu komponent. Databáze bude úplně prázdná. Pokračovat?",
+            "Ano, vymaž",
+            "Zrušit");
+        if (!confirm) return;
+
+        await RunDevAction(
+            "Mažu...",
+            () => _appService.WipeDatabaseAsync(),
+            "Databáze vymazána. Restartuj aplikaci.");
+    }
+
+    private async Task RunDevAction(string busyText, Func<Task> action, string okText)
+    {
+        try
+        {
+            LoadTestDataBtn.IsEnabled = false;
+            WipeDbBtn.IsEnabled = false;
+            DevStatusLabel.TextColor = Colors.Gray;
+            DevStatusLabel.Text = busyText;
+            await action();
+            DevStatusLabel.TextColor = Colors.Green;
+            DevStatusLabel.Text = okText;
+        }
+        catch (Exception ex)
+        {
+            DevStatusLabel.TextColor = Colors.Red;
+            DevStatusLabel.Text = $"Chyba: {ex.Message}";
+        }
+        finally
+        {
+            LoadTestDataBtn.IsEnabled = true;
+            WipeDbBtn.IsEnabled = true;
+        }
+    }
+
     private async void OnBackClicked(object sender, EventArgs e)
     {
         await Shell.Current.GoToAsync("..");
