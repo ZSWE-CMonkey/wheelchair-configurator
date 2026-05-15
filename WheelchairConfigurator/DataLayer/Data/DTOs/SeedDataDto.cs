@@ -11,4 +11,5 @@ public class SeedDataDto
     public List<Model3DDto> Models3D { get; set; } = new();
     public List<SpecialistDto> Specialists { get; set; } = new();
     public List<PatientDto> Patients { get; set; } = new();
+    public List<PatientMeasurementDto> Measurements { get; set; } = new();
 }

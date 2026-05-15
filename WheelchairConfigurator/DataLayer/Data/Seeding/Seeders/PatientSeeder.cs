@@ -6,9 +6,9 @@ namespace WheelchairConfigurator.Data.Seeding.Seeders;
 
 public class PatientSeeder
 {
-    public void Seed(SQLiteConnection db, List<PatientDto> dtos, Dictionary<string, int> specialistMap)
+    public Dictionary<string, int> Seed(SQLiteConnection db, List<PatientDto> dtos, Dictionary<string, int> specialistMap)
     {
-        int count = 0;
+        var map = new Dictionary<string, int>();
         foreach (var dto in dtos)
         {
             if (!specialistMap.TryGetValue(dto.CreatedBySpecialistFullName, out int specialistId))
@@ -28,9 +28,10 @@ public class PatientSeeder
                 CreatedBySpecialistName = dto.CreatedBySpecialistFullName
             };
             db.Insert(entity);
-            count++;
+            map[entity.BirthNumber] = entity.Id;
         }
 
-        Console.WriteLine($"[PatientSeeder] Patients: {count}");
+        Console.WriteLine($"[PatientSeeder] Patients: {map.Count}");
+        return map;
     }
 }

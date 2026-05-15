@@ -17,6 +17,7 @@ public class DbSeeder
     private readonly CompatibilityRuleSeeder _compatibilityRuleSeeder = new();
     private readonly SpecialistSeeder _specialistSeeder = new();
     private readonly PatientSeeder _patientSeeder = new();
+    private readonly PatientMeasurementSeeder _measurementSeeder = new();
 
     /// <summary>
     /// Seeds all entities from the provided <see cref="SeedDataDto"/> in dependency order.
@@ -35,7 +36,8 @@ public class DbSeeder
             _model3DSeeder.Seed(db, data.Models3D, componentMap);
             _compatibilityRuleSeeder.Seed(db, data.Rules, componentMap);
             var specialistMap = _specialistSeeder.Seed(db, data.Specialists);
-            _patientSeeder.Seed(db, data.Patients, specialistMap);
+            var patientMap = _patientSeeder.Seed(db, data.Patients, specialistMap);
+            _measurementSeeder.Seed(db, data.Measurements, patientMap, specialistMap);
 
             db.Commit();
             Console.WriteLine("[DbSeeder] Seed completed successfully.");

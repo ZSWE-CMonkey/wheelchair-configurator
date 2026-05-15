@@ -70,19 +70,19 @@
         { "ComponentName": "Headrest Adapter, long arm", "WeightCapacityKg": 150, "SeatWidthCm": null, "SeatDepthCm": null, "BackrestHeightLevel": 3, "MaxSpeedKmh": null, "DrivePowerLevel": null, "SupportsTilt": true, "SupportsRecline": true, "SupportsLateralSupport": true, "HasHeadSupport": true, "PressureReliefLevel": null, "ControlMode": null, "EnvironmentType": null, "SupportsLegRestAdjustment": null, "ComfortLevel": 3 }
     ],
     "Models3D": [
-        { "ComponentName": "M1 Corpus Seat Frame, ActiveReach 445-495 mm", "FilePath": "Permobil_M1_Skeleton.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "M1 AP Drive Unit, front-wheel", "FilePath": "Permobil_M1_Motor.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "M1 R-Net CJSM2 Joystick", "FilePath": "Permobil_M1_ControlPad.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "M1 Drive + Caster Wheel Set", "FilePath": "Permobil_M1_Wheels.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "M1 Corpus Tubular Backrest C3G", "FilePath": "Permobil_M1_BackRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "M1 Ergonomic Headrest, KN-T", "FilePath": "Permobil_M1_HeadRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
+        { "ComponentName": "M1 Corpus Seat Frame, ActiveReach 445-495 mm", "FilePath": "Permobil_M1_Skeleton.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "M1 AP Drive Unit, front-wheel", "FilePath": "Permobil_M1_Motor.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "M1 R-Net CJSM2 Joystick", "FilePath": "Permobil_M1_ControlPad.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "M1 Drive + Caster Wheel Set", "FilePath": "Permobil_M1_Wheels.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "M1 Corpus Tubular Backrest C3G", "FilePath": "Permobil_M1_BackRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "M1 Ergonomic Headrest, KN-T", "FilePath": "Permobil_M1_HeadRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
 
-        { "ComponentName": "Koala Pediatric Seat Frame, 280-360 mm", "FilePath": "Permobil_KoalaRNET_Skeleton.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "Koala MWD Drive Unit (R-NET)", "FilePath": "Permobil_KoalaRNET_Motor.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "Koala R-NET CJSM Joystick (pediatric)", "FilePath": "Permobil_KoalaRNET_ControlJoystick.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "Koala MWD Wheel Set, 8\"", "FilePath": "Permobil_KoalaRNET_Wheels.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "Koala Adjustable Backrest, pediatric", "FilePath": "Permobil_KoalaRNET_BackRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 },
-        { "ComponentName": "Koala Pediatric Headrest, short arm", "FilePath": "Permobil_KoalaRNET_HeadRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 3.0 }
+        { "ComponentName": "Koala Pediatric Seat Frame, 280-360 mm", "FilePath": "Permobil_KoalaRNET_Skeleton.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "Koala MWD Drive Unit (R-NET)", "FilePath": "Permobil_KoalaRNET_Motor.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "Koala R-NET CJSM Joystick (pediatric)", "FilePath": "Permobil_KoalaRNET_ControlJoystick.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "Koala MWD Wheel Set, 8\"", "FilePath": "Permobil_KoalaRNET_Wheels.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "Koala Adjustable Backrest, pediatric", "FilePath": "Permobil_KoalaRNET_BackRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 },
+        { "ComponentName": "Koala Pediatric Headrest, short arm", "FilePath": "Permobil_KoalaRNET_HeadRest.glb", "TextureId": "", "AnchorX": 0.0, "AnchorY": 0.0, "AnchorZ": 0.0, "Scale": 4.0 }
     ],
     "Specialists": [
         {
@@ -98,6 +98,44 @@
             "FirstName": "Jan",
             "LastName": "Testovací",
             "CreatedBySpecialistFullName": "Test Terapeut"
+        },
+        {
+            "BirthNumber": "1801051234",
+            "FirstName": "Anna",
+            "LastName": "Malá",
+            "CreatedBySpecialistFullName": "Test Terapeut"
+        }
+    ],
+    "Measurements": [
+        {
+            "PatientBirthNumber": "9001011234",
+            "CreatedBySpecialistFullName": "Test Terapeut",
+            "BodyHeight": 60,
+            "PelvisWidth": 46,
+            "ThighLength": 47,
+            "Weight": 80,
+            "BodyStability": "Dobrá",
+            "HeadStability": true,
+            "BedsoreRisk": "Nízké",
+            "Control": "Hand control",
+            "Environment": "Kombinace",
+            "Legs": true,
+            "Pain": "Nízké"
+        },
+        {
+            "PatientBirthNumber": "1801051234",
+            "CreatedBySpecialistFullName": "Test Terapeut",
+            "BodyHeight": 40,
+            "PelvisWidth": 30,
+            "ThighLength": 36,
+            "Weight": 35,
+            "BodyStability": "Střední",
+            "HeadStability": true,
+            "BedsoreRisk": "Nízké",
+            "Control": "Hand control",
+            "Environment": "Indoor",
+            "Legs": true,
+            "Pain": "Nízké"
         }
     ]
 }
