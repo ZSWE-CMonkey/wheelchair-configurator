@@ -39,7 +39,7 @@
                 </CollectionView>
 
                 <Button Grid.Row="2" x:Name="DeactivatePatientBtn"
-                        Text="Deaktivovat pacienta"
+                        Text="Odstranit pacienta"
                         Clicked="OnDeactivatePatientClicked"
                         BackgroundColor="OrangeRed"
                         IsEnabled="False" />
@@ -51,12 +51,14 @@
                        FontSize="16" FontAttributes="Bold" />
 
                 <!-- Formulář nového pacienta (zobrazen při nezvolení) -->
-                <Grid Grid.Row="1" x:Name="NewPatientForm" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
-                    <Label Grid.Row="0" Text="Přidat nového pacienta" FontSize="13" TextColor="Gray" />
-                    <Entry Grid.Row="1" x:Name="BirthNumberEntry" Placeholder="Rodné číslo" MaxLength="20" />
-                    <Entry Grid.Row="2" x:Name="FirstNameEntry" Placeholder="Jméno" />
-                    <Entry Grid.Row="3" x:Name="LastNameEntry" Placeholder="Příjmení" />
-                </Grid>
+                <ScrollView Grid.Row="1" x:Name="NewPatientForm">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Přidat nového pacienta" FontSize="13" TextColor="Gray" />
+                        <Entry x:Name="BirthNumberEntry" Placeholder="Rodné číslo" MaxLength="20" />
+                        <Entry x:Name="FirstNameEntry" Placeholder="Jméno" />
+                        <Entry x:Name="LastNameEntry" Placeholder="Příjmení" />
+                    </VerticalStackLayout>
+                </ScrollView>
 
                 <!-- Záznamy měření (zobrazeny po výběru pacienta) -->
                 <CollectionView Grid.Row="2"

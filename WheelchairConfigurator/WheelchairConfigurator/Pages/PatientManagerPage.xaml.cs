@@ -52,8 +52,8 @@ public partial class PatientManagerPage : ContentPage
     {
         if (_selectedPatient is null) return;
 
-        bool confirm = await DisplayAlert("Deaktivovat",
-            $"Opravdu chcete deaktivovat pacienta {_selectedPatient.FullName}?", "Ano", "Ne");
+        bool confirm = await DisplayAlert("Odstranit",
+            $"Opravdu chcete odstranit pacienta {_selectedPatient.FullName}?", "Ano", "Ne");
         if (!confirm) return;
 
         await _appService.DeactivatePatientAsync(_selectedPatient.Id);

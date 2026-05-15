@@ -157,43 +157,43 @@ public partial class NewPatientPage : ContentPage
 
     private View BuildPortraitLayout()
     {
-        var grid = new Grid
+        var panelsStack = new VerticalStackLayout { Spacing = 16 };
+        panelsStack.Children.Add(_panels[0]);
+        panelsStack.Children.Add(_panels[1]);
+        panelsStack.Children.Add(_panels[2]);
+
+        var buttonsRow = new Grid
+        {
+            ColumnSpacing = 12,
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+            }
+        };
+        Grid.SetColumn(_continueBtn, 0);
+        Grid.SetColumn(_backBtn, 1);
+        buttonsRow.Children.Add(_continueBtn);
+        buttonsRow.Children.Add(_backBtn);
+
+        var scroll = new ScrollView { Content = panelsStack };
+
+        var outer = new Grid
         {
             Padding = new Thickness(20),
-            ColumnSpacing = 20,
-            RowSpacing = 20,
-            ColumnDefinitions =
-        {
-            new ColumnDefinition(GridLength.Star),
-            new ColumnDefinition(GridLength.Star),
-        },
+            RowSpacing = 12,
             RowDefinitions =
-        {
-            new RowDefinition(GridLength.Auto),
-            new RowDefinition(GridLength.Auto),
-        }
+            {
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(GridLength.Auto),
+            }
         };
+        Grid.SetRow(scroll, 0);
+        Grid.SetRow(buttonsRow, 1);
+        outer.Children.Add(scroll);
+        outer.Children.Add(buttonsRow);
 
-        Grid.SetRow(_panels[0], 0); Grid.SetColumn(_panels[0], 0);
-        Grid.SetRow(_panels[1], 0); Grid.SetColumn(_panels[1], 1);
-        grid.Children.Add(_panels[0]);
-        grid.Children.Add(_panels[1]);
-
-        Grid.SetRow(_panels[2], 1); Grid.SetColumn(_panels[2], 0);
-        grid.Children.Add(_panels[2]);
-
-        var btnStack = new VerticalStackLayout
-        {
-            Spacing = 8,
-            VerticalOptions = LayoutOptions.End
-        };
-        btnStack.Children.Add(_continueBtn);
-        btnStack.Children.Add(_backBtn);
-
-        Grid.SetRow(btnStack, 1); Grid.SetColumn(btnStack, 1);
-        grid.Children.Add(btnStack);
-
-        return grid;
+        return outer;
     }
 
     private void SaveAllPanels()

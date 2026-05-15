@@ -47,29 +47,30 @@
             </Grid>
 
             <!-- Formulář přidání/editace -->
-            <Grid Grid.Column="1" RowDefinitions="Auto, Auto, Auto, Auto, Auto, Auto, *" RowSpacing="10">
-                <Label Grid.Row="0" x:Name="FormTitle" Text="Přidat terapeuta"
-                       FontSize="16" FontAttributes="Bold" />
+            <ScrollView Grid.Column="1">
+                <VerticalStackLayout Spacing="10">
+                    <Label x:Name="FormTitle" Text="Přidat terapeuta"
+                           FontSize="16" FontAttributes="Bold" />
 
-                <Entry Grid.Row="1" x:Name="FirstNameEntry" Placeholder="Jméno" />
-                <Entry Grid.Row="2" x:Name="LastNameEntry" Placeholder="Příjmení" />
-                <Entry Grid.Row="3" x:Name="EmailEntry" Placeholder="Email (volitelně)" Keyboard="Email" />
-                <Entry Grid.Row="4" x:Name="ClinicEntry" Placeholder="Klinika (volitelně)" />
+                    <Entry x:Name="FirstNameEntry" Placeholder="Jméno" />
+                    <Entry x:Name="LastNameEntry" Placeholder="Příjmení" />
+                    <Entry x:Name="EmailEntry" Placeholder="Email (volitelně)" Keyboard="Email" />
+                    <Entry x:Name="ClinicEntry" Placeholder="Klinika (volitelně)" />
 
-                <Grid Grid.Row="5" ColumnDefinitions="*, *" ColumnSpacing="8">
-                    <Button Grid.Column="0" x:Name="SaveFormBtn" Text="Uložit"
-                            Clicked="OnSaveFormClicked" HorizontalOptions="Fill" />
-                    <Button Grid.Column="1" x:Name="ClearFormBtn" Text="Vymazat"
-                            Clicked="OnClearFormClicked" HorizontalOptions="Fill"
-                            BackgroundColor="Gray" />
-                </Grid>
+                    <Grid ColumnDefinitions="*, *" ColumnSpacing="8">
+                        <Button Grid.Column="0" x:Name="SaveFormBtn" Text="Uložit"
+                                Clicked="OnSaveFormClicked" HorizontalOptions="Fill" />
+                        <Button Grid.Column="1" x:Name="ClearFormBtn" Text="Vymazat"
+                                Clicked="OnClearFormClicked" HorizontalOptions="Fill"
+                                BackgroundColor="Gray" />
+                    </Grid>
 
-                <Button Grid.Row="6" x:Name="DeactivateBtn" Text="Deaktivovat vybraného"
-                        Clicked="OnDeactivateClicked"
-                        BackgroundColor="OrangeRed"
-                        IsEnabled="False"
-                        VerticalOptions="End" />
-            </Grid>
+                    <Button x:Name="DeactivateBtn" Text="Odstranit vybraného"
+                            Clicked="OnDeactivateClicked"
+                            BackgroundColor="OrangeRed"
+                            IsEnabled="False" />
+                </VerticalStackLayout>
+            </ScrollView>
 
         </Grid>
 

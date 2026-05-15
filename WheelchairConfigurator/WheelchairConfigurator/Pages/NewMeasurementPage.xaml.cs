@@ -133,9 +133,8 @@ public partial class NewMeasurementPage : ContentPage
 
     private View BuildLandscapeLayout()
     {
-        var grid = new Grid
+        var panelsGrid = new Grid
         {
-            Padding = new Thickness(20),
             ColumnSpacing = 20,
             ColumnDefinitions =
             {
@@ -143,37 +142,49 @@ public partial class NewMeasurementPage : ContentPage
                 new ColumnDefinition(GridLength.Star),
             }
         };
-
         Grid.SetColumn(_panels[0], 0);
         Grid.SetColumn(_panels[1], 1);
-        grid.Children.Add(_panels[0]);
+        panelsGrid.Children.Add(_panels[0]);
+        panelsGrid.Children.Add(_panels[1]);
 
-        var rightCol = new Grid
+        var buttonsRow = new Grid
         {
+            ColumnSpacing = 12,
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Auto),
+            }
+        };
+        Grid.SetColumn(_saveBtn, 0);
+        Grid.SetColumn(_configureBtn, 1);
+        Grid.SetColumn(_backBtn, 2);
+        buttonsRow.Children.Add(_saveBtn);
+        buttonsRow.Children.Add(_configureBtn);
+        buttonsRow.Children.Add(_backBtn);
+
+        var scroll = new ScrollView { Content = panelsGrid };
+
+        var outer = new Grid
+        {
+            Padding = new Thickness(20),
+            RowSpacing = 12,
             RowDefinitions =
             {
                 new RowDefinition(GridLength.Auto),
                 new RowDefinition(GridLength.Star),
                 new RowDefinition(GridLength.Auto),
-                new RowDefinition(GridLength.Auto),
-                new RowDefinition(GridLength.Auto),
             }
         };
         Grid.SetRow(_titleLabel, 0);
-        Grid.SetRow(_panels[1], 1);
-        Grid.SetRow(_saveBtn, 2);
-        Grid.SetRow(_configureBtn, 3);
-        Grid.SetRow(_backBtn, 4);
-        rightCol.Children.Add(_titleLabel);
-        rightCol.Children.Add(_panels[1]);
-        rightCol.Children.Add(_saveBtn);
-        rightCol.Children.Add(_configureBtn);
-        rightCol.Children.Add(_backBtn);
+        Grid.SetRow(scroll, 1);
+        Grid.SetRow(buttonsRow, 2);
+        outer.Children.Add(_titleLabel);
+        outer.Children.Add(scroll);
+        outer.Children.Add(buttonsRow);
 
-        Grid.SetColumn(rightCol, 1);
-        grid.Children.Add(rightCol);
-
-        return grid;
+        return outer;
     }
 
     private View BuildPortraitLayout()

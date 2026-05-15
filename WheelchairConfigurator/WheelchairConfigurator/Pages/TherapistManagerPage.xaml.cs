@@ -104,8 +104,8 @@ public partial class TherapistManagerPage : ContentPage
     {
         if (_selectedItem is null) return;
 
-        bool confirm = await DisplayAlert("Deaktivovat",
-            $"Opravdu chcete deaktivovat terapeuta {_selectedItem.FullName}?", "Ano", "Ne");
+        bool confirm = await DisplayAlert("Odstranit",
+            $"Opravdu chcete odstranit terapeuta {_selectedItem.FullName}?", "Ano", "Ne");
         if (!confirm) return;
 
         if (_navState.ActiveSpecialist?.Id == _selectedItem.Id)

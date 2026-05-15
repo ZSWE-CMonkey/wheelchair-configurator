@@ -64,7 +64,7 @@
                         IsEnabled="False" />
 
                 <Button x:Name="ToPatientSelectBtn"
-                        Text="Pokračovat v konfiguraci"
+                        Text="Nová konfigurace (Prohlížeč)"
                         Clicked="OnToPatientSelectClicked"
                         HorizontalOptions="Fill"
                         IsEnabled="False" />

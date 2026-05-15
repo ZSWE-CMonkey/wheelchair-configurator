@@ -34,10 +34,11 @@ VkResult VkLoader::MeshHandle::LoadMesh(std::string const& filename)
 	return VK_SUCCESS;
 }
 
-VkResult VkLoader::MeshHandle::LoadMeshFromFile(std::string const& filepath)
+VkResult VkLoader::MeshHandle::LoadMeshFromFile(std::string const& filepath, float scale)
 {
-	const int flags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals;
+	const int flags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_GlobalScale | aiProcess_FlipUVs;
 
+	m_importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
 	m_scene = m_importer.ReadFile(filepath, flags);
 
 	if (!m_scene)
@@ -68,6 +69,18 @@ uint32_t VkLoader::MeshHandle::GetEntriesSize() const
 VkLoader::MeshEntry const& VkLoader::MeshHandle::GetEntry(uint32_t index) const
 {
 	return m_entries[index];
+}
+
+bool VkLoader::MeshHandle::TryGetEmbeddedTexture(const uint8_t** outData, size_t* outSize) const
+{
+	if (!m_scene || m_scene->mNumTextures == 0 || !m_scene->mTextures || !m_scene->mTextures[0])
+		return false;
+	const aiTexture* tex = m_scene->mTextures[0];
+	if (tex->mHeight != 0 || tex->pcData == nullptr)
+		return false; // not a compressed embedded blob
+	*outData = reinterpret_cast<const uint8_t*>(tex->pcData);
+	*outSize = static_cast<size_t>(tex->mWidth);
+	return true;
 }
 
 void VkLoader::MeshHandle::InitMesh(unsigned int index, const aiMesh* paiMesh)
