@@ -6,7 +6,10 @@ namespace ConfigurationLogic.Graphics
     {
         public bool Initialize();
         public void AddResource(string resourceId);
-        public void AddResourceFromFiles(string objectId, string daePath, string ktxPath);
+        public void AddResourceFromFiles(string objectId, string geometryPath, string texturePath, float scale,
+            float anchorX, float anchorY, float anchorZ,
+            float rotationX, float rotationY, float rotationZ);
+        public void SetHighQualityTextures(bool enabled);
         public void SetCamera(float zoom, CameraPosition position, CameraRotation rotation);
         public void ClearResources();
         public void Render(out byte[] image);

@@ -16,7 +16,10 @@ namespace GraphicsPlugin {
 		GPluginResult Initialize(std::string appName, uint32_t width, uint32_t height) override;
 		GPluginResult SetCamera(CameraSettings setting) override;
 		GPluginResult AddObject(std::string objectId) override;
-		GPluginResult AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath);
+		GPluginResult AddObjectFromFiles(std::string objectId, std::string geometryPath, std::string texturePath,
+			float scale,
+			float anchorX, float anchorY, float anchorZ,
+			float rotationX, float rotationY, float rotationZ) override;
 		GPluginResult Render(const char** out) override;
 		GPluginResult DeInitialize() override;
 	private:

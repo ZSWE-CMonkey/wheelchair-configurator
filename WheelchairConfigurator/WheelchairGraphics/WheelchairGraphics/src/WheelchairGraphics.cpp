@@ -15,24 +15,38 @@ namespace {
 
 	std::vector<std::string> g_objects{};
 
-	std::unordered_map<std::string, std::pair<std::string, std::string>> g_objectFilePaths{};
+	struct ObjectFilePathsEntry {
+		std::string geometryPath;
+		std::string texturePath;
+		float scale;
+		float anchorX, anchorY, anchorZ;
+		float rotationX, rotationY, rotationZ;
+	};
+
+	std::unordered_map<std::string, ObjectFilePathsEntry> g_objectFilePaths{};
 
 	std::unique_ptr<CameraSettings> g_cameraSettings = nullptr;
 
+	bool g_highQualityTextures = true;
 }
+
+bool wgGetHighQualityTextures() { return g_highQualityTextures; }
 
 
 WG_API void wgInitializeVulkanGraphicsWIN32(const char* appName, int width, int height)
 {
 	g_graphicsPlugin = GraphicsPluginFactory::CreateVulkanGraphicsPlugin();
-	
+
 	if (!g_graphicsPlugin)
 		throw std::runtime_error("Graphics plugin was not created");
 
 	for (auto& id : g_objects) {
 		auto it = g_objectFilePaths.find(id);
 		if (it != g_objectFilePaths.end())
-			g_graphicsPlugin->AddObjectFromFiles(id, it->second.first, it->second.second);
+			g_graphicsPlugin->AddObjectFromFiles(id, it->second.geometryPath, it->second.texturePath,
+				it->second.scale,
+				it->second.anchorX, it->second.anchorY, it->second.anchorZ,
+				it->second.rotationX, it->second.rotationY, it->second.rotationZ);
 		else
 			g_graphicsPlugin->AddObject(id);
 	}
@@ -59,7 +73,10 @@ WG_API void wgInitializeVulkanGraphicsANDROID(const char* appName, int width, in
 	for (auto& id : g_objects) {
 		auto it = g_objectFilePaths.find(id);
 		if (it != g_objectFilePaths.end())
-			g_graphicsPlugin->AddObjectFromFiles(id, it->second.first, it->second.second);
+			g_graphicsPlugin->AddObjectFromFiles(id, it->second.geometryPath, it->second.texturePath,
+				it->second.scale,
+				it->second.anchorX, it->second.anchorY, it->second.anchorZ,
+				it->second.rotationX, it->second.rotationY, it->second.rotationZ);
 		else
 			g_graphicsPlugin->AddObject(id);
 	}
@@ -100,9 +117,22 @@ WG_API void wgAddObject(const char* objectId) {
 	g_objects.push_back(std::string(objectId));
 }
 
-WG_API void wgAddObjectFromFiles(const char* objectId, const char* daeAbsolutePath, const char* ktxAbsolutePath) {
+WG_API void wgAddObjectFromFiles(const char* objectId, const char* geometryAbsolutePath, const char* textureAbsolutePath,
+	float scale,
+	float anchorX, float anchorY, float anchorZ,
+	float rotationX, float rotationY, float rotationZ) {
 	g_objects.push_back(std::string(objectId));
-	g_objectFilePaths[std::string(objectId)] = { std::string(daeAbsolutePath), std::string(ktxAbsolutePath) };
+	g_objectFilePaths[std::string(objectId)] = {
+		std::string(geometryAbsolutePath),
+		textureAbsolutePath ? std::string(textureAbsolutePath) : std::string(),
+		scale,
+		anchorX, anchorY, anchorZ,
+		rotationX, rotationY, rotationZ
+	};
+}
+
+WG_API void wgSetHighQualityTextures(bool enabled) {
+	g_highQualityTextures = enabled;
 }
 
 WG_API void wgRender(const char** out)

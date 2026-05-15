@@ -3,12 +3,14 @@
 #include "VulkanCommon.h"
 #include <string>
 
-#include <assimp/Importer.hpp> 
-#include <assimp/scene.h>     
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <assimp/cimport.h>
+#include <assimp/config.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <vector>
 
@@ -58,10 +60,14 @@ namespace VkLoader {
 		~MeshHandle();
 
 		VkResult LoadMesh(std::string const& filename);
-		VkResult LoadMeshFromFile(std::string const& filepath);
+		VkResult LoadMeshFromFile(std::string const& filepath, float scale,
+			float anchorX, float anchorY, float anchorZ,
+			float rotationX, float rotationY, float rotationZ);
 
 		uint32_t GetEntriesSize() const;
 		MeshEntry const& GetEntry(uint32_t index) const;
+
+		bool TryGetEmbeddedTexture(const uint8_t** outData, size_t* outSize) const;
 
 	private:
 		void InitMesh(unsigned int index, const aiMesh* paiMesh);
@@ -71,5 +77,9 @@ namespace VkLoader {
 		std::vector<MeshEntry> m_entries;
 		uint32_t m_numVertices = 0;
 		Dimension m_dim;
+
+		// Per-mesh post-Assimp transform (rotation in radians + translation offset).
+		glm::mat3 m_postRotMat = glm::mat3(1.0f);
+		glm::vec3 m_postAnchor = glm::vec3(0.0f);
 	};
 }

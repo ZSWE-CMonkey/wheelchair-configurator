@@ -8,4 +8,10 @@ public class Model3DDto
     public decimal AnchorX { get; set; } = 0.0m;
     public decimal AnchorY { get; set; } = 0.0m;
     public decimal AnchorZ { get; set; } = 0.0m;
+
+    public decimal Scale { get; set; } = 1.0m;
+
+    public decimal RotationX { get; set; } = 0.0m;
+    public decimal RotationY { get; set; } = 0.0m;
+    public decimal RotationZ { get; set; } = 0.0m;
 }

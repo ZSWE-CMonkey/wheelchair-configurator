@@ -446,15 +446,18 @@ public class AppService : IAppService
     public async Task<AppSettingsModel> GetSettingsAsync()
     {
         var renderingVal = await _settingRepo.GetAsync("RenderingEnabled");
+        var highQualityVal = await _settingRepo.GetAsync("HighQualityTextures");
         return new AppSettingsModel
         {
             RenderingEnabled = renderingVal is null || renderingVal == "true",
+            HighQualityTextures = highQualityVal is null || highQualityVal == "true",
         };
     }
 
     public async Task SaveSettingsAsync(AppSettingsModel settings)
     {
         await _settingRepo.SetAsync("RenderingEnabled", settings.RenderingEnabled ? "true" : "false");
+        await _settingRepo.SetAsync("HighQualityTextures", settings.HighQualityTextures ? "true" : "false");
     }
 
     // ── 3D Models ─────────────────────────────────────────────────────────────
@@ -467,7 +470,13 @@ public class AppService : IAppService
             ComponentId = m.ComponentId,
             FilePath = m.FilePath,
             TextureId = m.TextureId,
-            Scale = (float)m.Scale
+            Scale = (float)m.Scale,
+            AnchorX = (float)m.AnchorX,
+            AnchorY = (float)m.AnchorY,
+            AnchorZ = (float)m.AnchorZ,
+            RotationX = (float)m.RotationX,
+            RotationY = (float)m.RotationY,
+            RotationZ = (float)m.RotationZ
         }).ToList();
     }
 

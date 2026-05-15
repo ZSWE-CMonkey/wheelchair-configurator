@@ -18,7 +18,13 @@ namespace ConfigurationLogic.Graphics
         private static extern void wgAddObject(string objectId);
 
         [DllImport("WheelchairGraphics")]
-        private static extern void wgAddObjectFromFiles(string objectId, string daeAbsolutePath, string ktxAbsolutePath);
+        private static extern void wgAddObjectFromFiles(string objectId, string geometryAbsolutePath, string textureAbsolutePath,
+            float scale,
+            float anchorX, float anchorY, float anchorZ,
+            float rotationX, float rotationY, float rotationZ);
+
+        [DllImport("WheelchairGraphics")]
+        private static extern void wgSetHighQualityTextures(bool enabled);
 
         [DllImport("WheelchairGraphics")]
         private static extern void wgRender(out IntPtr outBuffer);
@@ -66,9 +72,18 @@ namespace ConfigurationLogic.Graphics
             wgAddObject(resourceId);
         }
 
-        public void AddResourceFromFiles(string objectId, string daePath, string ktxPath)
+        public void AddResourceFromFiles(string objectId, string geometryPath, string texturePath, float scale,
+            float anchorX, float anchorY, float anchorZ,
+            float rotationX, float rotationY, float rotationZ)
         {
-            wgAddObjectFromFiles(objectId, daePath, ktxPath);
+            wgAddObjectFromFiles(objectId, geometryPath, texturePath, scale,
+                anchorX, anchorY, anchorZ,
+                rotationX, rotationY, rotationZ);
+        }
+
+        public void SetHighQualityTextures(bool enabled)
+        {
+            wgSetHighQualityTextures(enabled);
         }
 
         public void ClearResources()

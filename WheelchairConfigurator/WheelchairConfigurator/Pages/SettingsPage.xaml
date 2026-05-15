@@ -27,6 +27,21 @@
                     </Grid>
                 </Border>
 
+                <!-- Vysoká kvalita textur -->
+                <Border Padding="16" StrokeThickness="1"
+                        Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                            <Label Text="Vysoká kvalita textur (mipmaps + anisotropy 4×)" FontSize="15" FontAttributes="Bold" />
+                            <Label Text="Ostřejší textury pod úhlem a při vzdálení. Změna se projeví po restartu aplikace."
+                                   FontSize="12" TextColor="Gray" />
+                        </VerticalStackLayout>
+                        <Switch Grid.Column="1" x:Name="HighQualityTexturesSwitch"
+                                VerticalOptions="Center"
+                                Toggled="OnHighQualityTexturesToggled" />
+                    </Grid>
+                </Border>
+
                 <!-- Export katalogu -->
                 <Border Padding="16" StrokeThickness="1"
                         Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3D3D3D}">

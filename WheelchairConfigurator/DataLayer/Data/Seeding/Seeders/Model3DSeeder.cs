@@ -31,7 +31,11 @@ public class Model3DSeeder
                 TextureId = dto.TextureId,
                 AnchorX = dto.AnchorX,
                 AnchorY = dto.AnchorY,
-                AnchorZ = dto.AnchorZ
+                AnchorZ = dto.AnchorZ,
+                Scale = dto.Scale,
+                RotationX = dto.RotationX,
+                RotationY = dto.RotationY,
+                RotationZ = dto.RotationZ
             });
             count++;
         }

@@ -1,4 +1,5 @@
 #include "VulkanEngine.h"
+#include "../includePublic/WheelchairGraphics.h"
 
 #include <vector>
 #include <array>
@@ -215,10 +216,15 @@ VkResult VkEngine::VulkanEngine::AddObject(std::string objectId)
 	return VK_SUCCESS;
 }
 
-VkResult VkEngine::VulkanEngine::AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath)
+VkResult VkEngine::VulkanEngine::AddObjectFromFiles(std::string objectId, std::string geometryPath, std::string texturePath,
+	float scale,
+	float anchorX, float anchorY, float anchorZ,
+	float rotationX, float rotationY, float rotationZ)
 {
 	m_objectId.push_back(objectId);
-	m_objectFilePaths[objectId] = { daePath, ktxPath };
+	m_objectFilePaths[objectId] = { geometryPath, texturePath, scale,
+		anchorX, anchorY, anchorZ,
+		rotationX, rotationY, rotationZ };
 	return VK_SUCCESS;
 }
 
@@ -368,12 +374,20 @@ VkResult VulkanEngine::CreateDevice(uint32_t graphicsQueueIndex)
 
 	std::vector<const char*> enabledExtensions = {};
 
+	VkPhysicalDeviceFeatures enabledFeatures = {};
+	if (wgGetHighQualityTextures()) {
+		VkPhysicalDeviceFeatures supportedFeatures{};
+		vkGetPhysicalDeviceFeatures(m_physicalDevice, &supportedFeatures);
+		if (supportedFeatures.samplerAnisotropy)
+			enabledFeatures.samplerAnisotropy = VK_TRUE;
+	}
+
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pNext = NULL;
 	deviceCreateInfo.queueCreateInfoCount = 1;
 	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	deviceCreateInfo.pEnabledFeatures = NULL;
+	deviceCreateInfo.pEnabledFeatures = &enabledFeatures;
 	deviceCreateInfo.enabledExtensionCount = (uint32_t)enabledExtensions.size();
 	deviceCreateInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
@@ -1168,8 +1182,40 @@ VkResult VkEngine::VulkanEngine::LoadResources()
 	for (auto& id : m_objectId) {
 		auto it = m_objectFilePaths.find(id);
 		if (it != m_objectFilePaths.end()) {
-			VKE_CHECK_RESULT(LoadTextureFromFile(it->second.ktxPath));
-			VKE_CHECK_RESULT(LoadMeshFromFile(it->second.daePath));
+			const std::string& geomPath = it->second.geometryPath;
+			const std::string& texPath = it->second.texturePath;
+			const float scale = it->second.scale;
+			const float ax = it->second.anchorX, ay = it->second.anchorY, az = it->second.anchorZ;
+			const float rx = it->second.rotationX, ry = it->second.rotationY, rz = it->second.rotationZ;
+
+			auto endsWith = [](const std::string& s, const char* suffix) {
+				size_t n = std::char_traits<char>::length(suffix);
+				return s.size() >= n && std::equal(s.end() - n, s.end(), suffix);
+			};
+			bool isGlb = endsWith(geomPath, ".glb") || endsWith(geomPath, ".gltf");
+
+			if (isGlb) {
+				VKE_CHECK_RESULT(LoadMeshFromFile(geomPath, scale, ax, ay, az, rx, ry, rz));
+
+				m_colorMaps.push_back({});
+				m_descriptorSets.push_back({});
+				VulkanTexture& tex = m_colorMaps.back();
+
+				if (!m_lastEmbeddedTextureBytes.empty()) {
+					VKE_CHECK_RESULT(m_textureHandle->LoadTextureFromMemory(
+						m_lastEmbeddedTextureBytes.data(),
+						m_lastEmbeddedTextureBytes.size(),
+						&tex));
+				} else if (!texPath.empty()) {
+					VKE_CHECK_RESULT(m_textureHandle->LoadTextureFromFile(
+						texPath, VK_FORMAT_BC3_UNORM_BLOCK, &tex));
+				} else {
+					VKE_CHECK_RESULT(m_textureHandle->LoadTextureFromMemory(nullptr, 0, &tex));
+				}
+			} else {
+				VKE_CHECK_RESULT(LoadTextureFromFile(texPath));
+				VKE_CHECK_RESULT(LoadMeshFromFile(geomPath, scale, ax, ay, az, rx, ry, rz));
+			}
 		} else {
 			VKE_CHECK_RESULT(LoadTexture(id + ".ktx"));
 			VKE_CHECK_RESULT(LoadMesh(id + ".dae"));
@@ -1439,16 +1485,26 @@ VkResult VkEngine::VulkanEngine::LoadMesh(std::string id)
 	return VK_SUCCESS;
 }
 
-VkResult VkEngine::VulkanEngine::LoadMeshFromFile(const std::string& path)
+VkResult VkEngine::VulkanEngine::LoadMeshFromFile(const std::string& path, float scale,
+	float anchorX, float anchorY, float anchorZ,
+	float rotationX, float rotationY, float rotationZ)
 {
 	std::unique_ptr<VkLoader::MeshHandle> meshHandle = VkLoader::ObjectLoader::CreateMeshHandle();
-	meshHandle->LoadMeshFromFile(path);
+	meshHandle->LoadMeshFromFile(path, scale, anchorX, anchorY, anchorZ, rotationX, rotationY, rotationZ);
+
+	m_lastEmbeddedTextureBytes.clear();
+	{
+		const uint8_t* embData = nullptr;
+		size_t embSize = 0;
+		if (meshHandle->TryGetEmbeddedTexture(&embData, &embSize) && embData && embSize > 0) {
+			m_lastEmbeddedTextureBytes.assign(embData, embData + embSize);
+		}
+	}
 
 	m_meshes.push_back({});
 
 	Mesh& newMesh = m_meshes[m_meshes.size() - 1];
 
-	float scale = 1.0f;
 	std::vector<Vertex> vertexBuffer;
 	for (uint32_t m = 0; m < meshHandle->GetEntriesSize(); m++)
 	{
@@ -1456,7 +1512,7 @@ VkResult VkEngine::VulkanEngine::LoadMeshFromFile(const std::string& path)
 		{
 			Vertex vertex;
 
-			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos * scale;
+			vertex.pos = meshHandle->GetEntry(m).Vertices[i].m_pos;
 			vertex.normal = meshHandle->GetEntry(m).Vertices[i].m_normal;
 			vertex.uv = meshHandle->GetEntry(m).Vertices[i].m_tex;
 			vertex.color = meshHandle->GetEntry(m).Vertices[i].m_color;

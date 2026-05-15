@@ -1,8 +1,18 @@
 #include "TextureHandle.h"
 
 #include <gli/gli.hpp>
+#include <cmath>
+#include <algorithm>
 
 #include "../assetResources/assetResource.h"
+#include "../includePublic/WheelchairGraphics.h"
+
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_ONLY_JPEG
+#define STBI_NO_STDIO
+#include "stb_image.h"
 
 VkLoader::TextureHandle::TextureHandle(VkPhysicalDevice& physicalDevice, VkDevice& device, VkQueue& queue, VkCommandPool& cmdPool) :
 	m_physicalDevice(physicalDevice),
@@ -280,8 +290,11 @@ VkResult VkLoader::TextureHandle::LoadTexture(std::string filename, VkFormat for
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
 	sampler.minLod = 0.0f;
 	sampler.maxLod = (useStaging) ? (float)texture->mipLevels : 0.0f;
-	sampler.maxAnisotropy = 1.0f;
-	sampler.anisotropyEnable = VK_FALSE;
+	{
+		bool highQ = wgGetHighQualityTextures();
+		sampler.maxAnisotropy = highQ ? 4.0f : 1.0f;
+		sampler.anisotropyEnable = highQ ? VK_TRUE : VK_FALSE;
+	}
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	VKE_CHECK_RESULT(vkCreateSampler(m_device, &sampler, nullptr, &texture->sampler));
 
@@ -554,8 +567,11 @@ VkResult VkLoader::TextureHandle::LoadTextureFromFile(std::string filepath, VkFo
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
 	sampler.minLod = 0.0f;
 	sampler.maxLod = (useStaging) ? (float)texture->mipLevels : 0.0f;
-	sampler.maxAnisotropy = 1.0f;
-	sampler.anisotropyEnable = VK_FALSE;
+	{
+		bool highQ = wgGetHighQualityTextures();
+		sampler.maxAnisotropy = highQ ? 4.0f : 1.0f;
+		sampler.anisotropyEnable = highQ ? VK_TRUE : VK_FALSE;
+	}
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	VKE_CHECK_RESULT(vkCreateSampler(m_device, &sampler, nullptr, &texture->sampler));
 
@@ -699,8 +715,11 @@ VkResult VkLoader::TextureHandle::LoadFallbackTexture(VkEngine::VulkanTexture* t
 	sampler.compareOp = VK_COMPARE_OP_NEVER;
 	sampler.minLod = 0.0f;
 	sampler.maxLod = 0.0f;
-	sampler.maxAnisotropy = 1.0f;
-	sampler.anisotropyEnable = VK_FALSE;
+	{
+		bool highQ = wgGetHighQualityTextures();
+		sampler.maxAnisotropy = highQ ? 4.0f : 1.0f;
+		sampler.anisotropyEnable = highQ ? VK_TRUE : VK_FALSE;
+	}
 	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 	VKE_CHECK_RESULT(vkCreateSampler(m_device, &sampler, nullptr, &texture->sampler));
 
@@ -806,4 +825,190 @@ uint32_t VkLoader::TextureHandle::GetMemoryType(uint32_t typeBits, VkFlags prope
 		typeBits >>= 1;
 	}
 	return 0;
+}
+
+VkResult VkLoader::TextureHandle::LoadTextureFromMemory(const uint8_t* compressedData, size_t compressedSize, VkEngine::VulkanTexture* texture)
+{
+	const VkFormat format = VK_FORMAT_R8G8B8A8_UNORM;
+	const bool highQ = wgGetHighQualityTextures();
+
+	int w = 0, h = 0, channels = 0;
+	stbi_uc* pixels = stbi_load_from_memory(compressedData, static_cast<int>(compressedSize), &w, &h, &channels, STBI_rgb_alpha);
+	if (!pixels || w <= 0 || h <= 0)
+	{
+		if (pixels) stbi_image_free(pixels);
+		return LoadFallbackTexture(texture);
+	}
+
+	const VkDeviceSize byteSize = static_cast<VkDeviceSize>(w) * h * 4;
+	texture->width = static_cast<uint32_t>(w);
+	texture->height = static_cast<uint32_t>(h);
+	texture->mipLevels = highQ
+		? static_cast<uint32_t>(std::floor(std::log2(std::max(w, h)))) + 1u
+		: 1u;
+
+	VkMemoryAllocateInfo memAllocInfo{};
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	VkMemoryRequirements memReqs{};
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingMemory;
+
+	VkBufferCreateInfo bufferCreateInfo{};
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.size = byteSize;
+	bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	VKE_CHECK_RESULT(vkCreateBuffer(m_device, &bufferCreateInfo, nullptr, &stagingBuffer));
+
+	vkGetBufferMemoryRequirements(m_device, stagingBuffer, &memReqs);
+	memAllocInfo.allocationSize = memReqs.size;
+	memAllocInfo.memoryTypeIndex = GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &memAllocInfo, nullptr, &stagingMemory));
+	VKE_CHECK_RESULT(vkBindBufferMemory(m_device, stagingBuffer, stagingMemory, 0));
+
+	uint8_t* mapped = nullptr;
+	VKE_CHECK_RESULT(vkMapMemory(m_device, stagingMemory, 0, memReqs.size, 0, (void**)&mapped));
+	memcpy(mapped, pixels, byteSize);
+	vkUnmapMemory(m_device, stagingMemory);
+	stbi_image_free(pixels);
+
+	VkImageCreateInfo imageCreateInfo{};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = format;
+	imageCreateInfo.mipLevels = texture->mipLevels;
+	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageCreateInfo.extent = { texture->width, texture->height, 1 };
+	imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+	VKE_CHECK_RESULT(vkCreateImage(m_device, &imageCreateInfo, nullptr, &texture->image));
+
+	vkGetImageMemoryRequirements(m_device, texture->image, &memReqs);
+	memAllocInfo.allocationSize = memReqs.size;
+	memAllocInfo.memoryTypeIndex = GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	VKE_CHECK_RESULT(vkAllocateMemory(m_device, &memAllocInfo, nullptr, &texture->deviceMemory));
+	VKE_CHECK_RESULT(vkBindImageMemory(m_device, texture->image, texture->deviceMemory, 0));
+
+	VkCommandBufferBeginInfo cmdBufInfo{};
+	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	VKE_CHECK_RESULT(vkBeginCommandBuffer(m_cmdBuffer, &cmdBufInfo));
+
+	VkImageSubresourceRange fullRange{};
+	fullRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	fullRange.baseMipLevel = 0;
+	fullRange.levelCount = texture->mipLevels;
+	fullRange.layerCount = 1;
+
+	VkImageSubresourceRange mip0Range{};
+	mip0Range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	mip0Range.baseMipLevel = 0;
+	mip0Range.levelCount = 1;
+	mip0Range.layerCount = 1;
+
+	SetImageLayout(m_cmdBuffer, texture->image, VK_IMAGE_ASPECT_COLOR_BIT,
+		VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, fullRange);
+
+	VkBufferImageCopy copyRegion{};
+	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	copyRegion.imageSubresource.mipLevel = 0;
+	copyRegion.imageSubresource.baseArrayLayer = 0;
+	copyRegion.imageSubresource.layerCount = 1;
+	copyRegion.imageExtent = { texture->width, texture->height, 1 };
+	copyRegion.bufferOffset = 0;
+	vkCmdCopyBufferToImage(m_cmdBuffer, stagingBuffer, texture->image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+	texture->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	if (texture->mipLevels > 1) {
+		// Transition mip 0 to TRANSFER_SRC so subsequent blits can read from it.
+		SetImageLayout(m_cmdBuffer, texture->image, VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, mip0Range);
+
+		int32_t mipW = static_cast<int32_t>(texture->width);
+		int32_t mipH = static_cast<int32_t>(texture->height);
+		for (uint32_t i = 1; i < texture->mipLevels; i++) {
+			int32_t nextW = (mipW > 1) ? mipW / 2 : 1;
+			int32_t nextH = (mipH > 1) ? mipH / 2 : 1;
+
+			VkImageBlit blit{};
+			blit.srcSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 };
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipW, mipH, 1 };
+			blit.dstSubresource = { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 };
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { nextW, nextH, 1 };
+
+			vkCmdBlitImage(m_cmdBuffer,
+				texture->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				1, &blit, VK_FILTER_LINEAR);
+
+			// Transition just-written level to SRC for next iteration.
+			VkImageSubresourceRange curRange{ VK_IMAGE_ASPECT_COLOR_BIT, i, 1, 0, 1 };
+			SetImageLayout(m_cmdBuffer, texture->image, VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, curRange);
+
+			mipW = nextW;
+			mipH = nextH;
+		}
+
+		// All levels are now in TRANSFER_SRC layout — transition all to SHADER_READ_ONLY.
+		SetImageLayout(m_cmdBuffer, texture->image, VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture->imageLayout, fullRange);
+	}
+	else {
+		SetImageLayout(m_cmdBuffer, texture->image, VK_IMAGE_ASPECT_COLOR_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture->imageLayout, fullRange);
+	}
+
+	VKE_CHECK_RESULT(vkEndCommandBuffer(m_cmdBuffer));
+
+	VkFence copyFence;
+	VkFenceCreateInfo fenceCreateInfo{};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	VKE_CHECK_RESULT(vkCreateFence(m_device, &fenceCreateInfo, nullptr, &copyFence));
+
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &m_cmdBuffer;
+	VKE_CHECK_RESULT(vkQueueSubmit(m_queue, 1, &submitInfo, copyFence));
+	VKE_CHECK_RESULT(vkWaitForFences(m_device, 1, &copyFence, VK_TRUE, 100000000000));
+
+	vkDestroyFence(m_device, copyFence, nullptr);
+	vkFreeMemory(m_device, stagingMemory, nullptr);
+	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+
+	VkSamplerCreateInfo sampler{};
+	sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	sampler.magFilter = VK_FILTER_LINEAR;
+	sampler.minFilter = VK_FILTER_LINEAR;
+	sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+	sampler.mipLodBias = 0.0f;
+	sampler.compareOp = VK_COMPARE_OP_NEVER;
+	sampler.minLod = 0.0f;
+	sampler.maxLod = static_cast<float>(texture->mipLevels);
+	{
+		sampler.maxAnisotropy = highQ ? 4.0f : 1.0f;
+		sampler.anisotropyEnable = highQ ? VK_TRUE : VK_FALSE;
+	}
+	sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	VKE_CHECK_RESULT(vkCreateSampler(m_device, &sampler, nullptr, &texture->sampler));
+
+	VkImageViewCreateInfo view{};
+	view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	view.format = format;
+	view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+	view.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, texture->mipLevels, 0, 1 };
+	view.image = texture->image;
+	return vkCreateImageView(m_device, &view, nullptr, &texture->view);
 }

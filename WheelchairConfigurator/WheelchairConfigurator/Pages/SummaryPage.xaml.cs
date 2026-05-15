@@ -148,6 +148,7 @@ public partial class SummaryPage : ContentPage
             try
             {
                 _tungTungTungSahur = new Bazilišek("summary", 800, 600);
+                _tungTungTungSahur.SetHighQualityTextures(settings.HighQualityTextures);
                 _tungTungTungSahur.StartRenderLoop(OnFrameReady);
             }
             catch (Exception ex)
@@ -168,7 +169,8 @@ public partial class SummaryPage : ContentPage
                     .GroupBy(m => m.ComponentId)
                     .ToDictionary(g => g.Key, g => g.First());
                 var modelsDir = Path.Combine(FileSystem.AppDataDirectory, "models");
-                var scene = new List<(string id, string geom, string tex, float scale)>();
+                var scene = new List<(string id, string geom, string tex, float scale,
+                    float ax, float ay, float az, float rx, float ry, float rz)>();
                 foreach (var c in components)
                 {
                     if (!modelMap.TryGetValue(c.Id, out var m)) continue;
@@ -177,7 +179,8 @@ public partial class SummaryPage : ContentPage
                     if (!File.Exists(geomPath)) continue;
                     var texPath = string.IsNullOrEmpty(m.TextureId) ? "" : Path.Combine(modelsDir, m.TextureId);
                     if (!string.IsNullOrEmpty(texPath) && !File.Exists(texPath)) texPath = "";
-                    scene.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale));
+                    scene.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale,
+                        m.AnchorX, m.AnchorY, m.AnchorZ, m.RotationX, m.RotationY, m.RotationZ));
                 }
                 Console.WriteLine($"[Summary] LoadData: scene built ({scene.Count} models)");
                 await _tungTungTungSahur.RebuildSceneAsync(scene);

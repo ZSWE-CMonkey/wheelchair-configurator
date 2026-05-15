@@ -45,9 +45,13 @@ GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObject(std::string object
     return GP_SUCCESS;
 }
 
-GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath)
+GPluginResult GraphicsPlugin::VulkanGraphicsPlugin::AddObjectFromFiles(std::string objectId, std::string geometryPath, std::string texturePath,
+    float scale,
+    float anchorX, float anchorY, float anchorZ,
+    float rotationX, float rotationY, float rotationZ)
 {
-    if (m_vulkanEngine->AddObjectFromFiles(objectId, daePath, ktxPath) != VK_SUCCESS)
+    if (m_vulkanEngine->AddObjectFromFiles(objectId, geometryPath, texturePath,
+        scale, anchorX, anchorY, anchorZ, rotationX, rotationY, rotationZ) != VK_SUCCESS)
         return GP_ADD_OBJECT_ERROR;
 
     return GP_SUCCESS;

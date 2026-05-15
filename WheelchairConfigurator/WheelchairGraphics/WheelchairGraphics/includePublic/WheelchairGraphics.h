@@ -26,8 +26,16 @@ extern "C" WG_API void wgSetCamera(float zoom, float x, float y, float z, float 
 
 extern "C" WG_API void wgAddObject(const char* objectId);
 
-extern "C" WG_API void wgAddObjectFromFiles(const char* objectId, const char* daeAbsolutePath, const char* ktxAbsolutePath);
+extern "C" WG_API void wgAddObjectFromFiles(const char* objectId, const char* geometryAbsolutePath, const char* textureAbsolutePath,
+    float scale,
+    float anchorX, float anchorY, float anchorZ,
+    float rotationX, float rotationY, float rotationZ);
+
+extern "C" WG_API void wgSetHighQualityTextures(bool enabled);
 
 extern "C" WG_API void wgRender(const char** out);
 
 extern "C" WG_API void wgDeinitializeGraphics();
+
+// Internal accessor for high-quality texture flag (used by TextureHandle.cpp + VulkanEngine.cpp).
+bool wgGetHighQualityTextures();

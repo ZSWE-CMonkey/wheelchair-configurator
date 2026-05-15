@@ -12,9 +12,16 @@ namespace ConfigurationLogic.Graphics
             _imageBuffer = CreateBlankImage(width, height);
         }
 
-        public void AddResourceFromFiles(string objectId, string daePath, string ktxPath)
+        public void AddResourceFromFiles(string objectId, string geometryPath, string texturePath, float scale,
+            float anchorX, float anchorY, float anchorZ,
+            float rotationX, float rotationY, float rotationZ)
         {
             AddResource(objectId);
+        }
+
+        public void SetHighQualityTextures(bool enabled)
+        {
+            // no-op for image compositor (no Vulkan samplers)
         }
 
         public void AddResource(string resourceId)

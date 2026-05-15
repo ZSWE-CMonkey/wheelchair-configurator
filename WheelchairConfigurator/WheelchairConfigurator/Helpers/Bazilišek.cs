@@ -1,13 +1,10 @@
-﻿using ConfigurationLogic.Graphics;
+using ConfigurationLogic.Graphics;
 using ConfigurationLogic.Graphics.Types;
 using SkiaSharp;
 using System.Runtime.InteropServices;
 
 namespace WheelchairConfigurator.Helpers
 {
-    /// <summary>
-    /// Vulkan helper for single render of image lol
-    /// </summary>
     internal class Bazilišek
     {
         private struct Camera
@@ -24,76 +21,155 @@ namespace WheelchairConfigurator.Helpers
             }
         }
 
-        private int _width;
-        private int _height;
-
-        private List<string> _objectsId;
-
-        private IGraphicsPlugin _graphicsPlugin;
+        private readonly int _width;
+        private readonly int _height;
+        private readonly IGraphicsPlugin _graphicsPlugin;
+        private readonly object _mutex = new();
 
         private Camera _camera;
+        private bool _isInitialized = false;
 
-        private SKBitmap? _renderedScene = null;
+        private CancellationTokenSource? _renderCts;
+        private Task? _renderTask;
+        private Action<SKBitmap>? _onFrame;
 
-        private object _mutex = new();
-
-        public Bazilišek(string name, int widht, int height)
+        public Bazilišek(string name, int width, int height)
         {
-            _width = widht;
+            _width = width;
             _height = height;
-            _objectsId = new List<string>();
-            _graphicsPlugin = GraphicsPluginFactory.CreateVulkanGraphicsPlugin(name, widht, height);
-
+            _graphicsPlugin = GraphicsPluginFactory.CreateVulkanGraphicsPlugin(name, width, height);
 
             _camera = new Camera(
                 -5.5f,
                 new CameraPosition(0.1f, 1.1f, 0.0f),
-                new CameraRotation(-0.5f, -112.75f, 0.0f)
-                );
+                new CameraRotation(-0.5f, -112.75f, 0.0f));
         }
 
-        /*~Bazilišek()
+        public void SetHighQualityTextures(bool enabled)
         {
-            _graphicsPlugin.Deinitialize();
-        }*/
+            _graphicsPlugin.SetHighQualityTextures(enabled);
+        }
 
-        public void ZabijBaziliška()
+        public async Task RebuildSceneAsync(IReadOnlyList<(string id, string geometryPath, string texturePath, float scale,
+            float anchorX, float anchorY, float anchorZ,
+            float rotationX, float rotationY, float rotationZ)> models)
         {
-            if (_graphicsPlugin != null)
+            Console.WriteLine($"[Bazilisek] Rebuild: {models.Count} models");
+            await StopRenderLoopAsync();
+
+            lock (_mutex)
             {
-                _graphicsPlugin.Deinitialize();
+                if (_isInitialized)
+                {
+                    _graphicsPlugin.Deinitialize();
+                    _isInitialized = false;
+                }
+
+                if (models.Count == 0)
+                {
+                    Console.WriteLine("[Bazilisek] Rebuild done (empty scene)");
+                    return;
+                }
+
+                foreach (var (id, geom, tex, scale, ax, ay, az, rx, ry, rz) in models)
+                    _graphicsPlugin.AddResourceFromFiles(id, geom, tex, scale, ax, ay, az, rx, ry, rz);
+
+                _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
+                _graphicsPlugin.Initialize();
+                _isInitialized = true;
             }
+
+            Console.WriteLine("[Bazilisek] Rebuild done");
+
+            if (_onFrame != null)
+                StartRenderLoopInternal();
         }
 
-        /// <summary>
-        /// Adds object to the rendered scene. You must add it first before rendering call skibidi
-        /// </summary>
-        /// <param name="name">Object id name in format like (without any extensions): [subfolder]/[name]</param>
-        public Bazilišek BrmBrmPatatim(string name)
+        public void StartRenderLoop(Action<SKBitmap> onFrame)
         {
-            _objectsId.Add(name);
-            return this;
+            _onFrame = onFrame;
+            if (_isInitialized)
+                StartRenderLoopInternal();
         }
 
-        /// <summary>
-        /// Adds object from absolute filesystem paths (no recompile needed for new models).
-        /// Must be called before OtevřítKomnatu.
-        /// </summary>
-        public Bazilišek BrmBrmPatatimZesouboru(string objectId, string daeAbsolutePath, string ktxAbsolutePath)
+        private void StartRenderLoopInternal()
         {
-            _graphicsPlugin.AddResourceFromFiles(objectId, daeAbsolutePath, ktxAbsolutePath);
-            return this;
+            if (_renderTask != null && !_renderTask.IsCompleted) return;
+
+            _renderCts = new CancellationTokenSource();
+            var ct = _renderCts.Token;
+            var callback = _onFrame;
+
+            _renderTask = Task.Run(async () =>
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    SKBitmap? frame = null;
+                    lock (_mutex)
+                    {
+                        if (_isInitialized)
+                        {
+                            try
+                            {
+                                _graphicsPlugin.Render(out byte[] pixels);
+                                ConvertMagentaToTransparent(pixels);
+
+                                var info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+                                var bitmap = new SKBitmap(info);
+                                Marshal.Copy(pixels, 0, bitmap.GetPixels(), pixels.Length);
+                                frame = bitmap;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine("[Bazilisek.RenderLoop] EXCEPTION: " + ex.Message);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (frame != null)
+                    {
+                        try { callback?.Invoke(frame); }
+                        catch (Exception ex) { Console.WriteLine("[Bazilisek.RenderLoop] callback exception: " + ex.Message); }
+                    }
+
+                    try { await Task.Delay(16, ct); }
+                    catch (OperationCanceledException) { break; }
+                }
+            }, ct);
         }
 
-        public void ClearObjects()
+        public async Task StopRenderLoopAsync()
         {
-            _objectsId.Clear();
+            var cts = _renderCts;
+            var task = _renderTask;
+            if (cts != null)
+            {
+                cts.Cancel();
+                if (task != null)
+                {
+                    try { await task; }
+                    catch { }
+                }
+                cts.Dispose();
+            }
+            _renderCts = null;
+            _renderTask = null;
         }
 
-        public void ChangeWidthHeight(int width, int height)
+        public async Task ShutdownAsync()
         {
-            _width = width;
-            _height = height;
+            Console.WriteLine("[Bazilisek] Shutdown begin");
+            await StopRenderLoopAsync();
+            lock (_mutex)
+            {
+                if (_isInitialized)
+                {
+                    _graphicsPlugin.Deinitialize();
+                    _isInitialized = false;
+                }
+            }
+            Console.WriteLine("[Bazilisek] Shutdown end");
         }
 
         public void PomaluSanjski(float x, float y)
@@ -101,65 +177,23 @@ namespace WheelchairConfigurator.Helpers
             _camera.Rotation.X += x;
             _camera.Rotation.Y += y;
 
-            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
-        }
-
-        public void ToJáJsemVypustilBaziliška()
-        {
             lock (_mutex)
             {
-                _graphicsPlugin.Render(out byte[] pixelBuffer);
-
-                ConvertMangetaToTransparent(ref pixelBuffer);
-
-                GCHandle handle = GCHandle.Alloc(pixelBuffer, GCHandleType.Pinned);
-                IntPtr pixels = handle.AddrOfPinnedObject();
-
-                SKImageInfo info = new SKImageInfo(_width, _height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
-
-                SKBitmap bitmap = new SKBitmap();
-                bitmap.InstallPixels(info, pixels, info.RowBytes);
-
-                _renderedScene?.Dispose();
-                _renderedScene = bitmap;
+                if (_isInitialized)
+                    _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
             }
         }
 
-        public void OtevřítKomnatu()
-        {
-            foreach (string id in _objectsId)
-            {
-                _graphicsPlugin.AddResource(id);
-            }
-            _graphicsPlugin.SetCamera(_camera.Zoom, _camera.Position, _camera.Rotation);
-            _graphicsPlugin.Initialize();
-        }
-
-        /// <summary>
-        /// Initialize and renders once the scene and deinitialize vulkan engine. 
-        /// Outputs final image of that rendering.
-        /// You must add object first before this call :3
-        /// </summary>
-        /// <returns>ImageSource of pixel buffer</returns>        
-        public SKBitmap? JaJsemHagrid()
-        {
-            return _renderedScene;
-        }
-
-        private void ConvertMangetaToTransparent(ref byte[] pixels)
+        private static void ConvertMagentaToTransparent(byte[] pixels)
         {
             for (int i = 0; i < pixels.Length; i += 4)
             {
                 byte b = pixels[i];
                 byte g = pixels[i + 1];
                 byte r = pixels[i + 2];
-
                 if (r == 255 && g == 0 && b == 255)
-                {
                     pixels[i + 3] = 0;
-                }
             }
         }
-
     }
 }

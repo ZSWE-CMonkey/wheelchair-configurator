@@ -34,9 +34,17 @@ VkResult VkLoader::MeshHandle::LoadMesh(std::string const& filename)
 	return VK_SUCCESS;
 }
 
-VkResult VkLoader::MeshHandle::LoadMeshFromFile(std::string const& filepath, float scale)
+VkResult VkLoader::MeshHandle::LoadMeshFromFile(std::string const& filepath, float scale,
+	float anchorX, float anchorY, float anchorZ,
+	float rotationX, float rotationY, float rotationZ)
 {
 	const int flags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_GlobalScale | aiProcess_FlipUVs;
+
+	glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), glm::radians(rotationX), glm::vec3(1.0f, 0.0f, 0.0f))
+		* glm::rotate(glm::mat4(1.0f), glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f))
+		* glm::rotate(glm::mat4(1.0f), glm::radians(rotationZ), glm::vec3(0.0f, 0.0f, 1.0f));
+	m_postRotMat = glm::mat3(rotMat);
+	m_postAnchor = glm::vec3(anchorX, anchorY, anchorZ);
 
 	m_importer.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, scale);
 	m_scene = m_importer.ReadFile(filepath, flags);
@@ -106,21 +114,26 @@ void VkLoader::MeshHandle::InitMesh(unsigned int index, const aiMesh* paiMesh)
 		aiVector3D* pTangent = (paiMesh->HasTangentsAndBitangents()) ? &(paiMesh->mTangents[i]) : &Zero3D;
 		aiVector3D* pBiTangent = (paiMesh->HasTangentsAndBitangents()) ? &(paiMesh->mBitangents[i]) : &Zero3D;
 
-		Vertex v(glm::vec3(pPos->x, -pPos->y, pPos->z),
+		glm::vec3 pos = m_postRotMat * glm::vec3(pPos->x, -pPos->y, pPos->z) + m_postAnchor;
+		glm::vec3 nrm = m_postRotMat * glm::vec3(pNormal->x, pNormal->y, pNormal->z);
+		glm::vec3 tan = m_postRotMat * glm::vec3(pTangent->x, pTangent->y, pTangent->z);
+		glm::vec3 btn = m_postRotMat * glm::vec3(pBiTangent->x, pBiTangent->y, pBiTangent->z);
+
+		Vertex v(pos,
 			glm::vec2(pTexCoord->x, pTexCoord->y),
-			glm::vec3(pNormal->x, pNormal->y, pNormal->z),
-			glm::vec3(pTangent->x, pTangent->y, pTangent->z),
-			glm::vec3(pBiTangent->x, pBiTangent->y, pBiTangent->z),
+			nrm,
+			tan,
+			btn,
 			glm::vec3(pColor.r, pColor.g, pColor.b)
 		);
 
-		m_dim.max.x = fmax(pPos->x, m_dim.max.x);
-		m_dim.max.y = fmax(pPos->y, m_dim.max.y);
-		m_dim.max.z = fmax(pPos->z, m_dim.max.z);
+		m_dim.max.x = fmax(pos.x, m_dim.max.x);
+		m_dim.max.y = fmax(pos.y, m_dim.max.y);
+		m_dim.max.z = fmax(pos.z, m_dim.max.z);
 
-		m_dim.min.x = fmin(pPos->x, m_dim.min.x);
-		m_dim.min.y = fmin(pPos->y, m_dim.min.y);
-		m_dim.min.z = fmin(pPos->z, m_dim.min.z);
+		m_dim.min.x = fmin(pos.x, m_dim.min.x);
+		m_dim.min.y = fmin(pos.y, m_dim.min.y);
+		m_dim.min.z = fmin(pos.z, m_dim.min.z);
 
 		m_entries[index].Vertices.push_back(v);
 	}

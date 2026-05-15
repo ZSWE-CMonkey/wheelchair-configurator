@@ -61,7 +61,10 @@ namespace VkEngine {
 		VkResult SetCamera(float zoom, glm::vec3 position, glm::vec3 rotation);
 
 		VkResult AddObject(std::string objectId);
-		VkResult AddObjectFromFiles(std::string objectId, std::string daePath, std::string ktxPath);
+		VkResult AddObjectFromFiles(std::string objectId, std::string geometryPath, std::string texturePath,
+			float scale,
+			float anchorX, float anchorY, float anchorZ,
+			float rotationX, float rotationY, float rotationZ);
 
 		VkResult InitVulkan(std::string appName, uint32_t width, uint32_t height);
 
@@ -119,7 +122,9 @@ namespace VkEngine {
 		VkResult CreateOffscreenFrameBuffer();
 
 		VkResult LoadMesh(std::string id);
-		VkResult LoadMeshFromFile(const std::string& path);
+		VkResult LoadMeshFromFile(const std::string& path, float scale,
+			float anchorX, float anchorY, float anchorZ,
+			float rotationX, float rotationY, float rotationZ);
 		VkResult LoadTexture(std::string id);
 		VkResult LoadTextureFromFile(const std::string& path);
 		VkResult LoadShader(std::string fileName, VkShaderStageFlagBits stage, VkPipelineShaderStageCreateInfo& out);
@@ -182,8 +187,16 @@ namespace VkEngine {
 
 		std::vector<std::string> m_objectId{};
 
-		struct ObjectFilePaths { std::string daePath; std::string ktxPath; };
+		struct ObjectFilePaths {
+			std::string geometryPath;
+			std::string texturePath;
+			float scale;
+			float anchorX, anchorY, anchorZ;
+			float rotationX, rotationY, rotationZ;
+		};
 		std::unordered_map<std::string, ObjectFilePaths> m_objectFilePaths{};
+
+		std::vector<uint8_t> m_lastEmbeddedTextureBytes{};
 
 		struct {
 			VkSemaphore presentComplete;

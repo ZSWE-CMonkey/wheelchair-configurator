@@ -129,8 +129,9 @@ public partial class WheelchairConfiguratorPage : ContentPage
             try
             {
                 _tungTungTungSahur = new Bazilišek("app", 800, 600);
+                _tungTungTungSahur.SetHighQualityTextures(settings.HighQualityTextures);
                 _tungTungTungSahur.StartRenderLoop(OnFrameReady);
-                Console.WriteLine("[Configurator] Bazilisek created");
+                Console.WriteLine($"[Configurator] Bazilisek created (highQuality={settings.HighQualityTextures})");
             }
             catch (Exception ex)
             {
@@ -146,7 +147,8 @@ public partial class WheelchairConfiguratorPage : ContentPage
         if (_renderUnavailable || _tungTungTungSahur == null) return;
 
         var modelsDir = Path.Combine(FileSystem.AppDataDirectory, "models");
-        var sceneModels = new List<(string id, string geom, string tex, float scale)>();
+        var sceneModels = new List<(string id, string geom, string tex, float scale,
+            float ax, float ay, float az, float rx, float ry, float rz)>();
 
         foreach (var comp in _selectedComponents.Values)
         {
@@ -157,7 +159,8 @@ public partial class WheelchairConfiguratorPage : ContentPage
             if (!File.Exists(geomPath)) continue;
             var texPath = string.IsNullOrEmpty(m.TextureId) ? "" : Path.Combine(modelsDir, m.TextureId);
             if (!string.IsNullOrEmpty(texPath) && !File.Exists(texPath)) texPath = "";
-            sceneModels.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale));
+            sceneModels.Add(($"model_{m.ComponentId}", geomPath, texPath, m.Scale,
+                m.AnchorX, m.AnchorY, m.AnchorZ, m.RotationX, m.RotationY, m.RotationZ));
         }
 
         Console.WriteLine($"[Configurator] RefreshScene: {sceneModels.Count} models");
@@ -219,11 +222,7 @@ public partial class WheelchairConfiguratorPage : ContentPage
 
             foreach (var component in components)
             {
-                var bgColor = component.IsIncompatible
-                    ? ThemeColor(Color.FromArgb("#F5F5F5"), Color.FromArgb("#3A3A3A"))
-                    : component.IsRecommended
-                        ? ThemeColor(Color.FromArgb("#E8F5E9"), Color.FromArgb("#1B3A1F"))
-                        : ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
+                var bgColor = ResolveBgColor(component);
 
                 var textColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Colors.Black, Colors.White);
                 var subColor = component.IsIncompatible ? Colors.Gray : ThemeColor(Color.FromArgb("#555555"), Color.FromArgb("#AAAAAA"));
@@ -272,12 +271,19 @@ public partial class WheelchairConfiguratorPage : ContentPage
         }
     }
 
+    private Color ResolveBgColor(ComponentModel c) => c.IsIncompatible
+        ? ThemeColor(Color.FromArgb("#F5F5F5"), Color.FromArgb("#3A3A3A"))
+        : c.IsRecommended
+            ? ThemeColor(Color.FromArgb("#E8F5E9"), Color.FromArgb("#1B3A1F"))
+            : ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
+
     private async void OnComponentTapped(ComponentModel component, Border tappedBorder, int categoryId)
     {
-        if (_selectedBorders.TryGetValue(categoryId, out var prev) && prev is not null)
+        if (_selectedBorders.TryGetValue(categoryId, out var prev) && prev is not null
+            && _selectedComponents.TryGetValue(categoryId, out var prevComp) && prevComp is not null)
         {
             prev.Stroke = Colors.LightGray;
-            prev.BackgroundColor = ThemeColor(Colors.White, Color.FromArgb("#2D2D2D"));
+            prev.BackgroundColor = ResolveBgColor(prevComp);
         }
 
         tappedBorder.Stroke = Color.FromArgb("#512BD4");

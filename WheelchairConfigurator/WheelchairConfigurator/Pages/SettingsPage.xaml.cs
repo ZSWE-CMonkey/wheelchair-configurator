@@ -20,13 +20,24 @@ public partial class SettingsPage : ContentPage
         var settings = await _appService.GetSettingsAsync();
         _suppressToggle = true;
         RenderingSwitch.IsToggled = settings.RenderingEnabled;
+        HighQualityTexturesSwitch.IsToggled = settings.HighQualityTextures;
         _suppressToggle = false;
     }
 
     private async void OnRenderingToggled(object sender, ToggledEventArgs e)
     {
         if (_suppressToggle) return;
-        await _appService.SaveSettingsAsync(new AppSettingsModel { RenderingEnabled = e.Value });
+        var settings = await _appService.GetSettingsAsync();
+        settings.RenderingEnabled = e.Value;
+        await _appService.SaveSettingsAsync(settings);
+    }
+
+    private async void OnHighQualityTexturesToggled(object sender, ToggledEventArgs e)
+    {
+        if (_suppressToggle) return;
+        var settings = await _appService.GetSettingsAsync();
+        settings.HighQualityTextures = e.Value;
+        await _appService.SaveSettingsAsync(settings);
     }
 
     private async void OnExportCatalogClicked(object sender, EventArgs e)
